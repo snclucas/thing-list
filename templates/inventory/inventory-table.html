@@ -1,0 +1,85 @@
+{% if number_inventories > 0 %}
+
+    <table class="table  dataTable" id="inventories-table">
+        <thead class="success">
+
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+            {% if user_is_authenticated %}
+                <th></th>
+            {% endif %}
+        </tr>
+
+        </thead>
+        <tbody>
+
+
+        {% for user_inventory, inventory, user in inventories %}
+
+            {% if "__default__" not in  inventory.name %}
+
+                <tr>
+                    <td>
+                        <a href="{{ url_for('item.items_with_username_and_inventory', username=user.username, inventory_slug=inventory.slug) | replace('%40', '@') }}">
+                            {{ inventory['name'] }}</a>
+                    </td>
+                    <td>{{ inventory['description'] }}</td>
+
+                    <td>
+                        {{ inventory['items']|length }} items | @{{ user.username }} | <span
+                            class="fas fa-lock"></span>
+                    </td>
+
+                    {% if user_is_authenticated %}
+
+                        <td>
+                            <span class="fas fa-edit fa-2x" data-bs-toggle="collapse"
+                                  id="inventoryEdit-{{ inventory['id'] }}"
+                                  href="#collapseInventoryEdit"
+                                  data-inventory-id="{{ inventory['id'] }}"
+                                  data-inventory-name="{{ inventory['name'] }}"
+                                  data-inventory-description="{{ inventory['description'] }}"
+                                  data-inventory-slug="{{ inventory['slug'] }}"
+                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                            <span id="delete-inventory-btn-{{ inventory['id'] }}" data-bs-toggle="collapse"
+                                  href="#confirmInventoryDelete-{{ inventory['id'] }}"
+                                  class="fas fa-times fa-2x "
+                                  style="color:red; display: inline-block; margin-right: 20px;"></span>
+
+                            <div class="collapse" id="confirmInventoryDelete-{{ inventory['id'] }}"
+                                 aria-expanded="false">
+                                <button type="button" class="btn btn-primary btn-sm"
+                                        id="confirmInventoryDeleteBtn-{{ inventory['id'] }}"
+                                        data-inventory-id="{{ inventory['id'] }}"
+                                        data-inventory-slug="{{ inventory['slug'] }}">Confirm delete
+                                </button>
+                            </div>
+                        </td>
+
+                    {% endif %}
+                </tr>
+
+            {% endif %}
+
+        {% endfor %}
+
+
+        </tbody>
+    </table>
+
+{% else %}
+
+    <div class="row">
+        <div class="col-md-12">
+            <div class=" text-center">
+            <h5>Oh no, no inventories :(</h5>
+
+            <p>You can add a new inventory by clicking the <i class="fas fa-plus"></i> icon at the top.</p>
+        </div>
+        </div>
+    </div>
+
+{% endif %}

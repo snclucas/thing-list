@@ -1,0 +1,464 @@
+{% extends "base.html" %}
+
+{% block title %} ThingList | {{ item.name }}{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <meta property="og:title" content="Colby Fayock - A UX Designer &amp; Front-end Developer Blog" />
+    <meta property="og:type" content="website" />
+    {% if item.main_image is not none %}
+        <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}" />
+    {% endif %}
+    <meta property="og:url" content="{{ url_for(request.endpoint, username=username, item_slug=item.slug) | replace('%40', '@') }}" />
+
+    <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
+{% endblock %}
+
+{% block content %}
+
+    <div class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+
+                        <div class="card-header">
+                            <div class="row">
+                                <div class="col-md-9">
+                                    <h5>{{ item.name }} </h5>
+                                </div>
+                                <div class="col-md-3">
+
+                                    <div class="text-end">
+
+                                        {% if item_access_level == "owner" %}
+
+                                            <span class="fas fa-list fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseItemFields"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                            <span class="fas fa-edit fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseExample"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                            <span class="fas fa-images fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseImagesEdit"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                        {% endif %}
+
+                                        <span class="fas fa-file-pdf fa-2x" data-bs-toggle="collapse"
+                                              href="#collapseImagesEdit"
+                                              style="display: inline-block; margin-right: 20px;"></span>
+                                    </div>
+
+
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card-body">
+
+                            {% if item_access_level == "owner" %}
+                                <div class="row">
+
+                                    <div class="col-md-12">
+
+                                        <div class="collapse" id="collapseItemFields" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/item_field_selector.html' %}
+                                            </div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseExample" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/edit_item_form.html' %}
+                                            </div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseImagesEdit" aria-expanded="false">
+                                            {% include 'item/item_images_upload.html' %}
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                            {% endif %}
+
+                            <div class="row">
+
+
+                                <div class="col-md-8">
+                                    <p class="card-text">{{ item.description }}</p>
+                                    <h6><strong>Type:</strong> {{ item_type }}</h6>
+
+                                    {% if item_access_level == "owner" %}
+                                        <h6><strong>Location:</strong> {{ item_location.name }}</h6>
+
+                                        {% if item.specific_location is not none %}
+                                            <h6><strong>Specific location #:</strong> {{ item.specific_location }}</h6>
+                                        {% else %}
+                                            <h6><strong>Specific location #:</strong> Not set</h6>
+                                        {% endif %}
+                                    {% endif %}
+
+                                </div>
+
+
+                                <div class="col-md-4">
+                                    {% if item.main_image is not none %}
+                                        {% set image_url = url_for('static', filename="uploads/" + item.main_image) %}
+                                        <img src="{{ image_url }}" class="rounded float-end img-thumbnail" alt="...">
+                                    {% endif %}
+                                </div>
+
+
+                            </div>
+
+                            <hr>
+
+                            {% for field_name, field in item_fields.items() %}
+                                <div class="row">
+                                    {% if  "input" == "input" %}
+                                        <div class="col-md-3">
+                                            <h6><strong>{{ field_name }}:</strong></h6>
+                                        </div>
+                                        <div class="col-md-9">
+                                            <h6>{{ field.value }}</h6>
+                                        </div>
+
+                                    {% endif %}
+                                </div>
+                            {% endfor %}
+
+                            <hr>
+
+                            <div id="item-tags">
+                                {% for tag in item.tags %}
+                                    <a href="{{ url_for('item.items') }}?tags={{ tag.tag }}">
+                                        <button type="button" class="btn btn-sm btn-primary">{{ tag.tag }}</button>
+                                    </a>
+                                {% endfor %}
+                            </div>
+
+                            <hr>
+
+
+                            <hr>
+
+                            <div class="row">
+
+                                <div class="col-md-12">
+                                    <h5>Inventories: </h5>
+
+                                    {% for inventory in item.inventories %}
+
+                                        <strong><a
+                                                href="{{ url_for('inv.inventory_by_slug', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">{{ inventory.name }}</a></strong>
+                                        | <a href="#"> Remove</a> | <a href="#"> Move </a>
+
+                                    {% endfor %}
+
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+
+                                {% if item.images | length > 0 %}
+
+                                    <div class="col-md-6 text-center">
+                                        <button id="btn-remove-images" type="button" class="btn btn-sm btn-primary"
+                                                disabled>
+                                            Remove images
+                                        </button>
+                                    </div>
+                                    <div class="col-md-6 text-center">
+                                        <button id="btn-main-image" type="button" class="btn btn-sm btn-primary"
+                                                disabled>
+                                            Make main image
+                                        </button>
+                                    </div>
+
+                                {% endif %}
+
+                            </div>
+
+                            <br>
+
+                            <div class="row">
+
+                                <div class="grid" id="masonry">
+                                    {% for img in item.images %}
+
+                                        {% set image_url = url_for('static', filename="uploads/" + img.image_filename) %}
+                                        <div class="item">
+                                            <img width="300" class="image-checkbox" src="{{ image_url }}"
+                                                 data-image-url="{{ image_url }}"
+                                                 id="{{ img.id }}">
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+
+                            <hr>
+                            <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/masonry/4.1.0/masonry.pkgd.min.js"></script>
+    <script src="https://npmcdn.com/imagesloaded@4.1/imagesloaded.pkgd.min.js"></script>
+
+    <script src="{{ url_for('static', filename='js/autoComplete.js') }}"></script>
+
+    <script>
+
+    $(document).ready(function () {
+
+            $('#item-field-table').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+
+        });
+
+        function checkbox_count() {
+            let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
+            let number_selected = 0;
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected += 1
+                }
+            });
+        }
+
+        $(document).ready(function () {
+            checkbox_count();
+        });
+
+
+        $("#save-fields-btn").on("click", function (e) {
+            e.preventDefault();
+            // clear the search table to make sure the table is complete
+            let table = $('#item-field-table').DataTable();
+            table.search('').draw();
+            var csrf_token = "{{ csrf_token() }}";
+            console.log("ddddd")
+            let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push(parseInt($this.attr('data-itemfield-id')));
+                }
+            });
+            console.log(number_selected);
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.edit_item_fields')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": csrf_token,
+                },
+                data: JSON.stringify(
+                    {
+                        'field_ids': number_selected,
+                        'item_id': "{{ item.id }}",
+                        'username': "{{ username }}",
+                    }
+                ),
+                success: function (e) {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $('#masonry').imagesLoaded(function () {
+
+            $('#masonry').masonry({
+                itemSelector: '.item',
+                gutter: 20,
+                fitWidth: true,
+                //percentPosition: true,
+                originTop: true
+            });
+
+        });
+
+        // init the state from the input
+        $(".image-checkbox").each(function () {
+            if ($(this).find('input[types="checkbox"]').first().attr("checked")) {
+                $(this).addClass('image-checkbox-checked');
+            } else {
+                $(this).removeClass('image-checkbox-checked');
+            }
+        });
+
+        // sync the state to the input
+        $(".image-checkbox").on("click", function (e) {
+            $(this).toggleClass('image-checkbox-checked');
+            var $checkbox = $(this).find('input[types="checkbox"]');
+            $checkbox.prop("checked", !$checkbox.prop("checked"))
+
+
+            let selectedImages = $('.image-checkbox-checked')
+
+            if (selectedImages.length > 0) {
+                $('#btn-remove-images').prop('disabled', false);
+            } else {
+                $('#btn-remove-images').prop('disabled', true);
+            }
+
+            if (selectedImages.length === 1) {
+                $('#btn-main-image').prop('disabled', false);
+            } else {
+                $('#btn-main-image').prop('disabled', true);
+            }
+
+            e.preventDefault();
+        });
+
+        $("#btn-main-image").click(function (e) {
+            e.preventDefault();
+
+            var csrf_token = "{{ csrf_token() }}";
+            let selectedImages = $('.image-checkbox-checked')
+            let selectedImagesList = []
+            for (const im of selectedImages) {
+                selectedImagesList.push(im.getAttribute("data-image-url"));
+            }
+            let main_image = selectedImagesList[0]
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.set_main_image')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": csrf_token,
+                },
+                data: JSON.stringify(
+                    {
+                        'item_id': {{ item.id }},
+                        'item_slug': "{{ item.slug }}",
+                        'username': "{{ username }}",
+                        'main_image': main_image
+                    }
+                ),
+                success: function () {
+                    location.reload();
+                },
+                error: function (e) {
+                    location.reload();
+                }
+            });
+
+        });
+
+        $("#btn-remove-images").click(function (e) {
+            e.preventDefault();
+
+            let selectedImages = $('.image-checkbox-checked')
+            let selectedImagesList = []
+            for (const im of selectedImages) {
+                selectedImagesList.push(im.id);
+            }
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.delete_images')}}",
+                contentType: 'application/json;charset=UTF-8',
+                data: JSON.stringify(
+                    {
+                        'item_id': {{ item.id }},
+                        'item_slug': "{{ item.slug }}",
+                        'username': "{{ username }}",
+                        'image_id_list': selectedImagesList
+                    }
+                ),
+                success: function () {
+                    location.reload();
+                },
+                error: function () {
+                    location.reload();
+                }
+            });
+        });
+
+
+        const autoCompleteJS = new autoComplete({
+            selector: "#autoComplete",
+            placeHolder: "Search for Food...",
+            data: {
+                src: async (query) => {
+                    try {
+                        // Fetch Data from external Source
+                        const source = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
+                        // Data should be an array of `Objects` or `Strings`
+                        const data = await source.json();
+
+                        return data;
+                    } catch (error) {
+                        return error;
+                    }
+                },
+                // Data source 'Object' key to be searched
+                //keys: ["food"]
+            },
+            threshold: 0,
+            resultsList: {
+                element: (list, data) => {
+                    if (!data.results.length) {
+                        // Create "No Results" message element
+                        const message = document.createElement("div");
+                        // Add class to the created element
+                        message.setAttribute("class", "no_result");
+                        // Add message text content
+                        message.innerHTML = `<span>Save to add new type "${data.query}"</span>`;
+                        // Append message element to the results list
+                        list.prepend(message);
+                    }
+                },
+                noResults: true,
+                maxResults: undefined,
+            },
+            resultItem: {
+                highlight: true,
+            },
+            events: {
+                input: {
+                    selection: (event) => {
+                        const selection = event.detail.selection.value;
+                        autoCompleteJS.input.value = selection;
+                    }
+                }
+            }
+        });
+
+    </script>
+
+{% endblock %}

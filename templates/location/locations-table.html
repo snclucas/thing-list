@@ -1,0 +1,36 @@
+{% if locations | length > 0 %}
+
+    <table class="table table-striped dataTable" id="my-locations-table">
+        <thead class="success">
+
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+
+        </thead>
+        <tbody>
+        {% for location in locations %}
+
+            <tr>
+                <td>
+                    {{ location[0].name }}
+                </td>
+                <td>{{ location[0].description }}</td>
+
+                <td>
+                    <a id="link-edit-location-{{ location[0]['id'] }}"
+                       data-itemid="{{ location[0]['id'] }}" href="#">Edit</a>
+                    |
+                    <a id="link-delete-location-{{ location[0]['id'] }}" data-locationid="{{ location[0]['id'] }}"
+                       href="{{ url_for('location.delete_location', location_id=location[0].id) }}">Delete</a>
+                </td>
+
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% endif %}

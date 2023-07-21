@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+
+
+{% block title %}
+    ThingList
+
+{% endblock %}
+
+{% block content %}
+
+    <div class="content">
+        <div class="container">
+
+            <div class="row">
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="content">
+                            <div class="row">
+                                <div class="dfd text-center">
+                                    <i class="grey large-icon mb-2 fas fa-stream"></i>
+                                    <h4 class="mb-0">{{ num_item_types }}</h4>
+                                    <p class="text-muted">ITEM TYPES</p>
+                                    <a class="nav-link" href="{{ url_for('types.item_types') }}"><p
+                                            class="text-muted">Go to item types</p></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="content">
+                            <div class="row">
+                                <div class="dfd text-center">
+                                    <i class="grey large-icon mb-2 fas fa-columns"></i>
+                                    <h4 class="mb-0">{{ num_field_templates }}</h4>
+                                    <p class="text-muted">FIELD TEMPLATES</p>
+                                    <a class="nav-link" href="{{ url_for('field_template.templates') }}"><p
+                                            class="text-muted">Go to field templates</p></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="content">
+                            <div class="row">
+                                <div class="dfd text-center">
+                                    <i class="grey large-icon mb-2 fas fa-location-arrow"></i>
+                                    <h4 class="mb-0">{{ num_user_locations }}</h4>
+                                    <p class="text-muted">LOCATIONS</p>
+                                    <a class="nav-link" href="{{ url_for('location.locations') }}"><p
+                                            class="text-muted">Go to locations</p></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+            </div>
+
+
+
+
+            <div class="row">
+
+                <div class="col-md-3"></div>
+
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="content">
+                            <div class="row">
+                                <div class="dfd text-center">
+                                    <i class="grey large-icon mb-2 fas fa-th-list"></i>
+                                    <h4 class="mb-0">{{ num_items }}</h4>
+                                    <p class="text-muted">THINGS</p>
+                                    <a class="nav-link" href="{{ url_for('item.items') }}"><p
+                                            class="text-muted">Go to things</p></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="content">
+                            <div class="row">
+                                <div class="dfd text-center">
+                                    <i class="grey large-icon mb-2 fas fa-table"></i>
+                                    <h4 class="mb-0">{{ num_inventories }}</h4>
+                                    <p class="text-muted">INVENTORIES</p>
+                                    <a class="nav-link" href="{{ url_for('inv.inventories') }}"><p
+                                            class="text-muted">Go to inventories</p></a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+
+                <div class="col-md-3">
+
+
+                </div>
+
+
+            </div>
+
+
+        </div>
+
+    </div>
+
+{% endblock %}
+
+
+{% block footer %}
+    {{ super() }}
+
+{% endblock %}

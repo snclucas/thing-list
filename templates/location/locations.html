@@ -1,0 +1,99 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+
+
+    <div class="content">
+        <div class="container">
+
+            <div class="row">
+
+                <div class="col-md-12">
+                    <div class="card">
+
+
+                        <div class="card-body">
+
+                            <div class="row">
+                                <div class="col-md-8">
+                                    <h4>Locations <small>| {{ locations | length }}</small></h4>
+                                </div>
+
+                                <div class="col-md-4">
+                                    <div class="text-end">
+
+                                        <a id="add-location-btn" data-bs-toggle="collapse" href="#addLocationCollapse"
+                                           role="button" aria-expanded="false" aria-controls="addLocationCollapse">
+                                                <span id="delete-items-span" class="fas fa-plus fa-2x"
+                                                      style=" display: inline-block; margin-right: 20px;"></span>
+                                        </a>
+
+                                    </div>
+                                </div>
+                            </div>
+
+                            <hr>
+
+                            <div class="row">
+                                <div class="col-md-12">
+
+                                    <div class="collapse" id="addLocationCollapse" aria-expanded="false">
+                                        <div class="card card-body">
+
+                                            {% include 'location/add_location_form.html' %}
+
+                                        </div>
+                                    </div>
+
+                                    {% include 'location/locations-table.html' %}
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+
+    <script>
+
+        $(document).ready(function () {
+
+            $('#my-inventories-table').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+
+        });
+    </script>
+
+{% endblock %}

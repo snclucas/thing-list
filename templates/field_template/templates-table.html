@@ -1,0 +1,65 @@
+{% if templates | length > 0 %}
+
+    <table class="table table-striped dataTable" id="my-templates-table">
+        <thead class="success">
+
+        <tr>
+            <th></th>
+            <th></th>
+            <th></th>
+        </tr>
+
+        </thead>
+        <tbody>
+        {% for template in templates %}
+
+            <tr>
+                <td>
+                    {{ template[0].name }}
+                </td>
+
+                <td>
+
+                    {% for field in template[0].fields %}
+
+                        {% if not loop.last %}
+                            {{ field.field }},
+                            {% else %}
+                             {{ field.field }}
+                        {% endif %}
+
+
+
+                    {% endfor %}
+                </td>
+
+                <td>
+
+                    <span id="delete-template-btn-{{ template[0]['id'] }}" data-bs-toggle="collapse"
+                          href="#confirmFieldTemplateDelete-{{ template[0]['id'] }}"
+                          class="fas fa-times fa-2x "
+                          style="color:red; display: inline-block; margin-right: 20px;"></span>
+
+                    <div class="collapse" id="confirmFieldTemplateDelete-{{ template[0]['id'] }}" aria-expanded="false">
+                        <button type="button" class="btn btn-primary btn-sm"
+                                id="confirmFieldTemplateDelete-{{ template[0]['id'] }}"
+                                data-template-id="{{ template[0]['id'] }}">Confirm delete
+                        </button>
+                    </div>
+
+
+                    <span id="edit-template-btn-{{ template[0]['id'] }}" data-bs-toggle="collapse"
+                          href="#addTemplateCollapse"
+                          class="fas fa-edit fa-2x "
+                          style="color:black; display: inline-block; margin-right: 20px;"></span>
+
+
+                </td>
+
+            </tr>
+
+        {% endfor %}
+        </tbody>
+    </table>
+
+{% endif %}

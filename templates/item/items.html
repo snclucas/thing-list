@@ -1,0 +1,611 @@
+{% extends "base.html" %}
+
+<style>
+    tag_list {
+        color: #ffffff;
+        margin-right: 8px;
+        line-height: 2.2;
+        background: #4A79A3;
+        padding: 5px 10px;
+        border-radius: 3px;
+        position: relative;
+        cursor: pointer;
+        transition: all 0.3s;
+        -webkit-animation-duration: 1s;
+        animation-duration: 1s;
+        -webkit-animation-fill-mode: both;
+        animation-fill-mode: both;
+    }
+</style>
+
+
+
+{% block title %}
+    ThingList
+
+
+    {% if inventory is not none %}
+        | Items | {{ inventory.name }}
+    {% else %}
+        | Items
+    {% endif %}
+
+{% endblock %}
+
+{% block content %}
+    <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
+
+
+    <div class="content">
+        <div class="container">
+
+            <div class="row">
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="content">
+                            <div class="head">
+                                <h5 class="mb-0">Filters:</h5>
+                            </div>
+                            <hr>
+                            <div class="canvas-wrapper">
+
+                                {% include 'item/filter_form.html' %}
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="col-md-9">
+
+                    <div class="card">
+
+
+                        <div class="card-body">
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h4 class="mb-0">Items <small>| {{ data_dict| length }}
+                                        {% if inventory is not none %}
+                                            {% if "__default__" in inventory.name %}
+                                                {% set inv_name = "Default/None" %}
+                                            {% else %}
+                                                {% set inv_name = inventory.name %}
+                                            {% endif %}
+                                            | {{ inv_name }}
+                                        {% endif %}
+                                    </small>
+                                    </h4>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="text-end">
+                                        {% if user_is_authenticated %}
+
+                                            {% if inventory_slug != "all" and inventory_slug != "default" %}
+                                                <span class="fas fa-list fa-2x" data-bs-toggle="collapse"
+                                                      href="#collapseItemFields"
+                                                      style="display: inline-block; margin-right: 20px;"></span>
+                                            {% endif %}
+
+                                            <span class="fas fa-file-import fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseImagesEdit"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                            <span id="export-items-btn" class="fas fa-file-export fa-2x"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                            <span id="btn_export_pdf" class="fas fa-file-pdf fa-2x"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+                                            <a data-bs-toggle="collapse" href="#collapseExample"
+                                               role="button" aria-expanded="false" aria-controls="collapseExample">
+                                                <span class="fas fa-plus fa-2x"
+                                                      style="display: inline-block; margin-right: 20px;"></span>
+                                            </a>
+
+                                            <a id="move-items-btn" data-bs-toggle="collapse" href="#moveInventory"
+                                               role="button" aria-expanded="false" aria-controls="moveInventory">
+                                                <span id="move-items-span" class="fas fa-exchange-alt fa-2x"
+                                                      style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
+                                            </a>
+
+                                            <a id="delete-items-btn" data-bs-toggle="collapse" href="#confirmItemDelete"
+                                               role="button" aria-expanded="false" aria-controls="confirmItemDelete">
+                                                <span id="delete-items-span" class="fas fa-minus fa-2x"
+                                                      style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
+                                            </a>
+
+                                            <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseItemsHelp"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
+
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <hr>
+
+                            {% if user_is_authenticated %}
+
+                                <div class="collapse" id="collapseItemsHelp" aria-expanded="false">
+                                    <div class="card card-body">
+                                        {% include 'item/items_help.html' %}
+                                    </div>
+                                </div>
+
+                                <div class="collapse" id="collapseItemFields" aria-expanded="false">
+                                    {% include 'item/inventory_field_template.html' %}
+                                </div>
+
+                                <div class="collapse" id="moveInventory" aria-expanded="false">
+                                    <div class="card card-body">
+                                        {% include 'item/move_item_form.html' %}
+                                    </div>
+                                </div>
+
+                                <div class="collapse" id="collapseExample" aria-expanded="false">
+                                    <div class="card card-body">
+                                        {% include 'item/add_item_form.html' %}
+                                    </div>
+                                </div>
+
+                                <div class="collapse" id="collapseImagesEdit" aria-expanded="false">
+                                    <h5>Load CSV...</h5>
+                                    <div class="card card-body">
+                                        <form method="POST" action="{{ url_for("item.items_load") }}"
+                                              enctype="multipart/form-data">
+
+
+                                            <label class="form-label" for="add_to_inventory">Add to inventory:</label>
+
+                                            <select class="form-select" id="add_to_inventory" name="add_to_inventory">
+
+                                                {% for option in all_user_inventories %}
+
+                                                    {% if "__default__" in  option[1].name %}
+                                                        <option value="{{ option[1].id }}">None</option>
+
+                                                    {% else %}
+
+                                                        {% if inventory_slug == option[1].slug %}
+                                                            <option value="{{ option[1].id }}"
+                                                                    selected>{{ option[1].name }}</option>
+                                                        {% else %}
+                                                            <option value="{{ option[1].id }}">{{ option[1].name }}</option>
+                                                        {% endif %}
+
+                                                    {% endif %}
+
+                                                {% endfor %}
+
+                                            </select>
+                                            <hr>
+
+                                            <input class="form-control" type="file" name="file">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                            <hr>
+                                            <button type="submit" class="btn btn-primary">Load</button>
+                                        </form>
+                                    </div>
+                                </div>
+
+                                <form id="form-export-items" method="POST" style="display: none;"
+                                      action="{{ url_for("item.items_save", username=username) }}">
+                                    <input type="hidden" class="form-control" name="username" id="form_username"
+                                           value="{{ username }}">
+                                    <input type="hidden" class="form-control" name="inventory" id="form_inventory"
+                                           value="{{ inventory_slug }}">
+                                    <button type="submit" class="btn btn-primary">Export</button>
+                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                </form>
+
+
+
+                            {% endif %}
+
+
+                            {% include 'item/item-list.html' %}
+
+                        </div>
+                    </div>
+
+
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+{% endblock %}
+
+{% block footer %}
+    {{ super() }}
+
+    <script src="{{ url_for('static', filename='js/autoComplete.js') }}"></script>
+
+    <script>
+
+        $(document).ready(function () {
+
+            $('#items-table').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+
+            $('#item-field-table').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+
+        });
+
+        $("#btn-apply-filter").on("click", function (e) {
+            e.preventDefault();
+            let searchParams = new URLSearchParams(window.location.search);
+
+            let tag = $("#form_item_tags").val();
+            if (tag !== "" && tag !== "None") {
+                searchParams.set("tags", tag);
+            }
+
+            let item_type = $("#types_autocomplete").val();
+            if (item_type !== "" && item_type !== undefined) {
+                searchParams.set("type", item_type);
+            }
+
+            let specific_location = $("#form_item_specific_location").val();
+            if (specific_location !== "" && specific_location !== "None") {
+                searchParams.set("specific_location", specific_location);
+            }
+
+
+            window.location.search = searchParams.toString();
+        });
+
+        $("#btn-clear-filters").on("click", function (e) {
+            e.preventDefault();
+            let searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete("type");
+            searchParams.delete("location");
+            searchParams.delete("tags");
+            $("#form_item_tags").val("");
+            searchParams.delete("specific_location");
+            $("#form_item_specific_location").val("");
+            window.location.search = searchParams.toString();
+
+        });
+
+        $("#item_location_filter").on("change", function (e) {
+            let optionValue = $('#item_location_filter').find(":selected").text();
+            let searchParams = new URLSearchParams(window.location.search);
+            if (optionValue === "Any") {
+                searchParams.delete("location");
+                window.location.search = searchParams.toString();
+            } else {
+                searchParams.set("location", optionValue);
+                window.location.search = searchParams.toString();
+            }
+
+        });
+
+        $("#item_type_filter").on("change", function (e) {
+            let optionValue = $('#item_type_filter').find(":selected").text();
+            let searchParams = new URLSearchParams(window.location.search);
+            if (optionValue === "Any") {
+                searchParams.delete("type");
+                window.location.search = searchParams.toString();
+            } else {
+                searchParams.set("type", optionValue);
+                window.location.search = searchParams.toString();
+            }
+
+        });
+
+
+        $("#inventory_filter").on("change", function (e) {
+                let selection = $('#inventory_filter')
+                let optionText = selection.find(":selected").text();
+                let optionValue = selection.find(":selected").val();
+                let searchParams = new URLSearchParams(window.location.search);
+
+                if (optionText === "all") {
+                    window.location.href = "{{ url_for('item.items_with_username_and_inventory',
+                username=username, inventory_slug='all') | replace('%40', '@') }}?" + searchParams.toString()
+                } else if (optionText === "default") {
+                    window.location.href = "{{ url_for('item.items_with_username_and_inventory',
+                username=username, inventory_slug='default') | replace('%40', '@') }}?" + searchParams.toString()
+
+                } else {
+                    window.location.href = "{{ url_for('item.items_with_username_and_inventory',
+                username=username, inventory_slug='INV') | replace('%40', '@') }}?".replace("INV", optionValue) + searchParams.toString()
+
+                }
+
+            }
+        );
+
+
+        function checkbox_count() {
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = 0;
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected += 1
+                }
+            });
+
+            let delete_btn_selector = $('#delete-items-btn');
+            let move_items_selector = $('#move-items-btn');
+
+            if (number_selected > 0) {
+                delete_btn_selector.css("pointer-events", "auto");
+                move_items_selector.css("pointer-events", "auto");
+                $('#delete-items-span').css('color', 'black');
+                $('#move-items-span').css('color', 'black');
+
+                delete_btn_selector.prop('disabled', false);
+                move_items_selector.prop('disabled', false);
+
+                delete_btn_selector.attr('disabled', 'disabled');
+                move_items_selector.attr('disabled', 'disabled');
+            } else {
+                delete_btn_selector.css("pointer-events", "none");
+                move_items_selector.css("pointer-events", "none");
+                $('#delete-items-span').css('color', 'lightgray');
+                $('#move-items-span').css('color', 'lightgray');
+
+                delete_btn_selector.prop('disabled', true);
+                move_items_selector.prop('disabled', true);
+
+                delete_btn_selector.removeAttr('disabled');
+                move_items_selector.removeAttr('disabled');
+
+            }
+        }
+
+        $(document).ready(function () {
+            checkbox_count();
+
+            $('#invtable').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+        });
+
+
+        $('input:checkbox[id^="selected-item-"]').on("click", function (e) {
+            checkbox_count();
+        });
+
+        $("#all-selected-items").on("click", function (e) {
+
+            let is_checked = $(this).is(":checked");
+
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                $this.attr('checked', is_checked);
+            });
+            checkbox_count();
+        });
+
+        $("#delete-items-btn").on("click", function (e) {
+            e.preventDefault();
+
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push($this.attr('data-item-id'));
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.del_items')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'item_ids': number_selected,
+                        'username': "{{ username }}",
+                    }
+                ),
+                success: function () {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#btn_submit_move").on("click", function (e) {
+            e.preventDefault();
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push($this.attr('data-item-id'));
+                }
+            });
+
+            let selection = $('#destination_inventory')
+            let optionText = selection.find(":selected").text();
+            let optionValue = selection.find(":selected").val();
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.items_move')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'item_ids': number_selected,
+                        'username': "{{ username }}",
+                        'to_inventory_id': optionValue
+                    }
+                ),
+                success: function () {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#btn_export_pdf").on("click", function (e) {
+            e.preventDefault();
+
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.items_save_pdf')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'inventory_slug': "{{ inventory_slug }}",
+                        'username': "{{ username }}"
+                    }
+                ),
+                success: function () {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#save-fields-btn").on("click", function (e) {
+            e.preventDefault();
+            // clear the search table to make sure the table is complete
+            let table = $('#item-field-table').DataTable();
+            table.search('').draw();
+            let csrf_token = "{{ csrf_token() }}";
+            let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push(parseInt($this.attr('data-itemfield-id')));
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.edit_inv_default_fields')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": csrf_token,
+                },
+                data: JSON.stringify(
+                    {
+                        'field_ids': number_selected,
+                        'inventory_id': "{{ inventory.id}}",
+                        'username': "{{ username }}",
+                    }
+                ),
+                success: function (e) {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#export-items-btn").on("click", function (e) {
+            e.preventDefault();
+
+            $('#form-export-items').submit();
+
+        });
+
+        const autoCompleteJS = new autoComplete({
+            selector: "#types_autocomplete",
+            placeHolder: "Search for types ... ",
+            data: {
+                src: async (query) => {
+                    try {
+                        // Fetch Data from external Source
+                        const source = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
+                        // Data should be an array of `Objects` or `Strings`
+                        const data = await source.json();
+
+                        return data;
+                    } catch (error) {
+                        return error;
+                    }
+                },
+                // Data source 'Object' key to be searched
+                //keys: ["food"]
+            },
+            threshold: 0,
+            resultsList: {
+                element: (list, data) => {
+                    if (!data.results.length) {
+                        // Create "No Results" message element
+                        const message = document.createElement("div");
+                        // Add class to the created element
+                        message.setAttribute("class", "no_result");
+                        // Add message text content
+                        message.innerHTML = `<span>Save to add new type "${data.query}"</span>`;
+                        // Append message element to the results list
+                        list.prepend(message);
+                    }
+                },
+                noResults: true,
+                maxResults: undefined,
+            },
+            resultItem: {
+                highlight: true,
+            },
+            events: {
+                input: {
+                    selection: (event) => {
+                        const selection = event.detail.selection.value;
+                        autoCompleteJS.input.value = selection;
+                    }
+                }
+            }
+        });
+
+
+    </script>
+
+{% endblock %}

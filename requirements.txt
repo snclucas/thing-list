@@ -1,0 +1,12 @@
+flask
+sqlalchemy
+flask_sqlalchemy
+flask_bcrypt
+flask_resize
+flask_wtf
+Flask-QRcode
+flask_login
+bleach
+pdfkit
+slugify
+MySQLClient

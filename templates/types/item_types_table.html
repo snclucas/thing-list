@@ -1,0 +1,46 @@
+{% if user_item_types | length > 1 %}
+
+    <table class="table table-striped dataTable" id="my-inventories-table">
+        <thead class="success">
+
+        <tr>
+            <th></th>
+            <th></th>
+        </tr>
+
+        </thead>
+        <tbody>
+        {% for user_item_type in user_item_types %}
+            {% if user_item_type.name != "None" %}
+
+                <tr>
+                    <td>
+                        {{ user_item_type.name }}
+                    </td>
+                    <td>
+
+                <span id="delete-itemtype-btn-{{ user_item_type.id }}" data-bs-toggle="collapse"
+                      href="#confirmItemTypeDelete-{{ user_item_type.id }}"
+                      class="fas fa-times fa-2x " style="color:red; display: inline-block; margin-right: 20px;"></span>
+
+                        <div class="collapse" id="confirmItemTypeDelete-{{ user_item_type.id }}" aria-expanded="false">
+                            <button type="button" class="btn btn-primary btn-sm"
+                                    id="confirmItemTypeDelete-{{ user_item_type.id }}"
+                                    data-itemtype-id="{{ user_item_type.id }}">Confirm delete
+                            </button>
+                        </div>
+
+                    </td>
+
+                </tr>
+            {% endif %}
+
+        {% endfor %}
+        </tbody>
+    </table>
+
+    {% else %}
+
+    <h5>:) No item types</h5>
+
+{% endif %}
