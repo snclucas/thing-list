@@ -16,33 +16,35 @@
 
                 <div class="col-md-4">
                     <div class="card">
+                        <a class="nav-link" href="{{ url_for('types.item_types') }}">
                         <div class="content">
                             <div class="row">
                                 <div class="dfd text-center">
                                     <i class="grey large-icon mb-2 fas fa-stream"></i>
                                     <h4 class="mb-0">{{ num_item_types }}</h4>
                                     <p class="text-muted">ITEM TYPES</p>
-                                    <a class="nav-link" href="{{ url_for('types.item_types') }}"><p
-                                            class="text-muted">Go to item types</p></a>
+                                    <p class="text-muted">Go to item types</p>
                                 </div>
                             </div>
                         </div>
+                        </a>
                     </div>
                 </div>
 
                 <div class="col-md-4">
                     <div class="card">
+                        <a class="nav-link" href="{{ url_for('field_template.templates') }}">
                         <div class="content">
                             <div class="row">
                                 <div class="dfd text-center">
                                     <i class="grey large-icon mb-2 fas fa-columns"></i>
                                     <h4 class="mb-0">{{ num_field_templates }}</h4>
                                     <p class="text-muted">FIELD TEMPLATES</p>
-                                    <a class="nav-link" href="{{ url_for('field_template.templates') }}"><p
-                                            class="text-muted">Go to field templates</p></a>
+                                    <p class="text-muted">Go to field templates</p>
                                 </div>
                             </div>
                         </div>
+                        </a>
                     </div>
                 </div>
 
@@ -55,8 +57,7 @@
                                     <i class="grey large-icon mb-2 fas fa-location-arrow"></i>
                                     <h4 class="mb-0">{{ num_user_locations }}</h4>
                                     <p class="text-muted">LOCATIONS</p>
-                                    <p
-                                            class="text-muted">Go to locations</p>
+                                    <p class="text-muted">Go to locations</p>
                                 </div>
                             </div>
                         </div>
@@ -77,33 +78,36 @@
 
                 <div class="col-md-3">
                     <div class="card">
+                        <a class="nav-link" href="{{ url_for('item.items_with_username', username=username) }}">
                         <div class="content">
                             <div class="row">
                                 <div class="dfd text-center">
                                     <i class="grey large-icon mb-2 fas fa-th-list"></i>
                                     <h4 class="mb-0">{{ num_items }}</h4>
                                     <p class="text-muted">THINGS</p>
-                                    <a class="nav-link" href="{{ url_for('item.items_with_username', username=username) }}"><p
-                                            class="text-muted">Go to things</p></a>
+                                    <p class="text-muted">Go to things</p>
                                 </div>
                             </div>
                         </div>
+                        </a>
                     </div>
                 </div>
 
                 <div class="col-md-3">
                     <div class="card">
+                        <a class="nav-link" href="{{ url_for('inv.inventories_for_username', username=username) }}">
                         <div class="content">
                             <div class="row">
                                 <div class="dfd text-center">
                                     <i class="grey large-icon mb-2 fas fa-table"></i>
                                     <h4 class="mb-0">{{ num_inventories }}</h4>
                                     <p class="text-muted">INVENTORIES</p>
-                                    <a class="nav-link" href="{{ url_for('inv.inventories_for_username', username=username) }}"><p
-                                            class="text-muted">Go to inventories</p></a>
+                                    <p
+                                            class="text-muted">Go to inventories</p>
                                 </div>
                             </div>
                         </div>
+                        </a>
                     </div>
 
                 </div>

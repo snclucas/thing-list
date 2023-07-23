@@ -9,10 +9,10 @@ from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
 
 # Create and name Flask app
-app = Flask("HomeLabApp", static_url_path="", static_folder="static")
+app = Flask("ThingList", static_url_path="", static_folder="static")
 
 app.config['RESIZE_URL'] = 'https://mysite.com/'
-app.config['RESIZE_ROOT'] = 'C:\\Users\\simon clucas\\PycharmProjects\\retro-database\\static/uploads/'
+app.config['RESIZE_ROOT'] = 'C:\\Users\\simon clucas\\PycharmProjects\\thing-list\\static/uploads/'
 
 resize = flask_resize.Resize(app)
 

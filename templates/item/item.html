@@ -1,15 +1,16 @@
 {% extends "base.html" %}
 
-{% block title %} ThingList | {{ item.name }}{% endblock %}
+{% block title %} ThingList | @{{ username }} | {{ item.name }}{% endblock %}
 
 {% block head %}
     {{ super() }}
-    <meta property="og:title" content="Colby Fayock - A UX Designer &amp; Front-end Developer Blog" />
-    <meta property="og:type" content="website" />
+    <meta property="og:title" content="ThingList | @{{ username }} | {{ item.name }}"/>
+    <meta property="og:type" content="website"/>
     {% if item.main_image is not none %}
-        <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}" />
+        <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}"/>
     {% endif %}
-    <meta property="og:url" content="{{ url_for(request.endpoint, username=username, item_slug=item.slug) | replace('%40', '@') }}" />
+    <meta property="og:url"
+          content="{{ url_for(request.endpoint, username=username, item_slug=item.slug) | replace('%40', '@') }}"/>
 
     <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
 {% endblock %}
@@ -87,7 +88,6 @@
 
                             <div class="row">
 
-
                                 <div class="col-md-8">
                                     <p class="card-text">{{ item.description }}</p>
                                     <h6><strong>Type:</strong> {{ item_type }}</h6>
@@ -104,14 +104,12 @@
 
                                 </div>
 
-
                                 <div class="col-md-4">
                                     {% if item.main_image is not none %}
                                         {% set image_url = url_for('static', filename="uploads/" + item.main_image) %}
                                         <img src="{{ image_url }}" class="rounded float-end img-thumbnail" alt="...">
                                     {% endif %}
                                 </div>
-
 
                             </div>
 
@@ -140,9 +138,6 @@
                                     </a>
                                 {% endfor %}
                             </div>
-
-                            <hr>
-
 
                             <hr>
 
@@ -206,7 +201,6 @@
                             <hr>
                             <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
 
-
                         </div>
                     </div>
                 </div>
@@ -227,15 +221,15 @@
     <script src="{{ url_for('static', filename='js/autoComplete.js') }}"></script>
 
     <script>
-
-    $(document).ready(function () {
+        $(document).ready(function () {
 
             $('#item-field-table').DataTable({
                 "searching": true,
-                paging: false,
+                paging: true,
                 ordering: true,
                 info: true
             });
+            checkbox_count();
 
         });
 
@@ -250,18 +244,13 @@
             });
         }
 
-        $(document).ready(function () {
-            checkbox_count();
-        });
-
 
         $("#save-fields-btn").on("click", function (e) {
             e.preventDefault();
             // clear the search table to make sure the table is complete
             let table = $('#item-field-table').DataTable();
             table.search('').draw();
-            var csrf_token = "{{ csrf_token() }}";
-            console.log("ddddd")
+            let csrf_token = "{{ csrf_token() }}";
             let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
             let number_selected = [];
             $.each(all_checkboxes, function () {
@@ -270,7 +259,6 @@
                     number_selected.push(parseInt($this.attr('data-itemfield-id')));
                 }
             });
-            console.log(number_selected);
 
             $.ajax({
                 type: "POST",
@@ -286,14 +274,13 @@
                         'username': "{{ username }}",
                     }
                 ),
-                success: function (e) {
-                    location.reload(true);
+                success: function () {
+                    location.reload();
                 },
-                error: function (e) {
-                    location.reload(true);
+                error: function () {
+                    location.reload();
                 }
             });
-
 
         });
 
@@ -346,7 +333,7 @@
         $("#btn-main-image").click(function (e) {
             e.preventDefault();
 
-            var csrf_token = "{{ csrf_token() }}";
+            let csrf_token = "{{ csrf_token() }}";
             let selectedImages = $('.image-checkbox-checked')
             let selectedImagesList = []
             for (const im of selectedImages) {
@@ -363,7 +350,7 @@
                 },
                 data: JSON.stringify(
                     {
-                        'item_id': {{ item.id }},
+                        'item_id': "{{ item.id }}",
                         'item_slug': "{{ item.slug }}",
                         'username': "{{ username }}",
                         'main_image': main_image
@@ -372,7 +359,7 @@
                 success: function () {
                     location.reload();
                 },
-                error: function (e) {
+                error: function () {
                     location.reload();
                 }
             });
@@ -394,7 +381,7 @@
                 contentType: 'application/json;charset=UTF-8',
                 data: JSON.stringify(
                     {
-                        'item_id': {{ item.id }},
+                        'item_id': "{{ item.id }}",
                         'item_slug': "{{ item.slug }}",
                         'username': "{{ username }}",
                         'image_id_list': selectedImagesList
@@ -458,7 +445,6 @@
                 }
             }
         });
-
     </script>
 
 {% endblock %}

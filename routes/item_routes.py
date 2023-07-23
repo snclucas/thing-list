@@ -469,7 +469,6 @@ def edit_item(item_id):
         item_tags = item_tags.split(",")
         del form_data["item_tags"]
 
-        username = request.form.get("username")
         item_type = request.form.get("item_type")
         item_location = request.form.get("item_location")
         item_specific_location = request.form.get("item_specific_location")
@@ -559,6 +558,7 @@ def upload():
 @item_routes.route('/item/delete', methods=['POST'])
 @login_required
 def del_items():
+    print(request.json)
     if request.method == 'POST':
         json_data = request.json
         item_ids = json_data['item_ids']
