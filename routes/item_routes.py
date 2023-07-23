@@ -149,9 +149,6 @@ def items_save():
             row["types"],
             row["location"],
             item_.specific_location,
-            item_.manufacturer,
-            item_.model,
-            item_.serial_number
         ]
         csv_list.append(temp)
 
@@ -171,14 +168,17 @@ def items():
     return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
 
+@item_routes.route('/@<username>/items')
+def items_with_username(username=None):
+    return items_with_username_and_inventory(username=username, inventory_slug="all")
+
+
 @item_routes.route('/items/<inventory_slug>')
 def items_with_inventory(inventory_slug=None):
     return items_with_username_and_inventory(username=None, inventory_slug=inventory_slug)
 
 
-@item_routes.route('/items/@<username>')
-def items_with_username(username=None):
-    return items_with_username_and_inventory(username=username, inventory_slug="all")
+
 
 
 @item_routes.route('/@<username>/<inventory_slug>')

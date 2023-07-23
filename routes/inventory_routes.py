@@ -36,7 +36,7 @@ def inventories():
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
-@inv.route('/inventories/@<username>')
+@inv.route('/@<username>/inventories')
 def inventories_for_username(username):
     user_is_authenticated = current_user.is_authenticated
 

@@ -8,5 +8,6 @@ Flask-QRcode
 flask_login
 bleach
 pdfkit
-slugify
+python-slugify
 MySQLClient
+

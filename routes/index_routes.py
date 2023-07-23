@@ -27,6 +27,6 @@ def profile(username):
     user_inventories = get_user_inventories(logged_in_user=current_user, requested_username=None)
     # -1 to remove the default inventory
     return render_template('profile.html', name=current_user.username, num_items=num_items,
-                           num_item_types=num_item_types,
+                           num_item_types=num_item_types, username=username,
                            num_field_templates=num_field_templates, num_user_locations=num_user_locations,
                            num_inventories=len(list(user_inventories))-1)
