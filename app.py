@@ -8,30 +8,34 @@ from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
 
+
+from dotenv import load_dotenv
+load_dotenv('.env')
+
 # Create and name Flask app
 app = Flask("ThingList", static_url_path="", static_folder="static")
 
-app.config['RESIZE_URL'] = 'https://mysite.com/'
-app.config['RESIZE_ROOT'] = 'C:\\Users\\simon clucas\\PycharmProjects\\thing-list\\static/uploads/'
+app.config['RESIZE_URL'] = os.environ.get('RESIZE_URL', '')
+app.config['RESIZE_ROOT'] = os.environ.get('RESIZE_ROOT', '')
 
 resize = flask_resize.Resize(app)
 
 
-app.config['SECRET_KEY'] = '\xfd{H\xe5<\x95\xf9\xe3\x96.5\xd1\x01O<!\xd5\xa2\xa0\x9fR"\xa1\xa8'
+app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # database connection
-app.config['MYSQL_HOST'] = 'localhost'
-app.config['MYSQL_USER'] = 'root'
-app.config['MYSQL_PASSWORD'] = ''
-app.config['MYSQL_DB'] = 'retrodb'
+app.config['MYSQL_HOST'] = os.environ.get('MYSQL_HOST', '')
+app.config['MYSQL_USER'] = os.environ.get('MYSQL_USER', '')
+app.config['MYSQL_PASSWORD'] = os.environ.get('MYSQL_PASSWORD', '')
+app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB', '')
 
-app.config['UPLOAD_FOLDER'] = 'static/uploads/'
+app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '')
 
-app.config['FILE_UPLOADS'] = 'static/uploads/'
+app.config['FILE_UPLOADS'] = os.environ.get('FILE_UPLOADS', '')
 
 
-app.debug = os.environ.get('DEBUG', False)
+app.debug = os.environ.get('DEBUG', bool(os.environ.get('DEBUG', '')))
 
 csrf = CSRFProtect(app)
 

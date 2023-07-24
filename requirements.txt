@@ -10,6 +10,5 @@ bleach~=6.0.0
 pdfkit~=1.0.0
 python-slugify
 MySQLClient
-
-
+python-dotenv
 Pillow~=10.0.0
