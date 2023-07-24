@@ -31,7 +31,6 @@ mimetypes.add_type('application/javascript', '.js')
 mimetypes.add_type('text/css', '.css')
 
 
-
 @app.after_request
 def add_headers(response):
     """
@@ -53,5 +52,5 @@ def add_headers(response):
 
 # start the server
 if __name__ == "__main__":
-    port = int(os.environ.get('PORT', 5000))  # locally PORT 5000, Heroku will assign its own port
-    app.run(host='localhost', port=port, debug=True)
+    port = int(os.environ.get('THINGLIST_PORT', 5000))
+    app.run(host='0.0.0.0', port=port, debug=True)
