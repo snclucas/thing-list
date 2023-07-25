@@ -71,7 +71,7 @@ class Item(db.Model):
     __tablename__ = "items"
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    item_type = db.Column(db.Integer, db.ForeignKey('item_type.id'), default=1)
+    item_type = db.Column(db.Integer, db.ForeignKey('item_type.id'), nullable=True)
     name = db.Column(db.String(255), nullable=False, unique=False)
     slug = db.Column(db.String(255), nullable=True, unique=False)
     inventory_code = db.Column(db.String(50), nullable=True, unique=False)
