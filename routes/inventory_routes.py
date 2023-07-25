@@ -45,8 +45,10 @@ def inventories_for_username(username):
     else:
         user_invs = get_user_inventories(logged_in_user=None, requested_username=username, access_level=-1)
 
+    number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
+
     return render_template('inventory/inventories.html', inventories=user_invs,
-                           user_is_authenticated=user_is_authenticated)
+                           user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
 @inv.route('/inventory/<inventory_id>')
