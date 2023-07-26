@@ -10,13 +10,16 @@ from flask_wtf.csrf import CSRFProtect
 
 
 from dotenv import load_dotenv
-load_dotenv('.env')
+
+if not load_dotenv('.env'):
+    if not load_dotenv('../.env'):
+        raise Exception("Could not read environment file")
 
 # Create and name Flask app
 app = Flask("ThingList", static_url_path="", static_folder="static")
 
 app.config['RESIZE_URL'] = os.environ.get('RESIZE_URL', '')
-app.config['RESIZE_ROOT'] = os.environ.get('RESIZE_ROOT', '')
+app.config['RESIZE_ROOT'] = os.environ.get('RESIZE_ROOT', '/tmp')
 
 resize = flask_resize.Resize(app)
 
