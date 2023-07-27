@@ -2,12 +2,9 @@
 
 {% block content %}
 
-
     <div class="content">
         <div class="container">
-
             <div class="row">
-
                 <div class="col-md-12">
                     <div class="card">
 
@@ -27,6 +24,10 @@
                                                       style=" display: inline-block; margin-right: 20px;"></span>
                                         </a>
 
+                                        <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
+                                                  href="#collapseTemplateHelp"
+                                                  style="display: inline-block; margin-right: 20px;"></span>
+
                                     </div>
                                 </div>
                             </div>
@@ -44,6 +45,12 @@
                                         </div>
                                     </div>
 
+                                    <div class="collapse" id="collapseTemplateHelp" aria-expanded="false">
+                                        <div class="card card-body">
+                                            {% include 'field_template/field_template_help.html' %}
+                                        </div>
+                                    </div>
+
                                     {% include 'field_template/templates-table.html' %}
 
                                 </div>
@@ -55,26 +62,6 @@
         </div>
     </div>
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 {% endblock %}
 
 {% block footer %}
@@ -83,16 +70,13 @@
     <script>
 
         $(document).ready(function () {
-
             $('#my-inventories-table').DataTable({
                 "searching": true,
                 paging: false,
                 ordering: true,
                 info: true
             });
-
         });
-
 
         $('[id^=confirmFieldTemplateDelete]').on("click", function (e) {
             e.preventDefault();
@@ -121,10 +105,6 @@
 
 
         });
-
-
-
-
 
          $("#save-template-fields-btn").on("click", function (e) {
             e.preventDefault();
@@ -165,7 +145,6 @@
                     location.reload();
                 }
             });
-
 
         });
     </script>
