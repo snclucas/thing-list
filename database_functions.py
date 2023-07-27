@@ -20,9 +20,12 @@ __PRIVATE__ = 0
 
 
 def drop_then_create():
-    db.drop_all()
-    db.create_all()
-    db.session.commit()
+    try:
+        db.drop_all()
+        db.create_all()
+        db.session.commit()
+    except Exception as e:
+        print(e)
 
 
 def post_user_add_hook(new_user: User):
@@ -130,6 +133,8 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
                 .join(ItemType, ItemType.id == Item.item_type) \
                 .join(Location, Location.id == Item.location_id)
 
+
+
             if logged_in_user_id is None:
                 if request_user_id is None:
                     d = d.filter(InventoryItem.access_level == __PUBLIC__)
@@ -156,13 +161,18 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
             return d.first()
 
         else:
+            if inventory_id is not None and inventory_id != '':
+                d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+                    .join(ItemType, ItemType.id == Item.item_type) \
+                    .join(Location, Location.id == Item.location_id)
 
-            d = db.session.query(Item, ItemType.name, Location.name,
-                                 InventoryItem.access_level) \
-                .join(InventoryItem, InventoryItem.item_id == Item.id) \
-                .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
-                .join(ItemType, ItemType.id == Item.item_type) \
-                .join(Location, Location.id == Item.location_id)
+                d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
+                d = d.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+                d = d.filter(InventoryItem.inventory_id == inventory_id)
+            else:
+                d = db.session.query(Item, ItemType.name, Location.name) \
+                    .join(ItemType, ItemType.id == Item.item_type) \
+                    .join(Location, Location.id == Item.location_id)
 
             if logged_in_user_id is None:
                 if request_user_id is None:
@@ -181,13 +191,13 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
                     else:
                         d = d.filter(Item.user_id == request_user_id)
 
-            if item_type is not None:
+            if item_type is not None and item_type != '':
                 d = d.filter(Item.item_type == item_type)
 
-            if item_location is not None:
+            if item_location is not None and item_location != '':
                 d = d.filter(Location.id == item_location)
 
-            if item_specific_location is not None:
+            if item_specific_location is not None and item_specific_location != '':
                 d = d.filter(Item.specific_location == item_specific_location)
 
             if item_tags is not None and item_tags != "":
@@ -201,8 +211,7 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
                     if t_ is not None:
                         d = d.filter(Item.tags.contains(t_))
 
-        if inventory_id is not None:
-            d = d.filter(InventoryItem.inventory_id == inventory_id)
+
 
         sd = d.all()
 
@@ -713,13 +722,13 @@ def add_item_to_inventory2(item_name, item_desc, item_type,
         db.session.commit()
 
 
-def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
+def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user=None,
                           item_location=1, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
     with app_context:
 
-        new_item = Item(name=item_name, description=item_desc, user_id=user_id,
+        new_item = Item(name=item_name, description=item_desc, user_id=user.id,
                         location_id=item_location, specific_location=item_specific_location)
 
         db.session.add(new_item)
@@ -731,10 +740,10 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "None"
 
-        item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(user_id=user_id).one_or_none()
+        item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(user_id=user.id).one_or_none()
 
         if item_type_ is None:
-            item_type_ = ItemType(name=item_type, user_id=user_id)
+            item_type_ = ItemType(name=item_type, user_id=user.id)
             db.session.add(item_type_)
             db.session.commit()
             db.session.flush()
@@ -751,12 +760,15 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
                 new_item.tags.append(instance)
 
-        if inventory_id is not None and inventory_id != '':
+        if inventory_id is None or inventory_id == '':
+            inventory_ = get_user_default_inventory(user=user)
+        else:
             stmt = db.session.query(Inventory).where(Inventory.id == inventory_id)
             inventory_ = db.session.execute(stmt).first()[0]
-            inventory_.items.append(new_item)
-        else:
-            db.session.add(new_item)
+
+        inventory_.items.append(new_item)
+
+        db.session.add(new_item)
 
         db.session.commit()
 

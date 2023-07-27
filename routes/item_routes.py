@@ -191,6 +191,9 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     logged_in_username = None
     requested_username = None
 
+    # remove spurious whitespace (if any)
+    inventory_slug = inventory_slug.strip()
+
     user_locations_ = None
 
     if user_is_authenticated:
@@ -288,13 +291,15 @@ def find_items_query(requested_user, logged_in_user, inventory_id, request_param
 
     data_dict = []
     for i in items_:
-        data_dict.append(
-            {
+        dat = {
                 "item": i[0],
                 "types": i[1],
-                "location": i[2],
-                "user_inventory": i[3]
+                "location": i[2]
             }
+        if inventory_id is not None:
+            dat["user_inventory"] = i[3]
+        data_dict.append(
+            dat
         )
 
     return data_dict

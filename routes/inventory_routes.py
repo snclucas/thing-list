@@ -177,8 +177,12 @@ def add_to_inventory():
         add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
                               item_tags=item_tags,
                               item_location=int(item_location), item_specific_location=item_specific_location,
-                              inventory_id=inventory_id, user_id=current_user.id,
+                              inventory_id=inventory_id, user=current_user,
                               custom_fields=item_custom_fields)
 
-        return redirect(url_for('item.items_with_username_and_inventory',
-                                username=username, inventory_slug=inventory_slug))
+        if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
+            return redirect(url_for('item.items_with_username',
+                                    username=username))
+        else:
+            return redirect(url_for('item.items_with_username_and_inventory',
+                                    username=username, inventory_slug=inventory_slug))
