@@ -19,11 +19,11 @@ def login():
             remember = request.form.get("remember", "no") == "yes"
 
             if login_user(user, remember=remember):
-                flash("Logged in!")
                 return redirect(url_for('main.profile', username=user.username).replace('%40', '@'))
             else:
-                flash("unable to log you in")
-
+                flash("Unable to log you in")
+        else:
+            flash("Unable to log you in")
     return render_template("auth/login.html")
 
 
@@ -91,7 +91,8 @@ def load_user(id):
         redirect('/login')
 
     user = User.query.filter_by(id=id).first()
-    if user.is_active:
-        return user
-    else:
-        return None
+    if user is not None:
+        if user.is_active:
+            return user
+        else:
+            return None
