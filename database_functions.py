@@ -81,6 +81,30 @@ def delete_inventory(inventory_id: int, user: User):
                     db.session.commit()
 
 
+def get_item_custom_field_data(user_id: int, item_list=None):
+    with app.app_context():
+        item_field_data_ = db.session.query(Item.id, Field.field, ItemField.value) \
+            .join(ItemField, ItemField.field_id == Field.id) \
+            .join(Item, ItemField.item_id == Item.id)\
+            .filter(Item.user_id == 1)
+
+        if item_list is not None:
+            if isinstance(item_list, list):
+                item_field_data_ = item_field_data_.filter(Item.id.in_(item_list))
+
+        item_field_data_ = item_field_data_.all()
+
+        sdsd = {}
+        for row in item_field_data_:
+            if row[0] in sdsd:
+                sdsd[row[0]][row[1]] = row[2]
+            else:
+                sdsd[row[0]] = {row[1]: row[2]}
+
+        return sdsd
+
+
+
 def delete_item_type_from_db(itemtype_id: int, user: User) -> (bool, str):
     with app.app_context():
         itemtype_ = ItemType.query.filter_by(user_id=user.id).filter_by(id=itemtype_id).first()
@@ -722,11 +746,20 @@ def add_item_to_inventory2(item_name, item_desc, item_type,
         db.session.commit()
 
 
+def get_user_default_item_type(user_id: int):
+    with app.app_context():
+        user_default_item_type = ItemType.query.filter_by(user_id=user_id, name="none").one_or_none()
+        return user_default_item_type
+
+
 def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user=None,
                           item_location=1, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
     with app_context:
+
+        if item_type is None:
+             item_type = "none"
 
         new_item = Item(name=item_name, description=item_desc, user_id=user.id,
                         location_id=item_location, specific_location=item_specific_location)
