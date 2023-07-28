@@ -224,380 +224,427 @@
     <script src="{{ url_for('static', filename='js/autoComplete.js') }}"></script>
 
     <script>
-    $(document).ready(function () {
+        $(document).ready(function () {
 
-    $('#items-table').DataTable({
-        "searching": true,
-        paging: true,
-        ordering: true,
-        info: true
-    });
+            $('#items-table').DataTable({
+                "searching": true,
+                paging: true,
+                ordering: true,
+                info: true
+            });
 
-    $('#item-field-table').DataTable({
-        "searching": true,
-        paging: true,
-        ordering: true,
-        info: true
-    });
+            $('#item-field-table').DataTable({
+                "searching": true,
+                paging: true,
+                ordering: true,
+                info: true
+            });
 
-});
+        });
 
-$("#btn-apply-filter").on("click", function (e) {
-    e.preventDefault();
-    let searchParams = new URLSearchParams(window.location.search);
+        $("#btn-apply-filter").on("click", function (e) {
+            e.preventDefault();
+            let searchParams = new URLSearchParams(window.location.search);
 
-    let tag = $("#form_item_tags").val();
-    if (tag !== "" && tag !== "None") {
-        searchParams.set("tags", tag);
-    }
-
-    let item_type = $("#types_autocomplete").val();
-    if (item_type !== "" && item_type !== undefined) {
-        searchParams.set("type", item_type);
-    }
-
-    let specific_location = $("#form_item_specific_location").val();
-    if (specific_location !== "" && specific_location !== "None") {
-        searchParams.set("specific_location", specific_location);
-    }
-
-
-    window.location.search = searchParams.toString();
-});
-
-$("#btn-clear-filters").on("click", function (e) {
-    e.preventDefault();
-    let searchParams = new URLSearchParams(window.location.search);
-    searchParams.delete("type");
-    searchParams.delete("location");
-    searchParams.delete("tags");
-    $("#form_item_tags").val("");
-    searchParams.delete("specific_location");
-    $("#form_item_specific_location").val("");
-    window.location.search = searchParams.toString();
-
-});
-
-$("#item_location_filter").on("change", function (e) {
-    let optionValue = $('#item_location_filter').find(":selected").text();
-    let searchParams = new URLSearchParams(window.location.search);
-    if (optionValue === "Any") {
-        searchParams.delete("location");
-        window.location.search = searchParams.toString();
-    } else {
-        searchParams.set("location", optionValue);
-        window.location.search = searchParams.toString();
-    }
-
-});
-
-$("#item_type_filter").on("change", function (e) {
-    let optionValue = $('#item_type_filter').find(":selected").text();
-    let searchParams = new URLSearchParams(window.location.search);
-    if (optionValue === "Any") {
-        searchParams.delete("type");
-        window.location.search = searchParams.toString();
-    } else {
-        searchParams.set("type", optionValue);
-        window.location.search = searchParams.toString();
-    }
-
-});
-
-
-$("#inventory_filter").on("change", function (e) {
-    let selection = $('#inventory_filter')
-    let optionText = selection.find(":selected").text();
-    let optionValue = selection.find(":selected").val();
-    let searchParams = new URLSearchParams(window.location.search);
-
-    if (optionText === "all") {
-        if(searchParams.size > 0) {
-            window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
-        } else {
-            window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
-        }
-} else
-if (optionText === "default") {
-    window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'default') |replace('%40', '@')}}?" + searchParams.toString()
-} else
-{
-    window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'INV') |replace('%40', '@')}}?".replace("INV", optionValue) + searchParams.toString()
-}
-
-});
-
-
-function checkbox_count() {
-    let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-    let number_selected = 0;
-    $.each(all_checkboxes, function () {
-        let $this = $(this);
-        if ($this.is(":checked")) {
-            number_selected += 1
-        }
-    });
-
-    let delete_btn_selector = $('#delete-items-btn');
-    let move_items_selector = $('#move-items-btn');
-
-    if (number_selected > 0) {
-        delete_btn_selector.css("pointer-events", "auto");
-        move_items_selector.css("pointer-events", "auto");
-        $('#delete-items-span').css('color', 'black');
-        $('#move-items-span').css('color', 'black');
-
-        delete_btn_selector.prop('disabled', false);
-        move_items_selector.prop('disabled', false);
-
-        delete_btn_selector.attr('disabled', 'disabled');
-        move_items_selector.attr('disabled', 'disabled');
-    } else {
-        delete_btn_selector.css("pointer-events", "none");
-        move_items_selector.css("pointer-events", "none");
-        $('#delete-items-span').css('color', 'lightgray');
-        $('#move-items-span').css('color', 'lightgray');
-
-        delete_btn_selector.prop('disabled', true);
-        move_items_selector.prop('disabled', true);
-
-        delete_btn_selector.removeAttr('disabled');
-        move_items_selector.removeAttr('disabled');
-
-    }
-}
-
-$(document).ready(function () {
-    checkbox_count();
-
-    $('#invtable').DataTable({
-        "searching": true,
-        paging: false,
-        ordering: true,
-        info: true
-    });
-});
-
-
-$('input:checkbox[id^="selected-item-"]').on("click", function (e) {
-    checkbox_count();
-});
-
-$("#all-selected-items").on("click", function (e) {
-
-    let is_checked = $(this).is(":checked");
-
-    let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-    $.each(all_checkboxes, function () {
-        let $this = $(this);
-        $this.attr('checked', is_checked);
-    });
-    checkbox_count();
-});
-
-$("#delete-items-btn").on("click", function (e) {
-    e.preventDefault();
-
-    let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-    let number_selected = [];
-    $.each(all_checkboxes, function () {
-        let $this = $(this);
-        if ($this.is(":checked")) {
-            number_selected.push($this.attr('data-item-id'));
-        }
-    });
-
-    $.ajax({
-        type: "POST",
-        url: "{{ url_for('item.del_items')}}",
-        contentType: 'application/json;charset=UTF-8',
-        headers: {
-            "X-CSRFToken": "{{ csrf_token() }}",
-        },
-        data: JSON.stringify(
-            {
-                'item_ids': number_selected,
-                'username': "{{ username }}",
+            let tag = $("#form_item_tags").val();
+            if (tag !== "" && tag !== "None") {
+                searchParams.set("tags", tag);
             }
-        ),
-        success: function () {
-            location.reload();
-        },
-        error: function (e) {
-            location.reload();
-        }
-    });
 
-
-});
-
-
-$("#btn_submit_move").on("click", function (e) {
-    e.preventDefault();
-    let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-    let number_selected = [];
-    $.each(all_checkboxes, function () {
-        let $this = $(this);
-        if ($this.is(":checked")) {
-            number_selected.push($this.attr('data-item-id'));
-        }
-    });
-
-    let selection = $('#destination_inventory')
-    let optionText = selection.find(":selected").text();
-    let optionValue = selection.find(":selected").val();
-
-    $.ajax({
-        type: "POST",
-        url: "{{ url_for('item.items_move')}}",
-        contentType: 'application/json;charset=UTF-8',
-        headers: {
-            "X-CSRFToken": "{{ csrf_token() }}",
-        },
-        data: JSON.stringify(
-            {
-                'item_ids': number_selected,
-                'username': "{{ username }}",
-                'to_inventory_id': optionValue
+            let item_type = $("#types_autocomplete").val();
+            if (item_type !== "" && item_type !== undefined) {
+                searchParams.set("type", item_type);
             }
-        ),
-        success: function () {
-            location.reload(true);
-        },
-        error: function (e) {
-            location.reload(true);
-        }
-    });
 
-
-});
-
-
-$("#btn_export_pdf").on("click", function (e) {
-    e.preventDefault();
-
-
-    $.ajax({
-        type: "POST",
-        url: "{{ url_for('item.items_save_pdf')}}",
-        contentType: 'application/json;charset=UTF-8',
-        headers: {
-            "X-CSRFToken": "{{ csrf_token() }}",
-        },
-        data: JSON.stringify(
-            {
-                'inventory_slug': "{{ inventory_slug }}",
-                'username': "{{ username }}"
+            let specific_location = $("#form_item_specific_location").val();
+            if (specific_location !== "" && specific_location !== "None") {
+                searchParams.set("specific_location", specific_location);
             }
-        ),
-        success: function () {
-            location.reload(true);
-        },
-        error: function (e) {
-            location.reload(true);
-        }
-    });
 
 
-});
+            window.location.search = searchParams.toString();
+        });
 
+        $("#btn-clear-filters").on("click", function (e) {
+            e.preventDefault();
+            let searchParams = new URLSearchParams(window.location.search);
+            searchParams.delete("type");
+            searchParams.delete("location");
+            searchParams.delete("tags");
+            $("#form_item_tags").val("");
+            searchParams.delete("specific_location");
+            $("#form_item_specific_location").val("");
+            window.location.search = searchParams.toString();
 
-$("#save-fields-btn").on("click", function (e) {
-    e.preventDefault();
-    // clear the search table to make sure the table is complete
-    let table = $('#item-field-table').DataTable();
-    table.search('').draw();
-    let csrf_token = "{{ csrf_token() }}";
-    let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
-    let number_selected = [];
-    $.each(all_checkboxes, function () {
-        let $this = $(this);
-        if ($this.is(":checked")) {
-            number_selected.push(parseInt($this.attr('data-itemfield-id')));
-        }
-    });
+        });
 
-    $.ajax({
-        type: "POST",
-        url: "{{ url_for('item.edit_inv_default_fields')}}",
-        contentType: 'application/json;charset=UTF-8',
-        headers: {
-            "X-CSRFToken": csrf_token,
-        },
-        data: JSON.stringify(
-            {
-                'field_ids': number_selected,
-                'inventory_id': "{{ inventory.id}}",
-                'username': "{{ username }}",
+        $("#item_location_filter").on("change", function (e) {
+            let optionValue = $('#item_location_filter').find(":selected").text();
+            let searchParams = new URLSearchParams(window.location.search);
+            if (optionValue === "Any") {
+                searchParams.delete("location");
+                window.location.search = searchParams.toString();
+            } else {
+                searchParams.set("location", optionValue);
+                window.location.search = searchParams.toString();
             }
-        ),
-        success: function (e) {
-            location.reload(true);
-        },
-        error: function (e) {
-            location.reload(true);
-        }
-    });
 
+        });
 
-});
-
-
-$("#export-items-btn").on("click", function (e) {
-    e.preventDefault();
-
-    $('#form-export-items').submit();
-
-});
-
-const autoCompleteJS = new autoComplete({
-    selector: "#types_autocomplete",
-    placeHolder: "Search for types ... ",
-    data: {
-        src: async (query) => {
-            try {
-                // Fetch Data from external Source
-                const source = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
-                // Data should be an array of `Objects` or `Strings`
-                const data = await source.json();
-
-                return data;
-            } catch (error) {
-                return error;
+        $("#item_type_filter").on("change", function (e) {
+            let optionValue = $('#item_type_filter').find(":selected").text();
+            let searchParams = new URLSearchParams(window.location.search);
+            if (optionValue === "Any") {
+                searchParams.delete("type");
+                window.location.search = searchParams.toString();
+            } else {
+                searchParams.set("type", optionValue);
+                window.location.search = searchParams.toString();
             }
-        },
-        // Data source 'Object' key to be searched
-        //keys: ["food"]
-    },
-    threshold: 0,
-    resultsList: {
-        element: (list, data) => {
-            if (!data.results.length) {
-                // Create "No Results" message element
-                const message = document.createElement("div");
-                // Add class to the created element
-                message.setAttribute("class", "no_result");
-                // Add message text content
-                message.innerHTML = `<span>Save to add new type "${data.query}"</span>`;
-                // Append message element to the results list
-                list.prepend(message);
+
+        });
+
+
+        $("#inventory_filter").on("change", function (e) {
+            let selection = $('#inventory_filter')
+            let optionText = selection.find(":selected").text();
+            let optionValue = selection.find(":selected").val();
+            let searchParams = new URLSearchParams(window.location.search);
+
+            if (optionText === "all") {
+                if (searchParams.size > 0) {
+                    window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
+                } else {
+                    window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
+                }
+            } else if (optionText === "default") {
+                window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'default') |replace('%40', '@')}}?" + searchParams.toString()
+            } else {
+                window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'INV') |replace('%40', '@')}}?".replace("INV", optionValue) + searchParams.toString()
             }
-        },
-        noResults: true,
-        maxResults: undefined,
-    },
-    resultItem: {
-        highlight: true,
-    },
-    events: {
-        input: {
-            selection: (event) => {
-                const selection = event.detail.selection.value;
-                autoCompleteJS.input.value = selection;
+
+        });
+
+
+        function checkbox_count() {
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = 0;
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected += 1
+                }
+            });
+
+            let delete_btn_selector = $('#delete-items-btn');
+            let move_items_selector = $('#move-items-btn');
+
+            if (number_selected > 0) {
+                delete_btn_selector.css("pointer-events", "auto");
+                move_items_selector.css("pointer-events", "auto");
+                $('#delete-items-span').css('color', 'black');
+                $('#move-items-span').css('color', 'black');
+
+                delete_btn_selector.prop('disabled', false);
+                move_items_selector.prop('disabled', false);
+
+                delete_btn_selector.attr('disabled', 'disabled');
+                move_items_selector.attr('disabled', 'disabled');
+            } else {
+                delete_btn_selector.css("pointer-events", "none");
+                move_items_selector.css("pointer-events", "none");
+                $('#delete-items-span').css('color', 'lightgray');
+                $('#move-items-span').css('color', 'lightgray');
+
+                delete_btn_selector.prop('disabled', true);
+                move_items_selector.prop('disabled', true);
+
+                delete_btn_selector.removeAttr('disabled');
+                move_items_selector.removeAttr('disabled');
+
             }
         }
-    }
-});
+
+        $(document).ready(function () {
+            checkbox_count();
+
+            $('#invtable').DataTable({
+                "searching": true,
+                paging: false,
+                ordering: true,
+                info: true
+            });
+        });
+
+
+        $('input:checkbox[id^="selected-item-"]').on("click", function (e) {
+            checkbox_count();
+        });
+
+        $("#all-selected-items").on("click", function (e) {
+
+            let is_checked = $(this).is(":checked");
+
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                $this.attr('checked', is_checked);
+            });
+            checkbox_count();
+        });
+
+        $("#delete-items-btn").on("click", function (e) {
+            e.preventDefault();
+
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push($this.attr('data-item-id'));
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.del_items')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'item_ids': number_selected,
+                        'username': "{{ username }}",
+                    }
+                ),
+                success: function () {
+                    location.reload();
+                },
+                error: function (e) {
+                    location.reload();
+                }
+            });
+
+
+        });
+
+
+        $("#btn_submit_move").on("click", function (e) {
+            e.preventDefault();
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push($this.attr('data-item-id'));
+                }
+            });
+
+            let selection = $('#destination_inventory')
+            let optionText = selection.find(":selected").text();
+            let optionValue = selection.find(":selected").val();
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.items_move')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'item_ids': number_selected,
+                        'username': "{{ username }}",
+                        'to_inventory_id': optionValue
+                    }
+                ),
+                success: function () {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#btn_export_pdf").on("click", function (e) {
+            e.preventDefault();
+
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.items_save_pdf')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'inventory_slug': "{{ inventory_slug }}",
+                        'username': "{{ username }}"
+                    }
+                ),
+                success: function () {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#save-fields-btn").on("click", function (e) {
+            e.preventDefault();
+            // clear the search table to make sure the table is complete
+            let table = $('#item-field-table').DataTable();
+            table.search('').draw();
+            let csrf_token = "{{ csrf_token() }}";
+            let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push(parseInt($this.attr('data-itemfield-id')));
+                }
+            });
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('item.edit_inv_default_fields')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": csrf_token,
+                },
+                data: JSON.stringify(
+                    {
+                        'field_ids': number_selected,
+                        'inventory_id': "{{ inventory.id}}",
+                        'username': "{{ username }}",
+                    }
+                ),
+                success: function (e) {
+                    location.reload(true);
+                },
+                error: function (e) {
+                    location.reload(true);
+                }
+            });
+
+
+        });
+
+
+        $("#export-items-btn").on("click", function (e) {
+            e.preventDefault();
+
+            $('#form-export-items').submit();
+
+        });
+
+        const autoCompleteJS = new autoComplete({
+            selector: "#types_autocomplete",
+            placeHolder: "Search for types ... ",
+            data: {
+                src: async (query) => {
+                    try {
+                        // Fetch Data from external Source
+                        const source = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
+                        // Data should be an array of `Objects` or `Strings`
+                        const data = await source.json();
+
+                        return data;
+                    } catch (error) {
+                        return error;
+                    }
+                },
+                // Data source 'Object' key to be searched
+                //keys: ["food"]
+            },
+            threshold: 0,
+            resultsList: {
+                element: (list, data) => {
+                    if (!data.results.length) {
+                        // Create "No Results" message element
+                        const message = document.createElement("div");
+                        // Add class to the created element
+                        message.setAttribute("class", "no_result");
+                        // Add message text content
+                        message.innerHTML = `<span>Save to add new type "${data.query}"</span>`;
+                        // Append message element to the results list
+                        list.prepend(message);
+                    }
+                },
+                noResults: true,
+                maxResults: undefined,
+            },
+            resultItem: {
+                highlight: true,
+            },
+            events: {
+                input: {
+                    selection: (event) => {
+                        const selection = event.detail.selection.value;
+                        autoCompleteJS.input.value = selection;
+                    }
+                }
+            }
+        });
+
+        const autoCompleteJS2 = new autoComplete({
+            selector: "#types_autocomplete_add_form",
+            placeHolder: "Search for types ... ",
+            data: {
+                src: async (query) => {
+                    try {
+                        // Fetch Data from external Source
+                        const source2 = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
+                        // Data should be an array of `Objects` or `Strings`
+                        const data2 = await source2.json();
+
+                        return data2;
+                    } catch (error) {
+                        return error;
+                    }
+                },
+                // Data source 'Object' key to be searched
+                //keys: ["food"]
+            },
+            threshold: 0,
+            resultsList: {
+                element: (list, data) => {
+                    if (!data.results.length) {
+                        // Create "No Results" message element
+                        const message = document.createElement("div");
+                        // Add class to the created element
+                        message.setAttribute("class", "no_result");
+                        // Add message text content
+                        message.innerHTML = `<span>Save to add new type "${data.query}"</span>`;
+                        // Append message element to the results list
+                        list.prepend(message);
+                    }
+                },
+                noResults: true,
+                maxResults: undefined,
+            },
+            resultItem: {
+                highlight: true,
+            },
+            events: {
+                input: {
+                    selection: (event) => {
+                        const selection2 = event.detail.selection.value;
+                        autoCompleteJS2.input.value = selection2;
+                    }
+                }
+            }
+        });
     </script>
 
 {% endblock %}
