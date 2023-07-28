@@ -70,7 +70,7 @@
     <script>
 
         $(document).ready(function () {
-            $('#my-inventories-table').DataTable({
+            $('#item-field-table').DataTable({
                 "searching": true,
                 paging: false,
                 ordering: true,
@@ -109,7 +109,7 @@
          $("#save-template-fields-btn").on("click", function (e) {
             e.preventDefault();
             // clear the search table to make sure the table is complete
-            let table = $('#template-field-table').DataTable();
+            let table = $('#item-field-table').DataTable();
             table.search('').draw();
 
             let template_name = $('#form_template_name').val();
