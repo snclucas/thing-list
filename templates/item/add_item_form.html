@@ -20,8 +20,9 @@
     <div class="row">
 
         <div class="col-6">
-            <label class="form-label" for="autoComplete">Type:</label>
-            <input id="autoComplete" name="type" type="text" class="form-control" value="{{ item_type }}">
+            <label class="form-label" for="types_autocomplete_add_form">Type:</label>
+            <input id="types_autocomplete_add_form" name="types_autocomplete_add_form" type="text" class="form-control"
+                   value="{{ item_type }}">
         </div>
         <div class="col-6">
 
@@ -32,7 +33,7 @@
     <div class="row">
         <div class="col-6">
 
-            <label class="form-label" for="plassering">Location:</label>
+            <label class="form-label" for="item_location">Location:</label>
             <select class="form-select" id="item_location" name="location_id">
                 {% for option in user_locations %}
                     <option value="{{ option.id }}">{{ option.name }}</option>
@@ -50,7 +51,7 @@
     <div class="row">
 
         <div class="col-12">
-            <label class="form-label" for="plassering">Tags:</label>
+            <label class="form-label" for="form_item_tags">Tags:</label>
             <input type="text" class="form-control" name="tags" id="form_item_tags">
         </div>
     </div>
@@ -61,7 +62,7 @@
             <div class="col-12">
 
                 <label for="form_item_{{ field.field }}" class="form-label">{{ field.field }}</label>
-                <input type="text" class="form-control" name="{{ field.field}}"
+                <input type="text" class="form-control" name="{{ field.field }}"
                        id="form_item_{{ field.field }}"
                        placeholder=""
                        value="{{ field.value }}">
