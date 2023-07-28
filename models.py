@@ -40,7 +40,7 @@ class Field(db.Model):
     __tablename__ = "fields"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     field = db.Column(db.String(255), nullable=True, unique=False)
-    description = db.Column(db.String(2000), nullable=True, unique=False)
+    slug = db.Column(db.String(2000), nullable=True, unique=False)
     type = db.Column(db.String(255), nullable=True, unique=False)
     data = db.Column(db.String(255), nullable=True, unique=False)
     items = db.relationship('Item', secondary='item_fields', back_populates='fields', cascade="all,delete")
