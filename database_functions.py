@@ -86,7 +86,7 @@ def get_item_custom_field_data(user_id: int, item_list=None):
         item_field_data_ = db.session.query(Item.id, Field.field, ItemField.value) \
             .join(ItemField, ItemField.field_id == Field.id) \
             .join(Item, ItemField.item_id == Item.id)\
-            .filter(Item.user_id == 1)
+            .filter(Item.user_id == user_id)
 
         if item_list is not None:
             if isinstance(item_list, list):
@@ -102,7 +102,6 @@ def get_item_custom_field_data(user_id: int, item_list=None):
                 sdsd[row[0]] = {row[1]: row[2]}
 
         return sdsd
-
 
 
 def delete_item_type_from_db(itemtype_id: int, user: User) -> (bool, str):
@@ -1185,7 +1184,8 @@ def add_new_item_field(item, custom_fields, app_context=None):
 
             field_ = Field.query.filter_by(field=field_name).one_or_none()
             if field_ is None:
-                field_ = Field(field=field_name, description=field_name)
+                field_slug = slugify(field_name)
+                field_ = Field(field=field_name, slug=field_slug)
                 db.session.add(field_)
                 db.session.flush()
 

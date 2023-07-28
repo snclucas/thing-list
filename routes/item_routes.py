@@ -20,7 +20,7 @@ from database_functions import get_all_user_locations, find_items, \
     find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, add_new_user_itemtype, \
-    set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate
+    set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate, get_item_custom_field_data
 from models import FieldTemplate
 
 item_routes = Blueprint('item', __name__)
@@ -85,7 +85,7 @@ def items_load():
                         add_item_to_inventory(item_name=item_name, item_desc=item_description,
                                               item_type=item_type,
                                               item_tags=tag_array, inventory_id=to_inventory_id,
-                                              user_id=current_user.id, custom_fields=custom_fields)
+                                              user=current_user, custom_fields=custom_fields)
                     line_count += 1
 
     username = current_user.username
@@ -135,13 +135,27 @@ def items_save():
     request_params = _process_url_query(req_=request, inventory_user=current_user)
     inventory_id, inventory_, inventory_default_fields = _get_inventory(inventory_slug=inventory_slug,
                                                                         logged_in_user_id=current_user.id)
-    data_dict = find_items_query(current_user, current_user, inventory_id, request_params=request_params)
+    data_dict, item_id_list = find_items_query(current_user, current_user, inventory_id, request_params=request_params)
 
-    csv_list = [["#Name", "Description", "Tags", "Type", "Location",
-                 "Specific location", "Manufacturer", "Model", "Serial number"]]
+    dd = get_item_custom_field_data(user_id=current_user.id, item_list=item_id_list)
+
+    field_set = set()
+
+    for dn, dv in dd.items():
+        dv_lower = [x.lower() for x in list(dv.keys())]
+        field_set.update(dv_lower)
+
+    csv_headers = ["#name", "description", "tags", "type", "location", "specific location"]
+    csv_headers.extend(field_set)
+
+    csv_list = [csv_headers]
 
     for row in data_dict:
         item_ = row["item"]
+        if item_.id in dd:
+            wewe = dd[item_.id]
+        else:
+            wewe = {}
         temp = [
             item_.name,
             item_.description,
@@ -150,6 +164,13 @@ def items_save():
             row["location"],
             item_.specific_location,
         ]
+        # add the custom values
+        wewe = {k.lower(): v for k, v in wewe.items()}
+        for k in field_set:
+            if k in wewe:
+                temp.append(wewe[k])
+            else:
+                temp.append("")
         csv_list.append(temp)
 
     si = StringIO()
@@ -229,7 +250,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     all_fields = dict(get_all_fields())
 
     request_params = _process_url_query(req_=request, inventory_user=requested_user)
-    data_dict = find_items_query(requested_user, logged_in_user, inventory_id, request_params=request_params)
+    data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id, request_params=request_params)
 
     inventory_templates = get_user_templates(user=current_user)
 
@@ -254,12 +275,14 @@ def _get_inventory(inventory_slug: str, logged_in_user_id):
 
     if inventory_slug == "default":
         inventory_slug_to_use = f"default-{current_user.username}"
+    elif inventory_slug is None or inventory_slug is '':
+        inventory_slug_to_use = 'all'
     else:
         inventory_slug_to_use = inventory_slug
 
     field_template_ = None
 
-    if inventory_slug != "all":
+    if inventory_slug_to_use != "all":
         inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug_to_use,
                                                              user_id=logged_in_user_id)
         if inventory_ is None:
@@ -289,8 +312,10 @@ def find_items_query(requested_user, logged_in_user, inventory_id, request_param
                         request_user=requested_user,
                         logged_in_user=logged_in_user)
 
+    item_id_list = []
     data_dict = []
     for i in items_:
+        item_id_list.append(i[0].id)
         dat = {
                 "item": i[0],
                 "types": i[1],
@@ -302,7 +327,7 @@ def find_items_query(requested_user, logged_in_user, inventory_id, request_param
             dat
         )
 
-    return data_dict
+    return data_dict, item_id_list
 
 
 def _process_url_query(req_, inventory_user):

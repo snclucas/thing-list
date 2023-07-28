@@ -1,5 +1,5 @@
 import bleach
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 
 from database_functions import get_user_inventories, delete_item_from_inventory, \
@@ -155,24 +155,19 @@ def add_to_inventory():
         item_description = request.form.get("description")
         inventory_id = request.form.get("inventory_id")
 
-        username = request.form.get("username")
-        inventory_slug = request.form.get("inventory_slug")
-        item_type = request.form.get("type")
-        item_location = request.form.get("location_id")
-        item_specific_location = request.form.get("specific_location")
-        item_tags = request.form.get("tags")
-        item_tags = item_tags.split(",")
+        username = request.form.get("username").lower()
+        inventory_slug = request.form.get("inventory_slug").lower()
+        item_type = request.form.get("type").lower()
+        item_location = request.form.get("location_id").lower()
+        item_specific_location = request.form.get("specific_location").lower()
+        item_tags = request.form.get("tags").lower()
+        item_tags = item_tags.lower().split(",")
 
         item_custom_fields = dict(request.form)
-        del item_custom_fields['username']
-        del item_custom_fields['name']
-        del item_custom_fields['id']
-        del item_custom_fields['description']
-        del item_custom_fields['inventory_id']
-        del item_custom_fields['location_id']
-        del item_custom_fields['inventory_slug']
-        del item_custom_fields['csrf_token']
-        del item_custom_fields['tags']
+        to_remove = ['username', 'name', 'id', 'description', 'inventory_id', 'location_id',
+                     'inventory_slug', 'specific_location', 'csrf_token', 'tags', 'type']
+        for field in to_remove:
+            del item_custom_fields[field]
 
         add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
                               item_tags=item_tags,
