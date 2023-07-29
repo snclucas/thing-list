@@ -194,14 +194,6 @@ def items_with_username(username=None):
     return items_with_username_and_inventory(username=username, inventory_slug="all")
 
 
-@item_routes.route('/items/<inventory_slug>')
-def items_with_inventory(inventory_slug=None):
-    return items_with_username_and_inventory(username=None, inventory_slug=inventory_slug)
-
-
-
-
-
 @item_routes.route('/@<username>/<inventory_slug>')
 def items_with_username_and_inventory(username=None, inventory_slug=None):
     user_is_authenticated = current_user.is_authenticated
@@ -246,11 +238,15 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     inventory_id, inventory_, inventory_field_template = _get_inventory(inventory_slug= inventory_slug,
                                                                         logged_in_user_id=logged_in_user_id)
 
+    if inventory_ is None and inventory_slug != "all":
+        return render_template('404.html', message="No such inventory"), 404
+
     item_types_ = get_all_item_types()
     all_fields = dict(get_all_fields())
 
     request_params = _process_url_query(req_=request, inventory_user=requested_user)
-    data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id, request_params=request_params)
+    data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id,
+                                               request_params=request_params)
 
     inventory_templates = get_user_templates(user=current_user)
 
@@ -271,6 +267,85 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
                            user_is_authenticated=user_is_authenticated, inventory_slug=inventory_slug)
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+@item_routes.route('/@<username>/item/<item_slug>')
+def item_with_username(username: str, item_slug: str):
+    logged_in_user_id = None
+    item_user_id = None
+    all_user_locations_ = None
+
+    if current_user.is_authenticated:
+        logged_in_user_id = current_user.id
+        all_user_locations_ = get_all_user_locations(user=current_user)
+
+    if username is None:
+        username = current_user.username
+    else:
+        user_ = find_user(username_or_email=username)
+        if user_ is not None:
+            item_user_id = user_.id
+
+    name = username
+
+    all_item_types_ = get_all_item_types()
+
+    if logged_in_user_id is None:
+        item_result = get_item_by_slug(username=username, item_slug=item_slug, user=None)
+    else:
+        item_result = get_item_by_slug(username=username, item_slug=item_slug, user=current_user)
+
+    item_access_level = item_result["access"]
+    item_location = None
+
+    if item_result["status"] == "success":
+        item_ = item_result["item"]
+        item_type_string = item_result["item_type"]
+        inventory_item = item_result["inventory_item"]
+
+        item_fields = dict(get_item_fields(item_id=item_.id))
+        all_item_fields = dict(get_all_item_fields(item_id=item_.id))
+        all_fields = dict(get_all_fields())
+
+        if item_access_level == "owner":
+            user_location = get_user_location(user=current_user, location_id=item_.location_id)
+            if user_location is not None:
+                item_location = user_location[0]
+
+    elif item_access_level == "denied":
+        return render_template('404.html', message="You do not have access to this item"), 404
+    else:
+        return render_template('404.html', message="No item found"), 404
+
+    return render_template('item/item.html', name=name, item_fields=item_fields, all_item_fields=all_item_fields,
+                           all_fields=all_fields,
+                           item=item_, username=username, item_type=item_type_string,
+                           all_item_types=all_item_types_,
+                           all_user_locations=all_user_locations_, item_location=item_location,
+                           image_dir=app.config['UPLOAD_FOLDER'], item_access_level=item_access_level)
+
+
+
+@item_routes.route('/items/<inventory_slug>')
+def items_with_inventory(inventory_slug=None):
+    return items_with_username_and_inventory(username=None, inventory_slug=inventory_slug)
+
+
+
+
+
+
+
 def _get_inventory(inventory_slug: str, logged_in_user_id):
 
     if inventory_slug == "default":
@@ -286,7 +361,7 @@ def _get_inventory(inventory_slug: str, logged_in_user_id):
         inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug_to_use,
                                                              user_id=logged_in_user_id)
         if inventory_ is None:
-            return render_template('404.html', message="No inventory found"), 404
+            return None, None, None
         else:
             inventory_id = inventory_.id
 
@@ -374,62 +449,6 @@ def _process_url_query(req_, inventory_user):
 def item(item_slug: str):
     username = current_user.username
     return redirect(url_for('item.item_with_username', username=username, item_slug=item_slug).replace('%40', '@'))
-
-
-@item_routes.route('/@<username>/item/<item_slug>')
-def item_with_username(username: str, item_slug: str):
-    logged_in_user_id = None
-    item_user_id = None
-    all_user_locations_ = None
-
-    if current_user.is_authenticated:
-        logged_in_user_id = current_user.id
-        all_user_locations_ = get_all_user_locations(user=current_user)
-
-    if username is None:
-        username = current_user.username
-    else:
-        user_ = find_user(username_or_email=username)
-        if user_ is not None:
-            item_user_id = user_.id
-
-    name = username
-
-    all_item_types_ = get_all_item_types()
-
-    if logged_in_user_id is None:
-        item_result = get_item_by_slug(username=username, item_slug=item_slug, user=None)
-    else:
-        item_result = get_item_by_slug(username=username, item_slug=item_slug, user=current_user)
-
-    item_access_level = item_result["access"]
-    item_location = None
-
-    if item_result["status"] == "success":
-        item_ = item_result["item"]
-        item_type_string = item_result["item_type"]
-        inventory_item = item_result["inventory_item"]
-
-        item_fields = dict(get_item_fields(item_id=item_.id))
-        all_item_fields = dict(get_all_item_fields(item_id=item_.id))
-        all_fields = dict(get_all_fields())
-
-        if item_access_level == "owner":
-            user_location = get_user_location(user=current_user, location_id=item_.location_id)
-            if user_location is not None:
-                item_location = user_location[0]
-
-    elif item_access_level == "denied":
-        return render_template('404.html', message="You do not have access to this item"), 404
-    else:
-        return render_template('404.html', message="No item found"), 404
-
-    return render_template('item/item.html', name=name, item_fields=item_fields, all_item_fields=all_item_fields,
-                           all_fields=all_fields,
-                           item=item_, username=username, item_type=item_type_string,
-                           all_item_types=all_item_types_,
-                           all_user_locations=all_user_locations_, item_location=item_location,
-                           image_dir=app.config['UPLOAD_FOLDER'], item_access_level=item_access_level)
 
 
 @item_routes.route('/item/fields', methods=['POST'])
