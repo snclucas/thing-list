@@ -1,38 +1,35 @@
 <!DOCTYPE html>
 <html lang="en">
 
-
 <head>
-{% block head %}
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>{% block title %} ThingList {% endblock %}</title>
+    {% block head %}
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>
+            {% block title %}
+                ThingList
+            {% endblock %}
+        </title>
 
-    <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/fontawesome.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/solid.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='vendor/fontawesome/css/brands.min.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='css/master.css') }}" rel="stylesheet">
-    <link href="{{ url_for('static', filename='DataTables/datatables.min.css') }}" rel="stylesheet"/>
-    <link href="{{ url_for('static', filename='css/gallery.css') }}" rel="stylesheet">
+        <meta property="og:title" content="ThingList | A list of all your things"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
+        <meta property="og:url"
+              content="https://thinglist.org"/>
 
-    <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
+        <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='vendor/fontawesome/css/fontawesome.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='vendor/fontawesome/css/solid.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='vendor/fontawesome/css/brands.min.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='css/master.css') }}" rel="stylesheet">
+        <link href="{{ url_for('static', filename='DataTables/datatables.min.css') }}" rel="stylesheet"/>
+        <link href="{{ url_for('static', filename='css/gallery.css') }}" rel="stylesheet">
 
-    <style>
-        body {
-            font-family: 'Roboto', sans-serif !important;
-        }
+        <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
 
-        .form-label {
-            margin-top: 1.0rem;
-        }
-
-    </style>
-{% endblock %}
+    {% endblock %}
 </head>
-
-
 
 <body>
 
