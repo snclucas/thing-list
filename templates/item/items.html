@@ -1,28 +1,7 @@
 {% extends "base.html" %}
 
-<style>
-    tag_list {
-        color: #ffffff;
-        margin-right: 8px;
-        line-height: 2.2;
-        background: #4A79A3;
-        padding: 5px 10px;
-        border-radius: 3px;
-        position: relative;
-        cursor: pointer;
-        transition: all 0.3s;
-        -webkit-animation-duration: 1s;
-        animation-duration: 1s;
-        -webkit-animation-fill-mode: both;
-        animation-fill-mode: both;
-    }
-</style>
-
-
-
 {% block title %}
     ThingList
-
 
     {% if inventory is not none %}
         | Items | {{ inventory.name }}
@@ -34,7 +13,6 @@
 
 {% block content %}
     <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
-
 
     <div class="content">
         <div class="container">
@@ -48,7 +26,6 @@
                             </div>
                             <hr>
                             <div class="canvas-wrapper">
-
                                 {% include 'item/filter_form.html' %}
                             </div>
                         </div>
@@ -78,136 +55,82 @@
                                 </div>
 
                                 <div class="col-md-6">
-                                    <div class="text-end">
-                                        {% if user_is_authenticated %}
-
-                                            {% if inventory_slug != "all" and inventory_slug != "default" %}
-                                                <span class="fas fa-list fa-2x" data-bs-toggle="collapse"
-                                                      href="#collapseItemFields"
-                                                      style="display: inline-block; margin-right: 20px;"></span>
-                                            {% endif %}
-
-                                            <span class="fas fa-file-import fa-2x" data-bs-toggle="collapse"
-                                                  href="#collapseImagesEdit"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
-
-                                            <span id="export-items-btn" class="fas fa-file-export fa-2x"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
-
-                                            <span id="btn_export_pdf" class="fas fa-file-pdf fa-2x"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
-
-                                            <a data-bs-toggle="collapse" href="#collapseExample"
-                                               role="button" aria-expanded="false" aria-controls="collapseExample">
+                                    <div class="row">
+                                        <div class="col-md-12">
+                                            <div class="text-end">
+                                                <a data-bs-toggle="collapse" href="#collapseAddItem"
+                                                   role="button" aria-expanded="false" aria-controls="collapseExample">
                                                 <span class="fas fa-plus fa-2x"
                                                       style="display: inline-block; margin-right: 20px;"></span>
-                                            </a>
-
-                                            <a id="move-items-btn" data-bs-toggle="collapse" href="#moveInventory"
-                                               role="button" aria-expanded="false" aria-controls="moveInventory">
-                                                <span id="move-items-span" class="fas fa-exchange-alt fa-2x"
-                                                      style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
-                                            </a>
-
-                                            <a id="delete-items-btn" data-bs-toggle="collapse" href="#confirmItemDelete"
-                                               role="button" aria-expanded="false" aria-controls="confirmItemDelete">
-                                                <span id="delete-items-span" class="fas fa-minus fa-2x"
-                                                      style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
-                                            </a>
-
-                                            <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
-                                                  href="#collapseItemsHelp"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
-
-
-                                        {% endif %}
+                                                </a>
+                                                <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
+                                                      href="#collapseButtonBar"
+                                                      style="display: inline-block; margin-right: 20px;"></span>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
 
                             </div>
 
+                            <div class="row">
+                                <div class="col-md-12">
+                                    <div class="collapse" id="collapseButtonBar" aria-expanded="false">
+                                        <hr>
+                                        <div class="text-center">
+                                            {% include 'item/_buttton_panel.html' %}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
                             <hr>
 
-                            {% if user_is_authenticated %}
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {% if user_is_authenticated %}
 
-                                <div class="collapse" id="collapseItemsHelp" aria-expanded="false">
-                                    <div class="card card-body">
-                                        {% include 'item/items_help.html' %}
-                                    </div>
+                                        <div class="collapse" id="collapseItemsHelp" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/items_help.html' %}
+                                            </div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseItemFields" aria-expanded="false">
+                                            {% include 'item/inventory_field_template.html' %}
+                                        </div>
+
+                                        <div class="collapse" id="moveInventory" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/move_item_form.html' %}
+                                            </div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseAddItem" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/add_item_form.html' %}
+                                            </div>
+                                        </div>
+
+                                        <div class="collapse" id="collapseImportItems" aria-expanded="false">
+                                            {% include 'item/_import_items_form.html' %}
+                                        </div>
+
+                                        {% include 'item/_export_items_form.html' %}
+
+                                    {% endif %}
                                 </div>
+                            </div>
 
-                                <div class="collapse" id="collapseItemFields" aria-expanded="false">
-                                    {% include 'item/inventory_field_template.html' %}
+                            <div class="row">
+                                <div class="col-md-12">
+                                    {% include 'item/item-list.html' %}
                                 </div>
-
-                                <div class="collapse" id="moveInventory" aria-expanded="false">
-                                    <div class="card card-body">
-                                        {% include 'item/move_item_form.html' %}
-                                    </div>
-                                </div>
-
-                                <div class="collapse" id="collapseExample" aria-expanded="false">
-                                    <div class="card card-body">
-                                        {% include 'item/add_item_form.html' %}
-                                    </div>
-                                </div>
-
-                                <div class="collapse" id="collapseImagesEdit" aria-expanded="false">
-                                    <h5>Load CSV...</h5>
-                                    <div class="card card-body">
-                                        <form method="POST" action="{{ url_for("item.items_load") }}"
-                                              enctype="multipart/form-data">
-
-                                            <label class="form-label" for="add_to_inventory">Add to inventory:</label>
-
-                                            <select class="form-select" id="add_to_inventory" name="add_to_inventory">
-
-                                                {% for option in all_user_inventories %}
-
-                                                    {% if "__default__" in  option[1].name %}
-                                                        <option value="{{ option[1].id }}">None</option>
-
-                                                    {% else %}
-
-                                                        {% if inventory_slug == option[1].slug %}
-                                                            <option value="{{ option[1].id }}"
-                                                                    selected>{{ option[1].name }}</option>
-                                                        {% else %}
-                                                            <option value="{{ option[1].id }}">{{ option[1].name }}</option>
-                                                        {% endif %}
-
-                                                    {% endif %}
-
-                                                {% endfor %}
-
-                                            </select>
-                                            <hr>
-
-                                            <input class="form-control" type="file" name="file">
-                                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                            <hr>
-                                            <button type="submit" class="btn btn-primary">Load</button>
-                                        </form>
-                                    </div>
-                                </div>
-
-                                <form id="form-export-items" method="POST" style="display: none;"
-                                      action="{{ url_for("item.items_save", username=username) }}">
-                                    <input type="hidden" class="form-control" name="username" id="form_username"
-                                           value="{{ username }}">
-                                    <input type="hidden" class="form-control" name="inventory_slug" id="form_inventory"
-                                           value="{{ inventory_slug }}">
-                                    <button type="submit" class="btn btn-primary">Export</button>
-                                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                                </form>
-
-                            {% endif %}
-
-                            {% include 'item/item-list.html' %}
+                            </div>
 
                         </div>
-                    </div>
 
+                    </div>
 
                 </div>
 
@@ -543,10 +466,14 @@
 
         $("#export-items-btn").on("click", function (e) {
             e.preventDefault();
-
             $('#form-export-items').submit();
-
         });
+
+        $("#add_item_cancel_btn").on("click", function (e) {
+            e.preventDefault();
+            $("#collapseAddItem").collapse("toggle");
+        });
+
 
         const autoCompleteJS = new autoComplete({
             selector: "#types_autocomplete",
