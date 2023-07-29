@@ -48,6 +48,10 @@ Notes:  decreasing heading by 0.4em with every subsequent heading level
 [1. Body / #body]
 */
 
+.vh-100h {
+    height: 50vh !important;
+}
+
 .form-label {
             margin-top: 1.0rem;
 }
@@ -404,6 +408,7 @@ table.dataTable>tbody>tr.child ul.dtr-details {
         background: #4A79A3;
         padding: 5px 10px;
         border-radius: 3px;
+        font-size: 0.65rem;
         position: relative;
         cursor: pointer;
         transition: all 0.3s;
