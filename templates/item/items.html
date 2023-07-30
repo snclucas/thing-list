@@ -26,7 +26,7 @@
                             </div>
                             <hr>
                             <div class="canvas-wrapper">
-                                {% include 'item/filter_form.html' %}
+                                {% include 'item/_filter_form.html' %}
                             </div>
                         </div>
                     </div>
@@ -63,6 +63,13 @@
                                                 <span class="fas fa-plus fa-2x"
                                                       style="display: inline-block; margin-right: 20px;"></span>
                                                 </a>
+                                                <a id="delete-items-btn-collapse" data-bs-toggle="collapse"
+                                                   href="#collapseDeleteItems"
+                                                   role="button" aria-expanded="false"
+                                                   aria-controls="confirmItemDelete">
+                                                <span id="delete-items-span" class="fas fa-minus fa-2x"
+                                                      style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
+                                                </a>
                                                 <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
                                                       href="#collapseButtonBar"
                                                       style="display: inline-block; margin-right: 20px;"></span>
@@ -92,7 +99,7 @@
 
                                         <div class="collapse" id="collapseItemsHelp" aria-expanded="false">
                                             <div class="card card-body">
-                                                {% include 'item/items_help.html' %}
+                                                {% include 'item/_items_help.html' %}
                                             </div>
                                         </div>
 
@@ -102,7 +109,7 @@
 
                                         <div class="collapse" id="moveInventory" aria-expanded="false">
                                             <div class="card card-body">
-                                                {% include 'item/move_item_form.html' %}
+                                                {% include 'item/_move_item_form.html' %}
                                             </div>
                                         </div>
 
@@ -114,6 +121,19 @@
 
                                         <div class="collapse" id="collapseImportItems" aria-expanded="false">
                                             {% include 'item/_import_items_form.html' %}
+                                        </div>
+
+                                        <div class="collapse" id="collapseDeleteItems" aria-expanded="false">
+                                            <div class="text-center">
+                                                <p>Do you really want to delete these items? This process cannot be
+                                                    undone.</p>
+                                                <button id="confirm-delete-items-btn" type="button"
+                                                        class="btn btn-primary btn-sm">Delete
+                                                </button>
+                                                <button id="cancel-delete-items-btn" type="button"
+                                                        class="btn btn-primary btn-sm">Cancel
+                                                </button>
+                                            </div>
                                         </div>
 
                                         {% include 'item/_export_items_form.html' %}
@@ -201,7 +221,7 @@
 
         });
 
-        $("#item_location_filter").on("change", function (e) {
+        $("#item_location_filter").on("change", function () {
             let optionValue = $('#item_location_filter').find(":selected").text();
             let searchParams = new URLSearchParams(window.location.search);
             if (optionValue === "Any") {
@@ -214,7 +234,7 @@
 
         });
 
-        $("#item_type_filter").on("change", function (e) {
+        $("#item_type_filter").on("change", function () {
             let optionValue = $('#item_type_filter').find(":selected").text();
             let searchParams = new URLSearchParams(window.location.search);
             if (optionValue === "Any") {
@@ -228,7 +248,7 @@
         });
 
 
-        $("#inventory_filter").on("change", function (e) {
+        $("#inventory_filter").on("change", function () {
             let selection = $('#inventory_filter')
             let optionText = selection.find(":selected").text();
             let optionValue = selection.find(":selected").val();
@@ -259,16 +279,19 @@
                 }
             });
 
+            let delete_collapse_btn_selector = $('#delete-items-btn-collapse');
             let delete_btn_selector = $('#delete-items-btn');
+            let delete_span_selector = $('#delete-items-span');
             let move_items_selector = $('#move-items-btn');
 
             if (number_selected > 0) {
                 delete_btn_selector.css("pointer-events", "auto");
                 move_items_selector.css("pointer-events", "auto");
-                $('#delete-items-span').css('color', 'black');
-                $('#move-items-span').css('color', 'black');
+                delete_span_selector.css('color', 'red');
+                $('#move-items-span').css('color', 'red');
 
                 delete_btn_selector.prop('disabled', false);
+                delete_collapse_btn_selector.prop('disabled', false);
                 move_items_selector.prop('disabled', false);
 
                 delete_btn_selector.attr('disabled', 'disabled');
@@ -276,10 +299,11 @@
             } else {
                 delete_btn_selector.css("pointer-events", "none");
                 move_items_selector.css("pointer-events", "none");
-                $('#delete-items-span').css('color', 'lightgray');
+                delete_span_selector.css('color', 'lightgray');
                 $('#move-items-span').css('color', 'lightgray');
 
                 delete_btn_selector.prop('disabled', true);
+                delete_collapse_btn_selector.prop('disabled', true);
                 move_items_selector.prop('disabled', true);
 
                 delete_btn_selector.removeAttr('disabled');
@@ -316,7 +340,17 @@
             checkbox_count();
         });
 
-        $("#delete-items-btn").on("click", function (e) {
+        let deselect_all_checkboxes = function () {
+
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                $this.prop('checked', false);
+            });
+            checkbox_count();
+        };
+
+        $("#confirm-delete-items-btn").on("click", function (e) {
             e.preventDefault();
 
             let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
@@ -344,12 +378,10 @@
                 success: function () {
                     location.reload();
                 },
-                error: function (e) {
+                error: function () {
                     location.reload();
                 }
             });
-
-
         });
 
 
@@ -472,6 +504,12 @@
         $("#add_item_cancel_btn").on("click", function (e) {
             e.preventDefault();
             $("#collapseAddItem").collapse("toggle");
+        });
+
+        $("#cancel-delete-items-btn").on("click", function (e) {
+            e.preventDefault();
+            deselect_all_checkboxes();
+            $("#collapseDeleteItems").collapse("toggle");
         });
 
 

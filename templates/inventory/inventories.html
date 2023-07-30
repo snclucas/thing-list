@@ -86,7 +86,7 @@
 
         });
 
-        $('[id^=inventoryEdit]').click(function (e) {
+        $('[id^=inventoryEdit]').click(function () {
             let inventory_id = $(this).attr('data-inventory-id');
             let inventory_name = $(this).attr('data-inventory-name');
             let inventory_desc = $(this).attr('data-inventory-description');
@@ -94,12 +94,6 @@
             $('#edit_form_inventory_id').val(inventory_id)
             $('#edit_form_inventory_name').val(inventory_name)
             $('#edit_form_inventory_description').val(inventory_desc)
-        });
-
-        $('[id^=delete-inventory-btnxx-]').click(function (e) {
-            let anchor = this;
-            $('#deleteModal').modal('show')//.attr('href', $(anchor).attr('href'));
-            return false;
         });
 
         $('[id^=confirmInventoryDeleteBtn-]').on("click", function (e) {
@@ -123,10 +117,10 @@
                     }
                 ),
                 success: function () {
-                    location.reload(true);
+                    location.reload();
                 },
-                error: function (e) {
-                    location.reload(true);
+                error: function () {
+                    location.reload();
                 }
             });
 
