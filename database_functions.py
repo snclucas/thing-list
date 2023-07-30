@@ -585,7 +585,7 @@ def delete_items(item_ids: list, user: User):
     return number_items_deleted
 
 
-def move_items(item_ids: list, user: User, inventory_id: int):
+def move_items(item_ids: list, user: User, inventory_id: int, copy: bool = False):
     with app.app_context():
 
         if inventory_id == -1:
@@ -597,10 +597,13 @@ def move_items(item_ids: list, user: User, inventory_id: int):
             .join(User) \
             .where(Item.user_id == user.id) \
             .where(Item.id.in_(item_ids))
-        items_ = db.session.execute(stmt).all()
+        results_ = db.session.execute(stmt).all()
 
-        for item_, iventory_item_ in items_:
-            iventory_item_.inventory_id = inventory_id
+        for item_, inventory_item_ in results_:
+            if copy:
+                pass
+            else:
+                inventory_item_.inventory_id = inventory_id
 
         db.session.commit()
 
@@ -793,7 +796,11 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
                 new_item.tags.append(instance)
 
         if inventory_id is None or inventory_id == '':
-            inventory_ = get_user_default_inventory(user=user)
+            default_user_inventory_ = get_user_default_inventory(user=user)
+            if default_user_inventory_ is not None:
+                default_user_inventory_id_ = default_user_inventory_.id
+                stmt = db.session.query(Inventory).where(Inventory.id == default_user_inventory_id_)
+                inventory_ = db.session.execute(stmt).first()[0]
         else:
             stmt = db.session.query(Inventory).where(Inventory.id == inventory_id)
             inventory_ = db.session.execute(stmt).first()[0]
