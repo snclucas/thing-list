@@ -1,3 +1,6 @@
+
+
+
 {% if templates | length > 0 %}
 
     <table class="table table-striped dataTable" id="my-templates-table">
@@ -31,6 +34,7 @@
                 </td>
 
                 <td>
+                    <div class="text-center">
                     <span id="delete-template-btn-{{ template[0]['id'] }}" data-bs-toggle="collapse"
                           href="#confirmFieldTemplateDelete-{{ template[0]['id'] }}"
                           class="fas fa-times fa-2x "
@@ -42,12 +46,7 @@
                                 data-template-id="{{ template[0]['id'] }}">Confirm delete
                         </button>
                     </div>
-
-                    <span id="edit-template-btn-{{ template[0]['id'] }}" data-bs-toggle="collapse"
-                          href="#addTemplateCollapse"
-                          class="fas fa-edit fa-2x "
-                          style="color:black; display: inline-block; margin-right: 20px;"></span>
-
+                    </div>
                 </td>
             </tr>
         {% endfor %}
@@ -60,7 +59,6 @@
         <div class="col-md-12">
             <div class=" text-center">
                 <h5>No field templates defined :(</h5>
-
                 <p>You can add a new template by clicking the <i class="fas fa-plus"></i> icon at the top.</p>
             </div>
         </div>
