@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, redirect, url_for, request
+import bleach
+from flask import Blueprint, render_template, redirect, url_for, request, abort, Response
 from flask_login import login_required, current_user
 
 from database_functions import find_template, add_new_template, update_template_by_id, get_user_templates, \
@@ -11,7 +12,12 @@ field_template = Blueprint('field_template', __name__)
 @field_template.route('/field-templates')
 @login_required
 def templates():
+    return templates_with_username(username=current_user.username)
 
+
+@field_template.route('/@<username>/field-templates')
+@login_required
+def templates_with_username(username):
     all_fields = dict(get_all_fields())
     user_templates = get_user_templates(user=current_user)
     return render_template('field_template/field_templates.html',
@@ -22,13 +28,21 @@ def templates():
 @login_required
 def set_template_fields():
     if request.method == 'POST':
-        json_data = request.json
-        template_name = json_data['template_name']
-        field_ids = json_data['field_ids']
+        request_xhr_key = request.headers.get('X-Requested-With')
+        if request_xhr_key and request_xhr_key == 'XMLHttpRequest':
+            json_data = request.json
+            template_name = json_data['template_name']
 
-        field_ids = [str(x) for x in field_ids]
+            # sanitise template name
+            template_name = bleach.clean(template_name)
 
-        save_template_fields(template_name=template_name, fields=field_ids, user=current_user)
+            field_ids = json_data['field_ids']
+            if len(field_ids) == 0:
+                abort(Response("At least 1 field is required for the template", 400))
+
+            field_ids = [str(x) for x in field_ids]
+
+            save_template_fields(template_name=template_name, fields=field_ids, user=current_user)
 
     return True
 
