@@ -25,8 +25,10 @@ def profile(username):
     num_field_templates = len(get_user_templates(user=current_user))
     num_user_locations = len(get_user_locations(user=current_user))
     user_inventories = get_user_inventories(logged_in_user=current_user, requested_username=None)
+    user_notifications = current_user.notifications
     # -1 to remove the default inventory
     return render_template('profile.html', name=current_user.username, num_items=num_items,
                            num_item_types=num_item_types, username=username,
                            num_field_templates=num_field_templates, num_user_locations=num_user_locations,
+                           user_notifications=user_notifications,
                            num_inventories=len(list(user_inventories))-1)

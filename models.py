@@ -19,13 +19,24 @@ class User(UserMixin, db.Model):
     inventories = db.relationship('Inventory', secondary='inventory_users',
                                   back_populates='users', cascade="all,delete", lazy='subquery')
 
+    notifications = db.relationship('Notification', backref='users')
+
+
+class Notification(db.Model):
+    __tablename__ = "notifications"
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    date = db.Column(db.DateTime(), default=datetime.datetime.now())
+    text = db.Column(db.String(50), nullable=True, unique=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
+
 
 class FieldTemplate(db.Model):
     __tablename__ = "field_templates"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50))
     # fields = db.Column(db.String(1000), default="-1")
-    fields = db.relationship('Field', secondary='fieldtemplate_fields', back_populates='field_templates', lazy='subquery')
+    fields = db.relationship('Field', secondary='fieldtemplate_fields',
+                             back_populates='field_templates', lazy='subquery')
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
 
 
@@ -101,7 +112,8 @@ class Image(db.Model):
     __tablename__ = "images"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     image_filename = db.Column(db.String(255), nullable=True, unique=False)
-    items = db.relationship('Item', secondary='item_images', back_populates='images', cascade="all,delete", lazy='subquery')
+    items = db.relationship('Item', secondary='item_images', back_populates='images',
+                            cascade="all,delete", lazy='subquery')
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
 
 

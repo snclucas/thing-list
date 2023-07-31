@@ -1,10 +1,8 @@
 {% extends "base.html" %}
 
 
-
 {% block title %}
     ThingList
-
 {% endblock %}
 
 {% block content %}
@@ -17,16 +15,16 @@
                 <div class="col-md-4">
                     <div class="card">
                         <a class="nav-link" href="{{ url_for('types.item_types') }}">
-                        <div class="content">
-                            <div class="row">
-                                <div class="dfd text-center">
-                                    <i class="grey large-icon mb-2 fas fa-stream"></i>
-                                    <h4 class="mb-0">{{ num_item_types }}</h4>
-                                    <p class="text-muted">ITEM TYPES</p>
-                                    <p class="text-muted">Go to item types</p>
+                            <div class="content">
+                                <div class="row">
+                                    <div class="dfd text-center">
+                                        <i class="grey large-icon mb-2 fas fa-stream"></i>
+                                        <h4 class="mb-0">{{ num_item_types }}</h4>
+                                        <p class="text-muted">ITEM TYPES</p>
+                                        <p class="text-muted">Go to item types</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         </a>
                     </div>
                 </div>
@@ -34,16 +32,16 @@
                 <div class="col-md-4">
                     <div class="card">
                         <a class="nav-link" href="{{ url_for('field_template.templates') }}">
-                        <div class="content">
-                            <div class="row">
-                                <div class="dfd text-center">
-                                    <i class="grey large-icon mb-2 fas fa-columns"></i>
-                                    <h4 class="mb-0">{{ num_field_templates }}</h4>
-                                    <p class="text-muted">FIELD TEMPLATES</p>
-                                    <p class="text-muted">Go to field templates</p>
+                            <div class="content">
+                                <div class="row">
+                                    <div class="dfd text-center">
+                                        <i class="grey large-icon mb-2 fas fa-columns"></i>
+                                        <h4 class="mb-0">{{ num_field_templates }}</h4>
+                                        <p class="text-muted">FIELD TEMPLATES</p>
+                                        <p class="text-muted">Go to field templates</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         </a>
                     </div>
                 </div>
@@ -51,26 +49,22 @@
                 <div class="col-md-4">
                     <div class="card">
                         <a class="nav-link" href="{{ url_for('location.locations') }}">
-                        <div class="content">
-                            <div class="row">
-                                <div class="dfd text-center">
-                                    <i class="grey large-icon mb-2 fas fa-location-arrow"></i>
-                                    <h4 class="mb-0">{{ num_user_locations }}</h4>
-                                    <p class="text-muted">LOCATIONS</p>
-                                    <p class="text-muted">Go to locations</p>
+                            <div class="content">
+                                <div class="row">
+                                    <div class="dfd text-center">
+                                        <i class="grey large-icon mb-2 fas fa-location-arrow"></i>
+                                        <h4 class="mb-0">{{ num_user_locations }}</h4>
+                                        <p class="text-muted">LOCATIONS</p>
+                                        <p class="text-muted">Go to locations</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         </a>
                     </div>
 
                 </div>
 
-
             </div>
-
-
-
 
             <div class="row">
 
@@ -79,16 +73,16 @@
                 <div class="col-md-3">
                     <div class="card">
                         <a class="nav-link" href="{{ url_for('items.items_with_username', username=username) }}">
-                        <div class="content">
-                            <div class="row">
-                                <div class="dfd text-center">
-                                    <i class="grey large-icon mb-2 fas fa-th-list"></i>
-                                    <h4 class="mb-0">{{ num_items }}</h4>
-                                    <p class="text-muted">THINGS</p>
-                                    <p class="text-muted">Go to things</p>
+                            <div class="content">
+                                <div class="row">
+                                    <div class="dfd text-center">
+                                        <i class="grey large-icon mb-2 fas fa-th-list"></i>
+                                        <h4 class="mb-0">{{ num_items }}</h4>
+                                        <p class="text-muted">THINGS</p>
+                                        <p class="text-muted">Go to things</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         </a>
                     </div>
                 </div>
@@ -96,31 +90,39 @@
                 <div class="col-md-3">
                     <div class="card">
                         <a class="nav-link" href="{{ url_for('inv.inventories_for_username', username=username) }}">
-                        <div class="content">
-                            <div class="row">
-                                <div class="dfd text-center">
-                                    <i class="grey large-icon mb-2 fas fa-table"></i>
-                                    <h4 class="mb-0">{{ num_inventories }}</h4>
-                                    <p class="text-muted">INVENTORIES</p>
-                                    <p
-                                            class="text-muted">Go to inventories</p>
+                            <div class="content">
+                                <div class="row">
+                                    <div class="dfd text-center">
+                                        <i class="grey large-icon mb-2 fas fa-table"></i>
+                                        <h4 class="mb-0">{{ num_inventories }}</h4>
+                                        <p class="text-muted">INVENTORIES</p>
+                                        <p class="text-muted">Go to inventories</p>
+                                    </div>
                                 </div>
                             </div>
-                        </div>
                         </a>
                     </div>
 
                 </div>
 
-
                 <div class="col-md-3">
-
 
                 </div>
 
-
             </div>
 
+            <hr>
+            <div class="row">
+                <div class="col-md-2"></div>
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="content">
+                            {% include '_notifications_table.html' %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-2"></div>
+            </div>
 
         </div>
 
@@ -128,8 +130,21 @@
 
 {% endblock %}
 
-
 {% block footer %}
     {{ super() }}
+
+    <script>
+        $(document).ready(function () {
+
+            $('#user-notifications-table').DataTable({
+                "searching": true,
+                paging: true,
+                ordering: true,
+                info: true
+            });
+            checkbox_count();
+
+        });
+    </script>
 
 {% endblock %}
