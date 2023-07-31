@@ -186,7 +186,7 @@ def items_save():
 @login_required
 def items():
     username = current_user.username
-    return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+    return redirect(url_for('items.items_with_username', username=username).replace('%40', '@'))
 
 
 @items_routes.route('/@<username>/items')
@@ -368,36 +368,6 @@ def _process_url_query(req_, inventory_user):
         "requested_item_location_string": requested_item_location_string,
         "requested_item_specific_location": requested_item_specific_location
     }
-
-
-@items_routes.route("/item/images/upload", methods=["POST"])
-def upload():
-    new_filename_list = []
-
-    username = request.form.get("username")
-    item_id = request.form.get("item_id")
-    item_slug = request.form.get("item_slug")
-
-    uploaded_files = request.files.getlist("file[]")
-    for file in uploaded_files:
-        file_name, file_extension = os.path.splitext(file.filename)
-
-        new_filename = ''.join(random.choices(string.ascii_lowercase, k=15)) + file_extension
-        new_filename_list.append(new_filename)
-
-        in_mem_file = BytesIO(file.read())
-        image = Image.open(in_mem_file)
-        image.thumbnail((600, 600))
-        in_mem_file = BytesIO()
-        image.save(in_mem_file, format="JPEG")
-        in_mem_file.seek(0)
-
-        pathlib.Path(os.path.join(app.config['UPLOAD_FOLDER'], new_filename)).write_bytes(
-            in_mem_file.getbuffer().tobytes())
-
-    add_images_to_item(item_id=item_id, filenames=new_filename_list, user=current_user)
-
-    return redirect(url_for('item.item', username=username, item_slug=item_slug))
 
 
 @items_routes.route('/item/delete', methods=['POST'])

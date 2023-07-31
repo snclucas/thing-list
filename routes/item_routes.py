@@ -93,34 +93,6 @@ def item_with_username(username: str, item_slug: str):
                            image_dir=app.config['UPLOAD_FOLDER'], item_access_level=item_access_level)
 
 
-def find_items_query(requested_user, logged_in_user, inventory_id, request_params):
-
-    items_ = find_items(inventory_id=inventory_id,
-                        item_type=request_params["requested_item_type_id"],
-                        item_location=request_params["requested_item_location_id"],
-                        item_tags=request_params["requested_tag_strings"],
-                        item_specific_location=request_params["requested_item_specific_location"],
-                        request_user=requested_user,
-                        logged_in_user=logged_in_user)
-
-    item_id_list = []
-    data_dict = []
-    for i in items_:
-        item_id_list.append(i[0].id)
-        dat = {
-                "item": i[0],
-                "types": i[1],
-                "location": i[2]
-            }
-        if inventory_id is not None:
-            dat["user_inventory"] = i[3]
-        data_dict.append(
-            dat
-        )
-
-    return data_dict, item_id_list
-
-
 def _process_url_query(req_, inventory_user):
     requested_item_type_string = req_.args.get('type')
     requested_tag_strings = req_.args.get('tags')
@@ -208,7 +180,7 @@ def save_inventory_template():
         save_inventory_fieldtemplate(inventory_id=inventory_id,
                                      inventory_template=inventory_template, user_id=current_user.id)
 
-        return redirect(url_for('item.items_with_username_and_inventory',
+        return redirect(url_for('items.items_with_username_and_inventory',
                                 username=current_user.username, inventory_slug=inventory_slug))
 
 
