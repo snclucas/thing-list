@@ -72,7 +72,7 @@
                                                 </a>
                                                 <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
                                                       href="#collapseButtonBar"
-                                                      style="display: inline-block; margin-right: 20px;"></span>
+                                                      style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
                                             </div>
                                         </div>
                                     </div>
@@ -136,6 +136,13 @@
                                             </div>
                                         </div>
 
+
+                                        <div class="collapse" id="collapseManageUserAccess" aria-expanded="false">
+                                            {% include 'item/_manage_inventory_users.html' %}
+                                            <hr>
+                                        </div>
+
+
                                         {% include 'item/_export_items_form.html' %}
 
                                     {% endif %}
@@ -177,6 +184,13 @@
             });
 
             $('#item-field-table').DataTable({
+                "searching": true,
+                paging: true,
+                ordering: true,
+                info: true
+            });
+
+            $('#inventory-users-table').DataTable({
                 "searching": true,
                 paging: true,
                 ordering: true,

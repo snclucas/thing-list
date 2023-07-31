@@ -20,7 +20,8 @@ from database_functions import get_all_user_locations, find_items, \
     find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, add_new_user_itemtype, \
-    set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate, get_item_custom_field_data
+    set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate, get_item_custom_field_data, \
+    get_users_for_inventory
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -250,6 +251,8 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
 
     inventory_templates = get_user_templates(user=current_user)
 
+    users_in_this_inventory = get_users_for_inventory(inventory_id=inventory_id, current_user_id=current_user.id)
+
     return render_template('item/items.html',
                            username=username,
                            inventory=inventory_,
@@ -263,7 +266,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
                            item_specific_location=request_params["requested_item_specific_location"],
                            selected_item_type=request_params["requested_item_type_string"],
                            selected_item_location_id=request_params["requested_item_location_id"],
-                           all_user_inventories=all_user_inventories,
+                           all_user_inventories=all_user_inventories, users_in_this_inventory=users_in_this_inventory,
                            user_is_authenticated=user_is_authenticated, inventory_slug=inventory_slug)
 
 

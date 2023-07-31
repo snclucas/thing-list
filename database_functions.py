@@ -17,6 +17,7 @@ _NONE_ = "None"
 
 __PUBLIC__ = 2
 __PRIVATE__ = 0
+__OWNER__ = 2
 
 
 def drop_then_create():
@@ -878,11 +879,68 @@ def add_new_template(name: str, fields: str, to_user: User) -> Location:
             print(e)
 
 
-def add_user_to_inventory(inventory: Inventory, user: User, access_level: int) -> UserInventory:
-    ui = UserInventory(user_id=user.id, inventory_id=inventory.id, access_level=access_level)
-    db.session.add(ui)
-    db.session.commit()
-    return ui
+def get_users_for_inventory(inventory_id: int, current_user_id: int):
+    with app.app_context():
+        stmt = db.session.query(User, UserInventory.access_level) \
+            .join(User, UserInventory.user_id == User.id) \
+            .filter(UserInventory.inventory_id == inventory_id)
+
+        result = db.session.execute(stmt).all()
+
+        return dict(result)
+
+
+def delete_user_to_inventory(inventory_id: int, user_to_delete_id: int):
+    with app.app_context():
+        user_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id)\
+            .filter(UserInventory.user_id == user_to_delete_id).one_or_none()
+
+        if user_inventory_ is not None:
+            if user_inventory_.access_level != __OWNER__:
+                db.session.delete(user_inventory_)
+                db.session.commit()
+                return True
+            else:
+                return False
+        else:
+            return False
+
+
+def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_username: str, added_user_access_level: int):
+    with app.app_context():
+        user_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id)\
+            .filter(UserInventory.user_id == current_user_id).one_or_none()
+
+        if user_inventory_ is not None:
+            if user_inventory_.access_level == __OWNER__:
+                if added_user_access_level != __OWNER__:
+
+                    user_to_add_ = find_user_by_username(username=user_to_add_username)
+                    if user_to_add_ is not None:
+                        if user_to_add_ is not None:
+
+                            # check if a user_inventory exists
+                            user_to_add_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id) \
+                                .filter(UserInventory.user_id == user_to_add_.id).one_or_none()
+
+                            if user_to_add_inventory_ is not None:
+                                user_to_add_inventory_.access_level = added_user_access_level
+                                db.session.commit()
+                                return True
+                            else:
+                                ui = UserInventory(user_id=user_to_add_.id, inventory_id=inventory_id, access_level=added_user_access_level)
+                                db.session.add(ui)
+                                db.session.commit()
+                                return True
+
+                    else:  # the username does not exist
+                        return False
+                else:
+                    return False  # dont support owner change right now
+            else:  # current user was not the inventory owner
+                return False
+        else:  # inventory was not found
+            return False
 
 
 def get_user_inventory_by_id(user: User, inventory_id: int) -> Inventory:
