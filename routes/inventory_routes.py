@@ -6,7 +6,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     add_item_to_inventory, \
     get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
     find_user_by_username, edit_inventory_data, get_all_user_locations, \
-    add_new_inventory, delete_inventory
+    add_new_inventory, delete_inventory, add_user_to_inventory, delete_user_to_inventory
 
 inv = Blueprint('inv', __name__)
 
@@ -96,6 +96,53 @@ def edit_inventory():
                             description=inventory_description,
                             access_level=int(0))
         return redirect(url_for('inv.inventories'))
+
+
+@inv.route('/inventory/deleteuser', methods=['POST'])
+@login_required
+def delete_user_to_inv():
+    if request.method == 'POST':
+        inventory_id = bleach.clean(request.form.get("inventory_id"))
+        user_id = bleach.clean(request.form.get("user_id"))
+
+        try:
+            inventory_id = int(inventory_id)
+            user_id = int(user_id)
+        except Exception:
+            return redirect(url_for('inv.inventories'))
+
+        result = delete_user_to_inventory(inventory_id=inventory_id, user_to_delete_id=user_id)
+
+        if result:
+            return redirect(url_for('inv.inventories'))
+        else:
+            return redirect(url_for('inv.inventories'))
+
+
+@inv.route('/inventory/adduser', methods=['POST'])
+@login_required
+def add_user_to_inv():
+    if request.method == 'POST':
+        inventory_id = bleach.clean(request.form.get("inventory_id"))
+        access_level = bleach.clean(request.form.get("access_level"))
+        user_to_add = bleach.clean(request.form.get("user_to_add"))
+
+        if '@' in user_to_add:
+            user_to_add = user_to_add.replace('@', '')
+
+        try:
+            inventory_id = int(inventory_id)
+            access_level = int(access_level)
+        except Exception:
+            return redirect(url_for('inv.inventories'))
+
+        result = add_user_to_inventory(inventory_id=inventory_id, current_user_id=current_user.id,
+                                       user_to_add_username=user_to_add, added_user_access_level=access_level)
+
+        if result:
+            return redirect(url_for('inv.inventories'))
+        else:
+            return redirect(url_for('inv.inventories'))
 
 
 @inv.route('/inventory/@<username>/<inventory_slug>')
