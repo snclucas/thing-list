@@ -11,7 +11,7 @@ from models import Field
 def load_fields():
     path = os.getcwd()
     file_path = os.path.realpath(__file__)
-    item_types_csv = f"{path}/data/fields.csv"
+    item_types_csv = f"{path}/../data/fields.csv"
 
     with open(item_types_csv, newline='') as csvfile:
         line_count = 0

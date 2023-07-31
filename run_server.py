@@ -14,6 +14,7 @@ from routes.location_routes import location
 from routes.field_template_routes import field_template
 from routes.itemtypes_routes import types
 from routes.item_routes import item_routes
+from routes.items_routes import items_routes
 from routes.api_routes import api_routes
 
 # Register Blueprints
@@ -24,6 +25,7 @@ app.register_blueprint(location)
 app.register_blueprint(field_template)
 app.register_blueprint(types)
 app.register_blueprint(item_routes)
+app.register_blueprint(items_routes)
 app.register_blueprint(api_routes)
 
 

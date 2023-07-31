@@ -22,7 +22,7 @@
 
                 <tr>
                     <td>
-                        <a href="{{ url_for('item.items_with_username_and_inventory', username=user.username, inventory_slug=inventory.slug) | replace('%40', '@') }}">
+                        <a href="{{ url_for('items.items_with_username_and_inventory', username=user.username, inventory_slug=inventory.slug) | replace('%40', '@') }}">
                             {{ inventory['name'] }}</a>
                     </td>
                     <td>{{ inventory['description'] }}</td>

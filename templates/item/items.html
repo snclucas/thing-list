@@ -256,14 +256,14 @@
 
             if (optionText === "all") {
                 if (searchParams.size > 0) {
-                    window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
+                    window.location.href = "{{ url_for('items.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
                 } else {
-                    window.location.href = "{{ url_for('item.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
+                    window.location.href = "{{ url_for('items.items_with_username_and_inventory', username = username, inventory_slug = 'all') | replace('%40', '@')}}?" + searchParams.toString()
                 }
             } else if (optionText === "default") {
-                window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'default') |replace('%40', '@')}}?" + searchParams.toString()
+                window.location.href = "{{ url_for('items.items_with_username_and_inventory',username = username, inventory_slug = 'default') |replace('%40', '@')}}?" + searchParams.toString()
             } else {
-                window.location.href = "{{ url_for('item.items_with_username_and_inventory',username = username, inventory_slug = 'INV') |replace('%40', '@')}}?".replace("INV", optionValue) + searchParams.toString()
+                window.location.href = "{{ url_for('items.items_with_username_and_inventory',username = username, inventory_slug = 'INV') |replace('%40', '@')}}?".replace("INV", optionValue) + searchParams.toString()
             }
 
         });
@@ -364,7 +364,7 @@
 
             $.ajax({
                 type: "POST",
-                url: "{{ url_for('item.del_items')}}",
+                url: "{{ url_for('items.del_items')}}",
                 contentType: 'application/json;charset=UTF-8',
                 headers: {
                     "X-CSRFToken": "{{ csrf_token() }}",
@@ -402,7 +402,7 @@
 
             $.ajax({
                 type: "POST",
-                url: "{{ url_for('item.items_move')}}",
+                url: "{{ url_for('items.items_move')}}",
                 contentType: 'application/json;charset=UTF-8',
                 headers: {
                     "X-CSRFToken": "{{ csrf_token() }}",
@@ -432,7 +432,7 @@
 
             $.ajax({
                 type: "POST",
-                url: "{{ url_for('item.items_save_pdf')}}",
+                url: "{{ url_for('items.items_save_pdf')}}",
                 contentType: 'application/json;charset=UTF-8',
                 headers: {
                     "X-CSRFToken": "{{ csrf_token() }}",

@@ -1,5 +1,5 @@
 <form id="form-export-items" method="POST" style="display: none;"
-      action="{{ url_for("item.items_save", username=username) }}">
+      action="{{ url_for("items.items_save", username=username) }}">
     <input type="hidden" class="form-control" name="username" id="form_username"
            value="{{ username }}">
     <input type="hidden" class="form-control" name="inventory_slug" id="form_inventory"
