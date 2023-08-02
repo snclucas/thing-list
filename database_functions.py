@@ -17,7 +17,9 @@ _NONE_ = "None"
 
 __PUBLIC__ = 2
 __PRIVATE__ = 0
-__OWNER__ = 2
+__OWNER__ = 0
+__COLLABORATOR__ = 1
+__READ_ONLY__ = 2
 
 
 def drop_then_create():
@@ -42,10 +44,11 @@ def add_new_inventory(name: str, description: str, user: User):
     return add_user_inventory(name=name, description=description, user_id=user.id)
 
 
-def get_user_default_inventory(user: User):
+def get_user_default_inventory(user_id: int):
     with app.app_context():
         # Find user default inventory
-        user_default_inventory_ = Inventory.query.filter_by(name=f"__default__{user.username}").filter_by().first()
+        user_ = find_user_by_id(user_id=user_id)
+        user_default_inventory_ = Inventory.query.filter_by(name=f"__default__{user_.username}").filter_by().first()
         return user_default_inventory_
 
 
@@ -145,7 +148,6 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
         request_user_id = None
     else:
         request_user_id = request_user.id
-
 
     with app.app_context():
 
@@ -334,6 +336,15 @@ def get_all_itemtypes_for_user(user_id: int, string_list=True) -> list:
 def find_user_by_username(username: str) -> User:
     user = User.query.filter_by(username=username).first()
     return user
+
+
+def find_user_by_id(user_id: int) -> User:
+    with app.app_context():
+        user_ = db.session.query(User).filter(User.id == user_id).one()
+        db.session.flush()
+        db.session.expunge_all()
+        db.session.close()
+        return user_
 
 
 def find_item(item_id: int, user_id: int = None) -> Item:
@@ -755,16 +766,19 @@ def get_user_default_item_type(user_id: int):
         return user_default_item_type
 
 
-def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user=None,
+def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
                           item_location=1, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
     with app_context:
 
+        if custom_fields is None:
+            custom_fields = {}
+
         if item_type is None:
              item_type = "none"
 
-        new_item = Item(name=item_name, description=item_desc, user_id=user.id,
+        new_item = Item(name=item_name, description=item_desc, user_id=user_id,
                         location_id=item_location, specific_location=item_specific_location)
 
         db.session.add(new_item)
@@ -776,10 +790,10 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "None"
 
-        item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(user_id=user.id).one_or_none()
+        item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(user_id=user_id).one_or_none()
 
         if item_type_ is None:
-            item_type_ = ItemType(name=item_type, user_id=user.id)
+            item_type_ = ItemType(name=item_type, user_id=user_id)
             db.session.add(item_type_)
             db.session.commit()
             db.session.flush()
@@ -797,7 +811,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
                 new_item.tags.append(instance)
 
         if inventory_id is None or inventory_id == '':
-            default_user_inventory_ = get_user_default_inventory(user=user)
+            default_user_inventory_ = get_user_default_inventory(user_id=user_id)
             if default_user_inventory_ is not None:
                 default_user_inventory_id_ = default_user_inventory_.id
                 stmt = db.session.query(Inventory).where(Inventory.id == default_user_inventory_id_)
@@ -822,8 +836,9 @@ def add_user_inventory(name, description, user_id: int):
     with app.app_context():
         try:
             # add it initially private
-            new_inventory = Inventory(name=name, description=description, slug=slug)
             to_user = User.query.filter_by(id=user_id).first()
+            new_inventory = Inventory(name=name, description=description, slug=slug, owner=to_user)
+
             if to_user is not None:
                 db.session.expire_on_commit = False
                 db.session.add(new_inventory)
@@ -836,21 +851,6 @@ def add_user_inventory(name, description, user_id: int):
 
         except SQLAlchemyError:
             return None, "Could not add inventory"
-
-
-
-
-def add_inventory(inventory_name: str, inventory_description: str, to_user: User) -> Inventory:
-    with app.app_context():
-        try:
-            inv = Inventory(name=inventory_name, description=inventory_description)
-            to_user.inventories.append(inv)
-            db.session.commit()
-            db.session.flush()
-            db.session.expire_all()
-            return inv
-        except Exception as e:
-            print(e)
 
 
 def add_new_location(location_name: str, location_description: str, to_user: User) -> Location:
@@ -943,11 +943,11 @@ def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_u
             return False
 
 
-def get_user_inventory_by_id(user: User, inventory_id: int) -> Inventory:
+def get_user_inventory_by_id(user_id: int, inventory_id: int) -> Inventory:
     session = db.session
-    stmt = select(UserInventory, Inventory).join(Inventory).join(User).where(User.id == user.id).where(
-        Inventory.id == inventory_id)
-    r = session.execute(stmt).first()
+    stmt = select(UserInventory).where(UserInventory.user_id == user_id)\
+        .where(UserInventory.inventory_id == inventory_id)
+    r = session.execute(stmt).one()
 
     return r
 
@@ -1098,35 +1098,46 @@ def delete_location_from_db(user: User, location_id: int) -> None:
         db.session.commit()
 
 
-def get_user_inventories(logged_in_user: User, requested_username: Optional[str], access_level: int = -1):
+def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1):
     with app.app_context():
 
-        # stmt = select(UserInventory) #.join(Inventory, Inventory.id == UserInventory.inventory_id)
+        # stmt = db.session.query(Inventory, UserInventory).join(UserInventory).filter(UserInventory.user_id==1).all()
+        stmt = db.session.query(Inventory, UserInventory).join(UserInventory)
 
-        stmt = db.session.query(UserInventory, Inventory, User)\
-            .join(Inventory, Inventory.id == UserInventory.inventory_id).join(User)
-
-        if logged_in_user is not None:
-
-            if logged_in_user.username == requested_username or requested_username is None:
-                stmt = stmt.filter(UserInventory.user_id == logged_in_user.id)
-                if access_level != -1:
-                    stmt = stmt.filter(access_level=access_level)
-            else:
-                if requested_username is not None:
-                    user_ = find_user(username_or_email=requested_username)
-                    if user_ is not None:
-                        stmt = stmt.filter(User.id == user_.id).filter(UserInventory.access_level != 0)
-
+        if current_user_id is not None and requesting_user_id is not None:
+            is_current_user = (current_user_id == requesting_user_id)
         else:
-            if requested_username is not None:
-                user_ = find_user(username_or_email=requested_username)
-                if user_ is not None:
-                    stmt = stmt.filter(User.id == user_.id).filter(UserInventory.access_level == 2)
+            if requesting_user_id is None:
+                return []
+            is_current_user = False
+
+        if is_current_user:
+            if access_level == -1:
+                stmt = stmt.filter(UserInventory.user_id == current_user_id)
+            else:
+                stmt = stmt.filter(UserInventory.user_id == current_user_id)\
+                    .filter(UserInventory.access_level == access_level)
+        else:
+            stmt = stmt.filter(UserInventory.user_id == requesting_user_id).filter(UserInventory.access_level != 0)
 
         r = db.session.execute(stmt).all()
 
-        return r
+        ret_results = []
+
+        for inv, user_inv in r:
+            d = {
+                "inventory_id": inv.id,
+                "inventory_name": inv.name,
+                "inventory_description": inv.description,
+                "inventory_slug": inv.slug,
+                "inventory_public": inv.public,
+                "inventory_owner": inv.owner.username,
+                "inventory_item_count": len(inv.items),
+                "inventory_access_level": user_inv.access_level
+            }
+            ret_results.append(d)
+
+        return ret_results
 
 
 def get_user_templates(user: User):

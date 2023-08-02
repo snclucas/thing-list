@@ -43,10 +43,12 @@
                     <tr>
                         <td>@{{ user.username }}</td>
                         <td>
-                            {% if access_level == 2 %}
-                                Collaborator
+                            {% if access_level == 0 %}
+                                Owner
+                            {% elif access_level == 2 %}
+                                View
                             {% else %}
-                                Viewer
+                                Collaborator
                             {% endif %}
 
                         </td>
@@ -61,7 +63,7 @@
                                  aria-expanded="false">
                                 <button type="button" class="btn btn-primary btn-sm"
                                         id="confirmUserDeleteBtn-{{ user.id }}"
-                                        data-inventory-id="{{ user.id }}">Confirm delete
+                                        data-user-id="{{ user.id }}">Confirm delete
                                 </button>
                             </div>
 

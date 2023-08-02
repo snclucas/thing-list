@@ -21,7 +21,7 @@ from database_functions import get_all_user_locations, find_items, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, add_new_user_itemtype, \
     set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate, get_item_custom_field_data, \
-    get_users_for_inventory
+    get_users_for_inventory, get_user_inventory_by_id
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -242,6 +242,15 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     if inventory_ is None and inventory_slug != "all":
         return render_template('404.html', message="No such inventory"), 404
 
+    # Get the user inventory entry
+    user_inventory_ = get_user_inventory_by_id(user_id=requested_user.id, inventory_id=inventory_id)
+    if user_inventory_ is not None:
+        inventory_access_level = user_inventory_[0].access_level
+    else:
+        return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
+
+    is_inventory_owner = (inventory_.owner_id == logged_in_user_id)
+
     item_types_ = get_all_item_types()
     all_fields = dict(get_all_fields())
 
@@ -261,7 +270,8 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
                            inventory_templates=inventory_templates,
                            inventory_field_template=inventory_field_template,
                            tags=request_params["requested_tag_strings"],
-                           all_fields=all_fields,
+                           all_fields=all_fields, is_inventory_owner=is_inventory_owner,
+                           inventory_access_level=inventory_access_level,
                            user_locations=user_locations_,
                            item_specific_location=request_params["requested_item_specific_location"],
                            selected_item_type=request_params["requested_item_type_string"],

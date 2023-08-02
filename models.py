@@ -72,10 +72,13 @@ class Inventory(db.Model):
     name = db.Column(db.String(50))
     slug = db.Column(db.String(50), nullable=True, unique=False)
     description = db.Column(db.String(255))
+    owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
+    owner = db.relationship(User, load_on_pending=True, lazy='subquery')
     users = db.relationship('User', secondary='inventory_users', back_populates='inventories', lazy='subquery')
     items = db.relationship('Item', secondary='inventory_items', back_populates='inventories', lazy='subquery')
     default_fields = db.Column(db.String(1000), default="-1")
     field_template = db.Column(db.Integer, db.ForeignKey('field_templates.id'), nullable=True)
+    public = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
 
 
 class Item(db.Model):
@@ -85,7 +88,6 @@ class Item(db.Model):
     item_type = db.Column(db.Integer, db.ForeignKey('item_type.id'), nullable=True)
     name = db.Column(db.String(255), nullable=False, unique=False)
     slug = db.Column(db.String(255), nullable=True, unique=False)
-    inventory_code = db.Column(db.String(50), nullable=True, unique=False)
     description = db.Column(db.String(2000), nullable=True, unique=False)
     inventories = db.relationship('Inventory', secondary='inventory_items', back_populates='items', lazy='subquery')
     tags = db.relationship('Tag', secondary='item_tags', back_populates='items', lazy='subquery')

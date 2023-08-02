@@ -6,7 +6,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     add_item_to_inventory, \
     get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
     find_user_by_username, edit_inventory_data, get_all_user_locations, \
-    add_new_inventory, delete_inventory, add_user_to_inventory, delete_user_to_inventory
+    add_new_inventory, delete_inventory, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id
 
 inv = Blueprint('inv', __name__)
 
@@ -28,7 +28,8 @@ def my_utility_processor():
 @login_required
 def inventories():
     user_is_authenticated = current_user.is_authenticated
-    user_invs = get_user_inventories(logged_in_user=current_user, requested_username=None, access_level=-1)
+    user_invs = get_user_inventories(current_user_id=current_user.id,
+                                     requesting_user_id=current_user.id, access_level=-1)
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
@@ -38,16 +39,28 @@ def inventories():
 
 @inv.route('/@<username>/inventories')
 def inventories_for_username(username):
+    current_user_id = None
+    requesting_user_id = None
     user_is_authenticated = current_user.is_authenticated
 
     if user_is_authenticated:
-        user_invs = get_user_inventories(logged_in_user=current_user, requested_username=username, access_level=-1)
-    else:
-        user_invs = get_user_inventories(logged_in_user=None, requested_username=username, access_level=-1)
+        current_user_id = current_user.id
+        if username != current_user.username:
+            user_ = find_user_by_username(username=username)
+            if user_ is not None:
+                requesting_user_id = user_.id
+                username = user_.username
+        else:
+            requesting_user_id = current_user.id
+            username = current_user.username
+
+    user_invs = get_user_inventories(current_user_id=current_user_id,
+                                     requesting_user_id=requesting_user_id,
+                                     access_level=-1)
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
-    return render_template('inventory/inventories.html', inventories=user_invs,
+    return render_template('inventory/inventories.html', inventories=user_invs, username=username,
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
@@ -102,8 +115,8 @@ def edit_inventory():
 @login_required
 def delete_user_to_inv():
     if request.method == 'POST':
-        inventory_id = bleach.clean(request.form.get("inventory_id"))
-        user_id = bleach.clean(request.form.get("user_id"))
+        inventory_id = bleach.clean(request.json["inventory_id"])
+        user_id = bleach.clean(request.json["user_id"])
 
         try:
             inventory_id = int(inventory_id)
@@ -113,10 +126,14 @@ def delete_user_to_inv():
 
         result = delete_user_to_inventory(inventory_id=inventory_id, user_to_delete_id=user_id)
 
+        inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
+
         if result:
-            return redirect(url_for('inv.inventories'))
+            return redirect(url_for('items.items_with_username_and_inventory',
+                                    inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
         else:
-            return redirect(url_for('inv.inventories'))
+            return redirect(url_for('items.items_with_username_and_inventory',
+                                    inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
 
 
 @inv.route('/inventory/adduser', methods=['POST'])
@@ -219,7 +236,7 @@ def add_to_inventory():
         add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
                               item_tags=item_tags,
                               item_location=int(item_location), item_specific_location=item_specific_location,
-                              inventory_id=inventory_id, user=current_user,
+                              inventory_id=inventory_id, user_id=current_user.id,
                               custom_fields=item_custom_fields)
 
         if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
