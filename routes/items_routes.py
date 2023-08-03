@@ -243,13 +243,17 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
         return render_template('404.html', message="No such inventory"), 404
 
     # Get the user inventory entry
-    user_inventory_ = get_user_inventory_by_id(user_id=requested_user.id, inventory_id=inventory_id)
-    if user_inventory_ is not None:
-        inventory_access_level = user_inventory_[0].access_level
-    else:
-        return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
+    if inventory_slug != "all":
+        user_inventory_ = get_user_inventory_by_id(user_id=requested_user.id, inventory_id=inventory_id)
+        if user_inventory_ is not None:
+            inventory_access_level = user_inventory_[0].access_level
+        else:
+            return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
 
-    is_inventory_owner = (inventory_.owner_id == logged_in_user_id)
+        is_inventory_owner = (inventory_.owner_id == logged_in_user_id)
+    else:
+        is_inventory_owner = True
+        inventory_access_level = 0
 
     item_types_ = get_all_item_types()
     all_fields = dict(get_all_fields())

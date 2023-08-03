@@ -9,8 +9,7 @@
     {% if item.main_image is not none %}
         <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}"/>
     {% endif %}
-    <meta property="og:url"
-          content="{{ url_for(request.endpoint, username=username, item_slug=item.slug) | replace('%40', '@') }}"/>
+
 
     <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
 {% endblock %}
@@ -32,7 +31,7 @@
 
                                     <div class="text-end">
 
-                                        {% if item_access_level == "owner" %}
+                                        {% if item_access_level == 0 %}
 
                                             <span class="fas fa-list fa-2x" data-bs-toggle="collapse"
                                                   href="#collapseItemFields"
@@ -60,7 +59,7 @@
 
                         <div class="card-body">
 
-                            {% if item_access_level == "owner" %}
+                            {% if item_access_level == 0 %}
                                 <div class="row">
 
                                     <div class="col-md-12">
@@ -92,7 +91,7 @@
                                     <p class="card-text">{{ item.description }}</p>
                                     <h6><strong>Type:</strong> {{ item_type }}</h6>
 
-                                    {% if item_access_level == "owner" %}
+                                    {% if item_access_level == 0 %}
                                         <h6><strong>Location:</strong> {{ item_location.name }}</h6>
 
                                         {% if item.specific_location is not none %}
@@ -199,8 +198,9 @@
                             </div>
 
                             <hr>
-                            <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
-
+                            <div class="text-center">
+                                <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -265,12 +265,13 @@
                 url: "{{ url_for('item.edit_item_fields')}}",
                 contentType: 'application/json;charset=UTF-8',
                 headers: {
-                    "X-CSRFToken": csrf_token,
+                    "X-CSRFToken": "{{ csrf_token() }}",
                 },
                 data: JSON.stringify(
                     {
                         'field_ids': number_selected,
                         'item_id': "{{ item.id }}",
+                        'inventory_slug': "{{ inventory_slug }}",
                         'username': "{{ username }}",
                     }
                 ),
@@ -346,12 +347,13 @@
                 url: "{{ url_for('item.set_main_image')}}",
                 contentType: 'application/json;charset=UTF-8',
                 headers: {
-                    "X-CSRFToken": csrf_token,
+                    "X-CSRFToken": "{{ csrf_token() }}",
                 },
                 data: JSON.stringify(
                     {
                         'item_id': "{{ item.id }}",
                         'item_slug': "{{ item.slug }}",
+                        'inventory_slug': "{{ inventory_slug }}",
                         'username': "{{ username }}",
                         'main_image': main_image
                     }
@@ -379,10 +381,14 @@
                 type: "POST",
                 url: "{{ url_for('item.delete_images')}}",
                 contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
                 data: JSON.stringify(
                     {
                         'item_id': "{{ item.id }}",
                         'item_slug': "{{ item.slug }}",
+                        'inventory_slug': "{{ inventory_slug }}",
                         'username': "{{ username }}",
                         'image_id_list': selectedImagesList
                     }

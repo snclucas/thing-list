@@ -27,7 +27,13 @@
 
                 <tr>
                     <td>
-                        <a href="{{ url_for('item.item_with_username', username=username, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                        {% if inventory_slug == "default" %}
+                                <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
+                                inventory_slug="d", item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                            {% else %}
+                                <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
+                                inventory_slug=inventory.slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                        {% endif %}
 
                         <br>
                         {% for tag in item.tags %}
