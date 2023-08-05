@@ -87,7 +87,7 @@
 
                             <div class="row">
 
-                                <div class="col-md-8">
+                                <div class="col-md-8 order-sm-first order-last">
                                     <p class="card-text">{{ item.description }}</p>
                                     <h6><strong>Type:</strong> {{ item_type }}</h6>
 
@@ -114,19 +114,22 @@
 
                             <hr>
 
-                            {% for field_name, field in item_fields.items() %}
-                                <div class="row">
-                                    {% if  "input" == "input" %}
-                                        <div class="col-md-3">
-                                            <h6><strong>{{ field_name }}:</strong></h6>
-                                        </div>
-                                        <div class="col-md-9">
-                                            <h6>{{ field.value }}</h6>
-                                        </div>
-
-                                    {% endif %}
-                                </div>
-                            {% endfor %}
+                            <table>
+                                <thead>
+                                <tr>
+                                    <th></th>
+                                    <th></th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                    {% for field_name, field in item_fields.items() %}
+                                        <tr>
+                                            <td><strong>{{ field_name|capitalize }}:</strong></td>
+                                            <td>{{ field.value }}</td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
 
                             <hr>
 

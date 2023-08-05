@@ -1,5 +1,6 @@
 import os
 import pathlib
+from typing import Union
 
 import flask_bcrypt
 
@@ -7,17 +8,11 @@ from slugify import slugify
 from sqlalchemy import select, and_, ClauseElement
 from sqlalchemy.exc import SQLAlchemyError
 
-from app import db, app
+from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate
+    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification
 
 _NONE_ = "None"
-
-__PUBLIC__ = 2
-__PRIVATE__ = 0
-__OWNER__ = 0
-__COLLABORATOR__ = 1
-__READ_ONLY__ = 2
 
 
 def drop_then_create():
@@ -31,16 +26,40 @@ def drop_then_create():
 
 def post_user_add_hook(new_user: User):
     with app.app_context():
-        add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory",
+        add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory", public=False,
                            user_id=new_user.id)
-        add_new_location(location_name=_NONE_, location_description="No location", to_user=new_user)
+        add_new_location(location_name=_NONE_, location_description="No location", to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
 
 
-def add_new_inventory(name: str, description: str, user: User):
-    return add_user_inventory(name=name, description=description, user_id=user.id)
+def backup_to_json():
+    with app.app_context():
+        backup_json = {}
 
+
+def add_user_inventory(name, description, public, user_id: int):
+    ret = {}
+    slug = slugify(name)
+
+    with app.app_context():
+        try:
+            # add it initially private
+            to_user = User.query.filter_by(id=user_id).first()
+            new_inventory = Inventory(name=name, description=description, slug=slug, owner=to_user, public=public)
+
+            if to_user is not None:
+                db.session.expire_on_commit = False
+                db.session.add(new_inventory)
+                db.session.flush()
+                ret["id"] = new_inventory.id
+                to_user.inventories.append(new_inventory)
+                db.session.commit()
+                db.session.expunge_all()
+                return ret, "success"
+
+        except SQLAlchemyError:
+            return None, "Could not add inventory"
 
 def get_user_default_inventory(user_id: int):
     with app.app_context():
@@ -48,6 +67,24 @@ def get_user_default_inventory(user_id: int):
         user_ = find_user_by_id(user_id=user_id)
         user_default_inventory_ = Inventory.query.filter_by(name=f"__default__{user_.username}").filter_by().first()
         return user_default_inventory_
+
+
+def delete_notification(notification_id: int, user: User):
+
+    with app.app_context():
+        notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
+
+        if notification_ is not None:
+            user.notifications.remove(notification_)
+            return {
+                "success": True,
+                "message": f"Removed notification with ID {notification_.id} from user @{user.username}"
+            }
+
+        return {
+            "success": False,
+            "message": f"No notification with ID {notification_id} for user @{user.username}"
+        }
 
 
 def delete_inventory(inventory_id: int, user: User):
@@ -392,21 +429,24 @@ def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Invento
             .where(UserInventory.user_id == user_id) \
             .where(Inventory.slug == inventory_slug)
 
+        res = db.session.execute(stmt).first()
+        if res is not None:
+            user_inventory_, inventory_ = res[0], res[1]
+        else:
+            user_inventory_, inventory_ = None, None
+
     else:  # get the inventory if it is public
-        stmt = select(UserInventory, Inventory) \
-            .join(UserInventory) \
-            .join(User) \
-            .where(UserInventory.access_level == __PUBLIC__) \
-            .where(Inventory.slug == inventory_slug)
+        stmt = db.session.query(Inventory) \
+            .filter(Inventory.public == 1) \
+            .filter(Inventory.slug == inventory_slug)
 
-    res = db.session.execute(stmt).first()
-    if res is not None:
-        user_inventory_, inventory_ = res[0], res[1]
+        res = db.session.execute(stmt).first()
+        if res is not None:
+            user_inventory_, inventory_ = None, res[0]
+        else:
+            user_inventory_, inventory_ = None, None
 
-        return inventory_, user_inventory_
-
-    else:
-        return None, None
+    return inventory_, user_inventory_
 
 
 def add_item_inventory(item, inventory):
@@ -518,7 +558,7 @@ def update_item_by_id(item_data: dict, item_id: int, user: User):
         r = db.session.execute(stmt).first()
 
         r[0].name = item_data['name']
-        new_item_slug = slugify(text=item_data['name'])
+        new_item_slug = f"{str(r[0].id)}-{slugify(item_data['name'])}"
         r[0].slug = new_item_slug
         r[0].description = item_data['description']
         r[0].location_id = item_data['item_location']
@@ -761,7 +801,7 @@ def get_user_default_item_type(user_id: int):
 
 
 def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
-                          item_location=1, item_specific_location="", custom_fields=None):
+                          item_location=None, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
     with app_context:
@@ -771,6 +811,14 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
         if item_type is None:
             item_type = "none"
+
+        if item_location is not None:
+            item_location_dict = add_new_location(location_name=item_location, location_description=item_location,
+                                                  to_user_id=user_id)
+
+        item_location = None
+        if item_location_dict is not None:
+            item_location = item_location_dict['id']
 
         new_item = Item(name=item_name, description=item_desc, user_id=user_id,
                         location_id=item_location, specific_location=item_specific_location)
@@ -824,41 +872,21 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         add_new_item_field(new_item, custom_fields, app_context)
 
 
-def add_user_inventory(name, description, user_id: int):
-    ret = {}
-    slug = slugify(name)
-
+def add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
     with app.app_context():
         try:
-            # add it initially private
-            to_user = User.query.filter_by(id=user_id).first()
-            new_inventory = Inventory(name=name, description=description, slug=slug, owner=to_user)
-
-            if to_user is not None:
-                db.session.expire_on_commit = False
-                db.session.add(new_inventory)
-                db.session.flush()
-                ret["id"] = new_inventory.id
-                to_user.inventories.append(new_inventory)
-                db.session.commit()
-                db.session.expunge_all()
-                return ret, "success"
-
-        except SQLAlchemyError:
-            return None, "Could not add inventory"
-
-
-def add_new_location(location_name: str, location_description: str, to_user: User) -> Location:
-    with app.app_context():
-        try:
-            location_ = Location(name=location_name, description=location_description, user_id=to_user.id)
+            location_ = Location(name=location_name, description=location_description, user_id=to_user_id)
             db.session.add(location_)
             db.session.commit()
             db.session.flush()
             db.session.expire_all()
-            return location_
+            return {
+                "id": location_.id,
+                "name": location_.name,
+                "description": location_.description
+            }
         except Exception as e:
-            print(e)
+            return None
 
 
 def add_new_template(name: str, fields: str, to_user: User) -> Location:
@@ -901,6 +929,17 @@ def delete_user_to_inventory(inventory_id: int, user_to_delete_id: int):
             return False
 
 
+def add_user_notification(to_user_id: int, from_user_id, message: str):
+    with app.app_context():
+        user_ = db.session.query(User).filter(User.id == to_user_id).one()
+        if user_ is not None:
+            from_user_ = db.session.query(User).filter(User.id == from_user_id).one()
+            if from_user_ is not None:
+                notification_ = Notification(text=message, from_user=from_user_)
+                user_.notifications.append(notification_)
+                db.session.commit()
+
+
 def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_username: str,
                           added_user_access_level: int):
     with app.app_context():
@@ -923,13 +962,16 @@ def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_u
                             if user_to_add_inventory_ is not None:
                                 user_to_add_inventory_.access_level = added_user_access_level
                                 db.session.commit()
-                                return True
+
                             else:
                                 ui = UserInventory(user_id=user_to_add_.id, inventory_id=inventory_id,
                                                    access_level=added_user_access_level)
                                 db.session.add(ui)
                                 db.session.commit()
-                                return True
+
+                            add_user_notification(from_user_id=current_user_id, to_user_id=user_to_add_.id,
+                                                  message=f"You have been added to the following inventory")
+                            return True
 
                     else:  # the username does not exist
                         return False
@@ -1074,19 +1116,21 @@ def delete_item_from_inventory(user: User, inventory_id: int, item_id: int) -> N
 
 
 def edit_inventory_data(user: User, inventory_id: int, name: str,
-                        description: str, access_level: int) -> None:
+                        description: str, public: int,  access_level: int) -> None:
     session = db.session
 
-    stmt = select(UserInventory, Inventory, User).join(Inventory).join(User).where(User.id == user.id) \
+    stmt = select(UserInventory, Inventory).join(Inventory)\
+        .where(UserInventory.user_id == user.id) \
         .where(UserInventory.inventory_id == inventory_id)
 
     r = session.execute(stmt)
 
-    ff = r.first()
+    ff = r.one_or_none()
 
     if ff is not None:
         ff[1].name = name
         ff[1].description = description
+        ff[1].public = public
         ff[0].access_level = access_level
         db.session.commit()
 

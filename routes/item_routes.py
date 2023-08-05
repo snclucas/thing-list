@@ -8,7 +8,7 @@ from PIL import Image
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 
-from app import app
+from app import app, __VIEWER__
 from database_functions import get_all_user_locations, \
     get_all_item_types, get_user_location, \
     update_item_by_id, get_item_by_slug, add_images_to_item, delete_images_from_item, set_item_main_image, \
@@ -57,13 +57,18 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
     if inventory_ is None:
         return render_template('404.html', message="No such item or you do not have access to this item"), 404
 
+    item_access_level = __VIEWER__
     if user_inventory_ is None:
         if not inventory_.public:
             return render_template('404.html', message="No such item or you do not have access to this item"), 404
+    else:
+        item_access_level = user_inventory_.access_level
 
-    item_access_level = user_inventory_.access_level
-
-    item_, item_type_string, inventory_item_ = get_item_by_slug(item_slug=item_slug)
+    item_data_ = get_item_by_slug(item_slug=item_slug)
+    if item_data_ is not None:
+        item_, item_type_string, inventory_item_ = item_data_
+    else:
+        item_, item_type_string, inventory_item_ = None, None, None
 
     if item_ is None or inventory_item_ is None:
         return render_template('404.html', message="No such item or you do not have access to this item"), 404
@@ -73,7 +78,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
     all_fields = dict(get_all_fields())
 
     item_location = None
-    if item_access_level == 2:
+    if user_is_authenticated and item_access_level != __VIEWER__:
         user_location = get_user_location(user=current_user, location_id=item_.location_id)
         if user_location is not None:
             item_location = user_location[0]

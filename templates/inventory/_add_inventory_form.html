@@ -1,6 +1,16 @@
 <form method="post"
       action="{{ url_for('inv.add_inventory') }}">
 
+    <hr>
+    <div class="row">
+        <div class="col-12">
+            <input class="form-check-input" type="checkbox" value="" name="inventory_public" id="inventory_public">
+            <label class="form-check-label" for="inventory_public">
+                Public inventory
+            </label>
+        </div>
+    </div>
+
     <div class="row">
 
         <div class="col-12">
@@ -10,8 +20,8 @@
 
     </div>
 
-        <br>
-          <div class="row">
+    <br>
+    <div class="row">
 
         <div class="col-12">
             <label for="inventoryDescription" class="form-label">Description:</label>
@@ -20,8 +30,7 @@
 
     </div>
 
-<br>
-
+    <br>
 
     <br>
 

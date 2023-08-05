@@ -17,10 +17,14 @@
                                 <div class="col-md-4">
                                     <div class="text-end">
                                         {% if user_is_authenticated %}
-                                            <span class="fas fa-plus fa-2x" data-bs-toggle="collapse"
+                                            <span class="fas fa-plus fa-2x"
+                                                  data-toggle="tooltip" data-placement="top" title="Add a new inventory"
+                                                  data-bs-toggle="collapse"
                                                   href="#collapseInventoryAdd"
                                                   style="display: inline-block; margin-right: 20px;"></span>
-                                            <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
+                                            <span class="fas fa-info fa-2x"
+                                                  data-toggle="tooltip" data-placement="top" title="Basic help"
+                                                  data-bs-toggle="collapse"
                                                   href="#collapseInventoryHelp"
                                                   style="display: inline-block; margin-right: 20px;"></span>
                                         {% endif %}
@@ -34,14 +38,14 @@
                                         <div class="collapse" id="collapseInventoryAdd" aria-expanded="false">
                                             <div class="card card-body">
                                                 <h5>Add new inventory:</h5>
-                                                {% include 'partials/add_inventory_form.html' %}
+                                                {% include 'inventory/_add_inventory_form.html' %}
                                             </div>
                                         </div>
 
                                         <div class="collapse" id="collapseInventoryEdit" aria-expanded="false">
                                             <div class="card card-body">
                                                 <h5>Edit inventory:</h5>
-                                                {% include 'partials/edit_inventory_form.html' %}
+                                                {% include 'inventory/_edit_inventory_form.html' %}
                                             </div>
                                         </div>
 
@@ -84,16 +88,27 @@
                 info: true
             });
 
+            $(function () {
+                $('[data-toggle="tooltip"]').tooltip()
+            })
+
         });
 
         $('[id^=inventoryEdit]').click(function () {
             let inventory_id = $(this).attr('data-inventory-id');
             let inventory_name = $(this).attr('data-inventory-name');
             let inventory_desc = $(this).attr('data-inventory-description');
+            let inventory_public = $(this).attr('data-inventory-public');
 
             $('#edit_form_inventory_id').val(inventory_id)
             $('#edit_form_inventory_name').val(inventory_name)
             $('#edit_form_inventory_description').val(inventory_desc)
+
+
+            let inventory_public_is_checked = (inventory_public === "True")
+
+            $('#edit_form_inventory_public').prop('checked', inventory_public_is_checked);
+
         });
 
         $('[id^=confirmInventoryDeleteBtn-]').on("click", function (e) {

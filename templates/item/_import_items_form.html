@@ -2,33 +2,9 @@
 <div class="card card-body">
     <form method="POST" action="{{ url_for("items.items_load") }}"
           enctype="multipart/form-data">
-
-        <label class="form-label" for="add_to_inventory">Add to inventory:</label>
-
-        <select class="form-select" id="add_to_inventory" name="add_to_inventory">
-
-            {% for option in all_user_inventories %}
-
-                {% if "__default__" in  option[1].name %}
-                    <option value="{{ option[1].id }}">None</option>
-
-                {% else %}
-
-                    {% if inventory_slug == option[1].slug %}
-                        <option value="{{ option[1].id }}"
-                                selected>{{ option[1].name }}</option>
-                    {% else %}
-                        <option value="{{ option[1].id }}">{{ option[1].name }}</option>
-                    {% endif %}
-
-                {% endif %}
-
-            {% endfor %}
-
-        </select>
-        <hr>
-
         <input class="form-control" type="file" name="file">
+        <input type="hidden" name="inventory_slug" value="{{ inventory.slug }}">
+        <input type="hidden" name="inventory_id" value="{{ inventory.id }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <hr>
         <button type="submit" class="btn btn-primary">Load</button>

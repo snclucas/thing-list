@@ -6,7 +6,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     add_item_to_inventory, \
     get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
     find_user_by_username, edit_inventory_data, get_all_user_locations, \
-    add_new_inventory, delete_inventory, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id
+    delete_inventory, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory
 
 inv = Blueprint('inv', __name__)
 
@@ -78,7 +78,13 @@ def add_inventory():
     if request.method == 'POST':
         inventory_name_ = bleach.clean(request.form.get("inventory_name"))
         inventory_description_ = bleach.clean(request.form.get("inventory_description"))
-        add_new_inventory(name=inventory_name_, description=inventory_description_, user=current_user)
+
+        inventory_public_ = 0
+        if "inventory_public" in request.form:
+            inventory_public_ = 1
+
+        add_user_inventory(name=inventory_name_, description=inventory_description_,
+                           public=inventory_public_, user_id=current_user.id)
     return redirect(url_for('inv.inventories'))
 
 
@@ -105,9 +111,14 @@ def edit_inventory():
         inventory_name = bleach.clean(request.form.get("inventory_name"))
         inventory_description = bleach.clean(request.form.get("inventory_description"))
 
+        inventory_public = 0
+        if "inventory_public" in request.form:
+            inventory_public = 1
+
         edit_inventory_data(user=current_user, inventory_id=int(inventory_id), name=inventory_name,
-                            description=inventory_description,
+                            description=inventory_description, public=inventory_public,
                             access_level=int(0))
+
         return redirect(url_for('inv.inventories'))
 
 

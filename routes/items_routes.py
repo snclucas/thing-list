@@ -1,26 +1,21 @@
 import os
-import pathlib
-import random
-import string
-from io import BytesIO
+
 from io import StringIO
 import csv
 
 import pdfkit
 from flask import make_response
 
-from PIL import Image
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 
 from app import app
 from database_functions import get_all_user_locations, find_items, \
-    get_all_item_types, get_user_location, \
-    update_item_by_id, get_item_by_slug, add_images_to_item, delete_images_from_item, set_item_main_image, \
+    get_all_item_types,\
     find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
-    add_item_to_inventory, final_all_user_inventories, delete_items, move_items, get_item_fields, get_all_item_fields, \
-    get_all_fields, set_field_status, update_item_fields, add_new_user_itemtype, \
-    set_inventory_default_fields, get_user_templates, save_inventory_fieldtemplate, get_item_custom_field_data, \
+    add_item_to_inventory, final_all_user_inventories, delete_items, move_items, \
+    get_all_fields, add_new_user_itemtype, \
+    get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id
 from models import FieldTemplate
 
@@ -38,11 +33,21 @@ def my_utility_processor():
     return dict(item_tag_to_string=item_tag_to_string)
 
 
+def _find_list_index(list_, value):
+    try:
+        return list_.index(value)
+    except ValueError:
+        return -1
+
+
 @items_routes.route('/items/load', methods=['POST'])
 @login_required
 def items_load():
+    username = current_user.username
+
     if request.method == 'POST':
-        to_inventory_id = request.form.get("add_to_inventory")
+        inventory_slug = request.form.get("inventory_slug")
+        inventory_id = request.form.get("inventory_id")
 
         if request.files:
             uploaded_file = request.files['file']  # This line uses the same variable and worked fine
@@ -54,19 +59,54 @@ def items_load():
                 reader = csv.reader(csvfile, delimiter=',', quotechar='"')
                 column_headers = None
                 custom_fields = {}
+                name_col_index = None
+                description_col_index = None
+                type_col_index = None
+                tags_col_index = None
+                location_col_index = None
+                specific_location_col_index = None
+
+                item_location = None
+                item_specific_location = None
+
                 for row in reader:
                     number_columns = len(row)
                     if line_count == 0:  # Header
+                        #  Get column headers and convert to lower case
                         column_headers = row
+                        column_headers = [str(x).lower() for x in column_headers]
+
+                        name_col_index = _find_list_index(column_headers, "name")
+                        description_col_index = _find_list_index(column_headers, "description")
+
+                        if name_col_index == -1 or description_col_index == -1:
+                            return redirect(url_for('items.items_with_username_and_inventory',
+                                                    username=username,
+                                                    inventory_slug=inventory_slug).replace('%40', '@'))
+
+                        type_col_index = _find_list_index(column_headers, "type")
+                        tags_col_index = _find_list_index(column_headers, "tags")
+                        location_col_index = _find_list_index(column_headers, "location")
+                        specific_location_col_index = _find_list_index(column_headers, "specific location")
 
                     else:
                         if len(row) < number_columns:
                             break
 
-                        item_name = row[0]
-                        item_description = row[1]
-                        item_type = row[2]
-                        item_tags = row[3]
+                        if name_col_index != -1:
+                            item_name = row[name_col_index]
+                        if description_col_index != -1:
+                            item_description = row[description_col_index]
+                        if type_col_index != -1:
+                            item_type = row[type_col_index]
+                        if tags_col_index != -1:
+                            item_tags = row[tags_col_index]
+
+                        if location_col_index != -1:
+                            item_location = row[location_col_index]
+
+                        if specific_location_col_index != -1:
+                            item_specific_location = row[specific_location_col_index]
 
                         # add item types
                         add_new_user_itemtype(name=item_type, user_id=current_user.id)
@@ -85,12 +125,14 @@ def items_load():
 
                         add_item_to_inventory(item_name=item_name, item_desc=item_description,
                                               item_type=item_type,
-                                              item_tags=tag_array, inventory_id=to_inventory_id,
-                                              user=current_user, custom_fields=custom_fields)
+                                              item_tags=tag_array, inventory_id=inventory_id,
+                                              item_location=item_location,
+                                              item_specific_location=item_specific_location,
+                                              user_id=current_user.id, custom_fields=custom_fields)
                     line_count += 1
 
-    username = current_user.username
-    return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+        return redirect(url_for('items.items_with_username_and_inventory',
+                                username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
 
 @items_routes.route('/items/move', methods=['POST'])
@@ -201,9 +243,6 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     logged_in_user = None
     requested_user = None
     logged_in_user_id = None
-    requested_user_id = None
-    logged_in_username = None
-    requested_username = None
 
     # remove spurious whitespace (if any)
     inventory_slug = inventory_slug.strip()
