@@ -15,7 +15,7 @@
 
                 <tr>
                     <td>
-                        {{ user_item_type.name }}
+                        <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug="all") | replace('%40', '@') }}?type={{ user_item_type.name }}">{{ user_item_type.name }}</a>
                     </td>
                     <td>
 
@@ -39,7 +39,7 @@
         </tbody>
     </table>
 
-    {% else %}
+{% else %}
 
     <h5>:) No item types</h5>
 

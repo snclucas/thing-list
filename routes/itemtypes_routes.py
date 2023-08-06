@@ -18,7 +18,7 @@ types = Blueprint('types', __name__)
 @login_required
 def item_types():
     user_itemtypes = get_all_itemtypes_for_user(user_id=current_user.id, string_list=False)
-    return render_template('types/item_types.html', name=current_user.username, user_item_types=user_itemtypes)
+    return render_template('types/item_types.html', username=current_user.username, user_item_types=user_itemtypes)
 
 
 @types.route('/item-type/delete', methods=['POST'])
