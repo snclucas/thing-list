@@ -42,7 +42,7 @@ def add_location():
         if potential_location is None:
             location_ = Location(name=new_location_data['name'], description=new_location_data['description'])
             add_new_location(location_name=location_name,
-                             location_description=location_description, to_user=current_user)
+                             location_description=location_description, to_user_id=current_user.id)
         else:
             update_location_by_id(location_data=new_location_data, user=current_user)
 
