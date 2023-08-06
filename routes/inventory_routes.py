@@ -251,8 +251,8 @@ def add_to_inventory():
                               custom_fields=item_custom_fields)
 
         if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
-            return redirect(url_for('item.items_with_username',
+            return redirect(url_for('items.items_with_username',
                                     username=username))
         else:
-            return redirect(url_for('item.items_with_username_and_inventory',
+            return redirect(url_for('items.items_with_username_and_inventory',
                                     username=username, inventory_slug=inventory_slug))
