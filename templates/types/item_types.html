@@ -2,8 +2,6 @@
 
 {% block content %}
 
-
-
     <div class="content">
         <div class="container">
             <div class="row">
@@ -13,19 +11,11 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-9">
-                                    <h4 class="mb-0">Item types <small>| {{ user_item_types | length }}</small></h4>
+                                    <h4 class="mb-0">Item types <small>| {{ user_item_types | length -1 }}</small></h4>
                                 </div>
                                 <div class="col-md-3">
 
                                     <div class="text-end">
-
-                                            <span class="fas fa-file-import fa-2x"
-                                                  data-bs-toggle="collapse"
-                                                  href="#collapseImportItemTypes"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
-
-                                        <span id="export-itemtypes-btn" class="fas fa-file-export fa-2x"
-                                              style="display: inline-block; margin-right: 20px;"></span>
 
                                         <span class="fas fa-plus fa-2x" data-bs-toggle="collapse"
                                               href="#collapseAddItemType"
@@ -53,10 +43,6 @@
                                 <div class="card card-body">
                                     {% include 'types/add_itemtypes_form.html' %}
                                 </div>
-                            </div>
-
-                            <div class="collapse" id="collapseImportItemTypes" aria-expanded="false">
-                                {% include 'types/import_itemtypes_form.html' %}
                             </div>
 
                             {% include 'types/item_types_table.html' %}
