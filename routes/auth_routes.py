@@ -68,8 +68,8 @@ def reauth():
         flash(u"Reauthenticated.")
         return redirect(request.args.get("next") or '/admin')
 
-    templateData = {}
-    return render_template("auth/reauth.html", **templateData)
+    template_data = {}
+    return render_template("auth/reauth.html", **template_data)
 
 
 @auth_flask_login.route("/logout")
