@@ -28,7 +28,7 @@ def post_user_add_hook(new_user: User):
     with app.app_context():
         add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory", public=False,
                            user_id=new_user.id)
-        add_new_location(location_name=_NONE_, location_description="No location", to_user_id=new_user.id)
+        add_new_location(location_name=_NONE_, location_description="No location (default)", to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
 
@@ -339,9 +339,9 @@ def find_user(username_or_email: str) -> User:
 
 def find_type_by_text(type_text: str, user_id: int = None) -> ItemType:
     if user_id is None:
-        item_type_ = ItemType.query.filter_by(name=type_text.lower()).first()
+        item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).one_or_none()
     else:
-        item_type_ = ItemType.query.filter_by(name=type_text.lower()).filter_by(user_id=user_id).first()
+        item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).filter_by(user_id=user_id).one_or_none()
     return item_type_
 
 
@@ -812,13 +812,16 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "none"
 
-        if item_location is not None:
-            item_location_dict = add_new_location(location_name=item_location, location_description=item_location,
-                                                  to_user_id=user_id)
+        # if item_location is not None:
+        #     item_location_dict = add_new_location(location_name=item_location,
+        #                                           location_description=item_location,
+        #                                           to_user_id=user_id)
+        # else:
+        #     item_location_dict = None
 
-        item_location = None
-        if item_location_dict is not None:
-            item_location = item_location_dict['id']
+        # item_location = None
+        # if item_location_dict is not None:
+        #     item_location = item_location_dict['id']
 
         new_item = Item(name=item_name, description=item_desc, user_id=user_id,
                         location_id=item_location, specific_location=item_specific_location)
@@ -874,19 +877,21 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
 def add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
     with app.app_context():
-        try:
-            location_ = Location(name=location_name, description=location_description, user_id=to_user_id)
-            db.session.add(location_)
-            db.session.commit()
-            db.session.flush()
-            db.session.expire_all()
-            return {
-                "id": location_.id,
-                "name": location_.name,
-                "description": location_.description
-            }
-        except Exception as e:
-            return None
+        location_ = Location.query.filter_by(name=location_name).filter_by(user_id=to_user_id).one_or_none()
+        if location_ is None:
+            try:
+                location_ = Location(name=location_name, description=location_description, user_id=to_user_id)
+                db.session.add(location_)
+                db.session.commit()
+                db.session.flush()
+                db.session.expire_all()
+            except Exception as e:
+                return None
+        return {
+            "id": location_.id,
+            "name": location_.name,
+            "description": location_.description
+        }
 
 
 def add_new_template(name: str, fields: str, to_user: User) -> Location:

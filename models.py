@@ -27,8 +27,6 @@ class Notification(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime(), default=datetime.datetime.now())
     text = db.Column(db.String(50), nullable=True, unique=False)
-    #from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-
     from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
     from_user = db.relationship(User, viewonly=True, load_on_pending=True, lazy='subquery')
 

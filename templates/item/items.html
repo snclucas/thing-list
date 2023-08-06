@@ -17,23 +17,10 @@
     <div class="content">
         <div class="container">
 
+
             <div class="row">
-                <div class="col-md-3">
-                    <div class="card">
-                        <div class="content">
-                            <div class="head">
-                                <h5 class="mb-0">Filters:</h5>
-                            </div>
-                            <hr>
-                            <div class="canvas-wrapper">
-                                {% include 'item/_filter_form.html' %}
-                            </div>
-                        </div>
-                    </div>
 
-                </div>
-
-                <div class="col-md-9">
+                <div class="col-md-12">
 
                     <div class="card">
 
@@ -49,7 +36,10 @@
                                                 {% set inv_name = inventory.name %}
                                             {% endif %}
                                             | {{ inv_name }}
+                                            {% else %}
+                                            | All item(s)
                                         {% endif %}
+
                                     </small>
                                     </h4>
                                 </div>
@@ -61,31 +51,39 @@
 
                                                 {% if is_inventory_owner or inventory_access_level == 1 %}
 
-                                                <a data-bs-toggle="collapse" href="#collapseAddItem"
-                                                   role="button" aria-expanded="false" aria-controls="collapseExample">
+                                                    <a data-bs-toggle="collapse" href="#collapseAddItem"
+                                                       role="button" aria-expanded="false"
+                                                       aria-controls="collapseExample">
                                                 <span class="fas fa-plus fa-2x"
                                                       style="display: inline-block; margin-right: 20px;"></span>
-                                                </a>
-                                                <a id="delete-items-btn-collapse" data-bs-toggle="collapse"
-                                                   href="#collapseDeleteItems"
-                                                   role="button" aria-expanded="false"
-                                                   aria-controls="confirmItemDelete">
+                                                    </a>
+                                                    <a id="delete-items-btn-collapse" data-bs-toggle="collapse"
+                                                       href="#collapseDeleteItems"
+                                                       role="button" aria-expanded="false"
+                                                       aria-controls="confirmItemDelete">
                                                 <span id="delete-items-span" class="fas fa-minus fa-2x"
                                                       style="color:lightgray; display: inline-block; margin-right: 20px;"></span>
-                                                </a>
+                                                    </a>
+
+
+                                                    <a data-bs-toggle="collapse" href="#collapseFilter"
+                                                       role="button" aria-expanded="false"
+                                                       aria-controls="collapseFilter">
+                                                <span class="fas fa-filter fa-2x"
+                                                      style="display: inline-block; margin-right: 20px;"></span>
+                                                    </a>
+
 
                                                     <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
-                                                      href="#collapseButtonBar"
-                                                      style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
+                                                          href="#collapseButtonBar"
+                                                          style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
 
                                                 {% endif %}
 
 
-
-
-                                               <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
-          href="#collapseItemsHelp"
-          style="display: inline-block; margin-right: 20px;"></span>
+                                                <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
+                                                      href="#collapseItemsHelp"
+                                                      style="display: inline-block; margin-right: 20px;"></span>
 
                                             </div>
                                         </div>
@@ -110,6 +108,12 @@
                             <div class="row">
                                 <div class="col-md-12">
                                     {% if user_is_authenticated %}
+
+                                        <div class="collapse" id="collapseFilter" aria-expanded="false">
+
+                                            {% include 'item/_filter_form.html' %}
+
+                                        </div>
 
                                         <div class="collapse" id="collapseItemsHelp" aria-expanded="false">
                                             <div class="card card-body">
@@ -147,6 +151,7 @@
                                                 <button id="cancel-delete-items-btn" type="button"
                                                         class="btn btn-primary btn-sm">Cancel
                                                 </button>
+                                                <hr>
                                             </div>
                                         </div>
 
@@ -177,6 +182,7 @@
 
             </div>
 
+
         </div>
     </div>
 
@@ -190,12 +196,21 @@
     <script>
         $(document).ready(function () {
 
-            $('#items-table').DataTable({
+            const table = new DataTable('#items-table', {
                 "searching": true,
                 paging: true,
                 ordering: true,
-                info: true
+                info: true,
+                stateSave: true,
+                "pageLength": 50,
+                columnDefs: [
+                    {
+                        target: 1,
+                        visible: false
+                    }
+                ]
             });
+
 
             $('#item-field-table').DataTable({
                 "searching": true,
@@ -209,6 +224,18 @@
                 paging: true,
                 ordering: true,
                 info: true
+            });
+
+            document.querySelectorAll('a.toggle-vis').forEach((el) => {
+                el.addEventListener('click', function (e) {
+                    e.preventDefault();
+
+                    let columnIdx = e.target.getAttribute('data-column');
+                    let column = table.column(columnIdx);
+
+                    // Toggle the visibility
+                    column.visible(!column.visible());
+                });
             });
 
         });
@@ -667,10 +694,6 @@
                 }
             });
         });
-
-
-
-
 
 
     </script>

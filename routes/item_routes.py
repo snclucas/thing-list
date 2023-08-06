@@ -118,7 +118,10 @@ def edit_item(item_id):
         del form_data["item_description"]
 
         item_tags = request.form.get("item_tags")
-        item_tags = item_tags.split(",")
+        if item_tags != '':
+            item_tags = item_tags.strip().split(",")
+        else:
+            item_tags = []
         del form_data["item_tags"]
 
         item_type = request.form.get("item_type")
