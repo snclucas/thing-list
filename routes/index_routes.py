@@ -9,7 +9,10 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    return render_template('index.html')
+    if current_user.is_authenticated:
+        return redirect(url_for('main.profile', username=current_user.username))
+    else:
+        return render_template('index.html')
 
 
 @main.route('/privacy-policy')
