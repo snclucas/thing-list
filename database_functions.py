@@ -1,12 +1,13 @@
 import os
 import pathlib
-from typing import Union
+from typing import Union, List
 
 import flask_bcrypt
 
 from slugify import slugify
 from sqlalchemy import select, and_, ClauseElement
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.sql.functions import count, func
 
 from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
@@ -28,7 +29,7 @@ def post_user_add_hook(new_user: User):
     with app.app_context():
         add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory", public=False,
                            user_id=new_user.id)
-        add_new_location(location_name=_NONE_, location_description="No location (default)", to_user_id=new_user.id)
+        get_or_add_new_location(location_name=_NONE_, location_description="No location (default)", to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
 
@@ -36,6 +37,9 @@ def post_user_add_hook(new_user: User):
 def backup_to_json():
     with app.app_context():
         backup_json = {}
+
+
+# --- INVENTORIES ---
 
 
 def add_user_inventory(name, description, public, user_id: int):
@@ -61,30 +65,13 @@ def add_user_inventory(name, description, public, user_id: int):
         except SQLAlchemyError:
             return None, "Could not add inventory"
 
+
 def get_user_default_inventory(user_id: int):
     with app.app_context():
         # Find user default inventory
         user_ = find_user_by_id(user_id=user_id)
         user_default_inventory_ = Inventory.query.filter_by(name=f"__default__{user_.username}").filter_by().first()
         return user_default_inventory_
-
-
-def delete_notification(notification_id: int, user: User):
-
-    with app.app_context():
-        notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
-
-        if notification_ is not None:
-            user.notifications.remove(notification_)
-            return {
-                "success": True,
-                "message": f"Removed notification with ID {notification_.id} from user @{user.username}"
-            }
-
-        return {
-            "success": False,
-            "message": f"No notification with ID {notification_id} for user @{user.username}"
-        }
 
 
 def delete_inventory(inventory_id: int, user: User):
@@ -118,6 +105,35 @@ def delete_inventory(inventory_id: int, user: User):
                 if inv_ is not None:
                     db.session.delete(inv_)
                     db.session.commit()
+
+
+
+
+
+
+
+
+
+
+
+
+def delete_notification(notification_id: int, user: User):
+
+    with app.app_context():
+        notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
+
+        if notification_ is not None:
+            user.notifications.remove(notification_)
+            return {
+                "success": True,
+                "message": f"Removed notification with ID {notification_.id} from user @{user.username}"
+            }
+
+        return {
+            "success": False,
+            "message": f"No notification with ID {notification_id} for user @{user.username}"
+        }
+
 
 
 def get_item_custom_field_data(user_id: int, item_list=None):
@@ -320,11 +336,12 @@ def get_item_types(item_id=None, user_id=None) -> list:
     return item_types_.all()
 
 
-def add_new_user_itemtype(name: str, user_id):
-    item_type_ = find_type_by_text(type_text=name.lower(), user_id=user_id)
-    print(f"Seraching for type {name.lower()} - result {item_type_}")
-    if item_type_ is None:
-        with app.app_context():
+def add_new_user_itemtype(name: str, user_id: int):
+    with app.app_context():
+
+        item_type_ = find_type_by_text(type_text=name, user_id=user_id)
+
+        if item_type_ is None:
             new_item_type_ = ItemType(name=name.lower(), user_id=user_id)
             db.session.add(new_item_type_)
             db.session.commit()
@@ -337,12 +354,19 @@ def find_user(username_or_email: str) -> User:
     return user
 
 
-def find_type_by_text(type_text: str, user_id: int = None) -> ItemType:
-    if user_id is None:
-        item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).one_or_none()
-    else:
-        item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).filter_by(user_id=user_id).one_or_none()
-    return item_type_
+def find_type_by_text(type_text: str, user_id: int = None) -> Union[dict, None]:
+    with app.app_context():
+
+        if user_id is None:
+            item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).one_or_none()
+        else:
+            item_type_ = ItemType.query.filter_by(name=type_text.lower().strip())\
+                .filter_by(user_id=user_id).one_or_none()
+
+        if item_type_ is not None:
+            return {"id": item_type_.id, "name": item_type_.name, "user_id": item_type_.user_id}
+
+        return None
 
 
 def get_all_itemtypes_for_user(user_id: int, string_list=True) -> list:
@@ -390,9 +414,11 @@ def find_tag(tag: str) -> User:
     return tag_
 
 
-def find_location(location_id: int) -> Location:
-    location_ = Location.query.filter_by(id=location_id).first()
-    return location_
+def find_location_by_id(location_id: int) -> Union[dict, None]:
+    location_ = Location.query.filter_by(id=location_id).one_or_none()
+    if location_ is not None:
+        return location_.__dict__
+    return None
 
 
 def find_template(template_id: int) -> Location:
@@ -631,6 +657,21 @@ def delete_items(item_ids: list, user: User):
     return number_items_deleted
 
 
+def edit_items_locations(item_ids: list, user: User, location_id: int, specific_location: str):
+    with app.app_context():
+        stmt = select(Item) \
+            .where(Item.user_id == user.id) \
+            .where(Item.id.in_(item_ids))
+        results_ = db.session.execute(stmt).all()
+
+        for item_ in results_:
+            item_[0].location_id = location_id
+            if specific_location is not None:
+                item_[0].specific_location = specific_location
+        db.session.commit()
+        return
+
+
 def move_items(item_ids: list, user: User, inventory_id: int, copy: bool = False):
     with app.app_context():
 
@@ -801,7 +842,7 @@ def get_user_default_item_type(user_id: int):
 
 
 def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
-                          item_location=None, item_specific_location="", custom_fields=None):
+                          item_location_id=None, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
     with app_context:
@@ -824,7 +865,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         #     item_location = item_location_dict['id']
 
         new_item = Item(name=item_name, description=item_desc, user_id=user_id,
-                        location_id=item_location, specific_location=item_specific_location)
+                        location_id=item_location_id, specific_location=item_specific_location)
 
         db.session.add(new_item)
         # get new item ID
@@ -875,7 +916,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         add_new_item_field(new_item, custom_fields, app_context)
 
 
-def add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
+def get_or_add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
     with app.app_context():
         location_ = Location.query.filter_by(name=location_name).filter_by(user_id=to_user_id).one_or_none()
         if location_ is None:
@@ -1148,12 +1189,24 @@ def delete_template_from_db(user: User, template_id: int) -> None:
         db.session.commit()
 
 
-def delete_location_from_db(user: User, location_id: int) -> None:
-    location_ = Location.query.filter_by(id=location_id).filter_by(user_id=user.id).first()
+def delete_location(user_id: int, location_id: int) -> dict:
+    location_ = Location.query.filter_by(id=location_id).filter_by(user_id=user_id).one_or_none()
 
     if location_ is not None:
-        db.session.delete(location_)
-        db.session.commit()
+        try:
+            # find any items with this location and chnge to None
+            user_default_location_ = Location.query.filter_by(name="None").filter_by(user_id=user_id).one_or_none()
+            if user_default_location_ is not None:
+                items_ = Item.query.filter_by(location_id=location_id).filter_by(user_id=user_id).all()
+                for row in items_:
+                    row.location_id = user_default_location_.id
+                db.session.commit()
+
+            db.session.delete(location_)
+            db.session.commit()
+            return {"success": True}
+        except SQLAlchemyError as err:
+            return {"success": False}
 
 
 def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1):
@@ -1218,18 +1271,37 @@ def save_inventory_fieldtemplate(inventory_id, inventory_template, user_id: int)
     return
 
 
-def get_user_locations(user: User):
+def get_user_locations(user_id: int) -> List[dict]:
     session = db.session
-    stmt = select(Location).join(User).where(User.id == user.id)
+    stmt = select(Location).where(Location.user_id == user_id)
     r = session.execute(stmt).all()
-    return r
+    locations_results = []
+    for row in r:
+        locations_results.append(
+            {
+                "id": row[0].id,
+                "name": row[0].name,
+                "description": row[0].description,
+                "user_id": row[0].user_id
+            }
+        )
+    return locations_results
 
 
-def get_user_location(user: User, location_id: str):
+def get_number_user_locations(user_id: int):
     session = db.session
-    stmt = select(Location).join(User).where(User.id == user.id).where(Location.id == location_id)
-    r = session.execute(stmt).first()
-    return r
+    stmt = session.query(func.count(Location.id)).where(Location.user_id == user_id)
+    r = session.execute(stmt).all()
+    return r[0][0]
+
+
+def get_user_location_by_id(location_id: str, user_id: int):
+    session = db.session
+    stmt = select(Location).join(User).where(User.id == user_id).where(Location.id == location_id)
+    r = session.execute(stmt).one_or_none()
+    if r is not None:
+        return r[0].__dict__
+    return None
 
 
 def get_item_fields(item_id: int):

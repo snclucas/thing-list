@@ -23,3 +23,10 @@ def my_utility_processor():
 def user_item_types():
     user_itemtypes_ = get_all_itemtypes_for_user(user_id=current_user.id)
     return user_itemtypes_
+
+
+# @api_routes.route('/api/locations', methods=['GET'])
+# @login_required
+# def user_locations():
+#     user_locations_ = get_all_itemtypes_for_user(user_id=current_user.id)
+#     return user_locations_

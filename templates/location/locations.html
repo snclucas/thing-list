@@ -2,17 +2,12 @@
 
 {% block content %}
 
-
-
     <div class="content">
         <div class="container">
 
             <div class="row">
-
                 <div class="col-md-12">
                     <div class="card">
-
-
                         <div class="card-body">
 
                             <div class="row">
@@ -40,14 +35,10 @@
 
                                     <div class="collapse" id="addLocationCollapse" aria-expanded="false">
                                         <div class="card card-body">
-
                                             {% include 'location/add_location_form.html' %}
-
                                         </div>
                                     </div>
-
                                     {% include 'location/locations-table.html' %}
-
                                 </div>
                             </div>
                         </div>
@@ -56,26 +47,6 @@
             </div>
         </div>
     </div>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 {% endblock %}
 
@@ -94,6 +65,33 @@
             });
 
         });
+
+        $('[id^="confirmLocationDelete-"]').on("click", function (e) {
+            e.preventDefault();
+            let $this = $(this);
+            let location_id = $this.attr('data-location-id')
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('location.del_location')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'location_id': location_id
+                    }
+                ),
+                success: function (e) {
+                    location.reload();
+                },
+                error: function (e) {
+                    location.reload();
+                }
+            });
+        });
+
     </script>
 
 {% endblock %}

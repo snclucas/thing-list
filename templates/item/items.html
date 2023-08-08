@@ -17,7 +17,6 @@
     <div class="content">
         <div class="container">
 
-
             <div class="row">
 
                 <div class="col-md-12">
@@ -36,7 +35,7 @@
                                                 {% set inv_name = inventory.name %}
                                             {% endif %}
                                             | {{ inv_name }}
-                                            {% else %}
+                                        {% else %}
                                             | All item(s)
                                         {% endif %}
 
@@ -53,7 +52,8 @@
 
                                                     <a data-bs-toggle="collapse" href="#collapseAddItem"
                                                        role="button" aria-expanded="false"
-                                                       data-toggle="tooltip" data-placement="top" title="Add new item to current inventory"
+                                                       data-toggle="tooltip" data-placement="top"
+                                                       title="Add new item to current inventory"
                                                        aria-controls="collapseExample">
                                                 <span class="fas fa-plus fa-2x"
                                                       style="display: inline-block; margin-right: 20px;"></span>
@@ -70,7 +70,8 @@
 
                                                     <a data-bs-toggle="collapse" href="#collapseFilter"
                                                        role="button" aria-expanded="false"
-                                                       data-toggle="tooltip" data-placement="top" title="Display item filter form"
+                                                       data-toggle="tooltip" data-placement="top"
+                                                       title="Display item filter form"
                                                        aria-controls="collapseFilter">
                                                 <span class="fas fa-filter fa-2x"
                                                       style="display: inline-block; margin-right: 20px;"></span>
@@ -79,7 +80,8 @@
 
                                                     <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
                                                           href="#collapseButtonBar"
-                                                          data-toggle="tooltip" data-placement="top" title="Display additional button bar"
+                                                          data-toggle="tooltip" data-placement="top"
+                                                          title="Display additional button bar"
                                                           style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
 
                                                 {% endif %}
@@ -87,7 +89,8 @@
 
                                                 <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
                                                       href="#collapseItemsHelp"
-                                                      data-toggle="tooltip" data-placement="top" title="Display help panel"
+                                                      data-toggle="tooltip" data-placement="top"
+                                                      title="Display help panel"
                                                       style="display: inline-block; margin-right: 20px;"></span>
 
                                             </div>
@@ -136,6 +139,12 @@
                                             </div>
                                         </div>
 
+                                        <div class="collapse" id="bulkEditItems" aria-expanded="false">
+                                            <div class="card card-body">
+                                                {% include 'item/_bulk_edit_item_form.html' %}
+                                            </div>
+                                        </div>
+
                                         <div class="collapse" id="collapseAddItem" aria-expanded="false">
                                             <div class="card card-body">
                                                 {% include 'item/add_item_form.html' %}
@@ -174,49 +183,53 @@
                             </div>
 
 
-    <div class="row">
-        <div class="col-md-6">
+                            <div class="row">
+                                <div class="col-md-6">
 
-            Toggle column:
-            <a class="toggle-vis" data-column="1">Description</a> -
-            <a class="toggle-vis" data-column="2">Type</a> -
-            <a class="toggle-vis" data-column="3">Location</a> -
-            <a class="toggle-vis" data-column="4">Inventory</a> -
-            <a class="toggle-vis" data-column="5">Tags</a>
+                                    Toggle column:
+                                    <a class="toggle-vis" data-column="1">Description</a> -
+                                    <a class="toggle-vis" data-column="2">Type</a> -
+                                    <a class="toggle-vis" data-column="3">Location</a> -
+                                     {% if inventory_slug == "all" %}
+                                    <a class="toggle-vis" data-column="4">Inventory</a> -
+                                         <a class="toggle-vis" data-column="5">Tags</a>
+                                         {% else %}
+                                          <a class="toggle-vis" data-column="4">Tags</a>
+                                    {% endif %}
 
-        </div>
-        <div class="col-md-6">
- {% if user_is_authenticated %}
-            <select class="form-select" id="inventory_filter" name="inventory_filter">
-                {% if inventory_slug == "all" %}
-                    <option value="all" selected>All item(s)</option>
-                {% else %}
-                    <option value="all">All item(s)</option>
-                {% endif %}
+                                </div>
+                                <div class="col-md-6">
+                                    {% if user_is_authenticated %}
+                                        <select class="form-select" id="inventory_filter" name="inventory_filter">
+                                            {% if inventory_slug == "all" %}
+                                                <option value="all" selected>All item(s)</option>
+                                            {% else %}
+                                                <option value="all">All item(s)</option>
+                                            {% endif %}
 
-                {% if inventory_slug == "default" %}
-                    <option value="default" selected>Default/None</option>
-                {% else %}
-                    <option value="default">Default/None</option>
-                {% endif %}
+                                            {% if inventory_slug == "default" %}
+                                                <option value="default" selected>Default/None</option>
+                                            {% else %}
+                                                <option value="default">Default/None</option>
+                                            {% endif %}
 
-                {% for option in all_user_inventories %}
-                    {% if "__default__" not in  option[1].name %}
-                        {% if inventory_slug == option[1].slug %}
+                                            {% for option in all_user_inventories %}
+                                                {% if "__default__" not in  option[1].name %}
+                                                    {% if inventory_slug == option[1].slug %}
 
-                            <option value="{{ option[1].slug }}"
-                                    selected>{{ option[1].name }}</option>
+                                                        <option value="{{ option[1].slug }}"
+                                                                selected>{{ option[1].name }}</option>
 
-                        {% else %}
-                            <option value="{{ option[1].slug }}">{{ option[1].name }}</option>
-                        {% endif %}
-                    {% endif %}
-                {% endfor %}
+                                                    {% else %}
+                                                        <option value="{{ option[1].slug }}">{{ option[1].name }}</option>
+                                                    {% endif %}
+                                                {% endif %}
+                                            {% endfor %}
 
-            </select>
-{% endif %}
-        </div>
-    </div>
+                                        </select>
+                                    {% endif %}
+                                </div>
+                            </div>
 
                             <div class="row">
                                 <div class="col-md-12">
@@ -389,30 +402,55 @@
             let delete_span_selector = $('#delete-items-span');
             let move_items_selector = $('#move-items-btn');
 
+            let bulk_edit_items_btn_selector = $('#bulk-edit-items-btn');
+            let bulk_edit_items_span_selector = $('#bulk-edit-items-span');
+
             if (number_selected > 0) {
                 delete_btn_selector.css("pointer-events", "auto");
                 move_items_selector.css("pointer-events", "auto");
+
+                bulk_edit_items_btn_selector.css("pointer-events", "auto");
+                bulk_edit_items_span_selector.css("pointer-events", "auto");
+
                 delete_span_selector.css('color', 'red');
-                $('#move-items-span').css('color', 'red');
+                bulk_edit_items_span_selector.css('color', 'green');
+                $('#move-items-span').css('color', 'green');
 
                 delete_btn_selector.prop('disabled', false);
                 delete_collapse_btn_selector.prop('disabled', false);
                 move_items_selector.prop('disabled', false);
 
+                bulk_edit_items_btn_selector.prop('disabled', false);
+                bulk_edit_items_span_selector.prop('disabled', false);
+
                 delete_btn_selector.attr('disabled', 'disabled');
                 move_items_selector.attr('disabled', 'disabled');
+
+                bulk_edit_items_btn_selector.attr('disabled', 'disabled');
+                bulk_edit_items_span_selector.attr('disabled', 'disabled');
             } else {
                 delete_btn_selector.css("pointer-events", "none");
                 move_items_selector.css("pointer-events", "none");
+
+                bulk_edit_items_btn_selector.css("pointer-events", "none");
+                bulk_edit_items_span_selector.css("pointer-events", "none");
+
                 delete_span_selector.css('color', 'lightgray');
+                bulk_edit_items_span_selector.css('color', 'lightgray');
                 $('#move-items-span').css('color', 'lightgray');
 
                 delete_btn_selector.prop('disabled', true);
                 delete_collapse_btn_selector.prop('disabled', true);
                 move_items_selector.prop('disabled', true);
 
+                bulk_edit_items_btn_selector.prop('disabled', true);
+                bulk_edit_items_span_selector.prop('disabled', true);
+
                 delete_btn_selector.removeAttr('disabled');
                 move_items_selector.removeAttr('disabled');
+
+                bulk_edit_items_btn_selector.removeAttr('disabled');
+                bulk_edit_items_span_selector.removeAttr('disabled');
 
             }
         }
@@ -487,6 +525,50 @@
                     location.reload();
                 }
             });
+        });
+
+
+        $("#btn_submit_edit").on("click", function (e) {
+            e.preventDefault();
+            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
+            let number_selected = [];
+            $.each(all_checkboxes, function () {
+                let $this = $(this);
+                if ($this.is(":checked")) {
+                    number_selected.push($this.attr('data-item-id'));
+                }
+            });
+
+            let location_selection = $('#items_location_edit')
+            let location_selection_option_text = location_selection.find(":selected").text();
+            let location_selection_option_value = location_selection.find(":selected").val();
+            let items_specific_location_edit_value = $('#items_specific_location_edit').val()
+
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('items.items_edit')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'item_ids': number_selected,
+                        'username': "{{ username }}",
+                        'location_id': location_selection_option_value,
+                        'specific_location': items_specific_location_edit_value
+                    }
+                ),
+                success: function () {
+                    location.reload();
+                },
+                error: function (e) {
+                    location.reload();
+                }
+            });
+
+
         });
 
 
@@ -628,7 +710,6 @@
                         const source = await fetch(`{{ url_for('api.user_item_types')}}?query=${query}`);
                         // Data should be an array of `Objects` or `Strings`
                         const data = await source.json();
-
                         return data;
                     } catch (error) {
                         return error;
@@ -638,6 +719,7 @@
                 //keys: ["food"]
             },
             threshold: 0,
+            autoFill: true,
             resultsList: {
                 element: (list, data) => {
                     if (!data.results.length) {

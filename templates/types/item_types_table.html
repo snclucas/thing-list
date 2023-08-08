@@ -19,14 +19,18 @@
                     </td>
                     <td>
 
-                <span id="delete-itemtype-btn-{{ user_item_type.id }}" data-bs-toggle="collapse"
+                <span id="delete-itemtype-btn-{{ user_item_type.id }}"
+                      data-bs-toggle="collapse"
                       href="#confirmItemTypeDelete-{{ user_item_type.id }}"
-                      class="fas fa-times fa-2x " style="color:red; display: inline-block; margin-right: 20px;"></span>
+                      class="fas fa-times fa-2x "
+                      style="color:red; display: inline-block; margin-right: 20px;"></span>
 
                         <div class="collapse" id="confirmItemTypeDelete-{{ user_item_type.id }}" aria-expanded="false">
-                            <button type="button" class="btn btn-primary btn-sm"
+                            <button type="button"
+                                    class="btn btn-primary btn-sm"
                                     id="confirmItemTypeDelete-{{ user_item_type.id }}"
-                                    data-itemtype-id="{{ user_item_type.id }}">Confirm delete
+                                    data-itemtype-id="{{ user_item_type.id }}">
+                                Confirm delete
                             </button>
                         </div>
 

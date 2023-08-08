@@ -148,8 +148,7 @@ class ItemType(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50), nullable=True, unique=False)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
-    __table_args__ = (UniqueConstraint('name', 'user_id', name='_name_userid_uc'),
-                      )
+    __table_args__ = (UniqueConstraint('name', 'user_id', name='_name_userid_uc'),)
 
 
 class Tag(db.Model):

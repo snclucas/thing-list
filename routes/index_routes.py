@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for
 from flask_login import login_required, current_user
 
 from database_functions import get_user_inventories, get_user_item_count, get_user_templates, get_user_locations, \
-    get_all_itemtypes_for_user, find_user_by_username, delete_notification
+    get_all_itemtypes_for_user, find_user_by_username, delete_notification, get_number_user_locations
 
 main = Blueprint('main', __name__)
 
@@ -43,7 +43,7 @@ def profile(username):
     num_item_types = len(get_all_itemtypes_for_user(user_id=current_user.id, string_list=False)) - 1
     num_items = get_user_item_count(user_id=current_user.id)
     num_field_templates = len(get_user_templates(user=current_user))
-    num_user_locations = len(get_user_locations(user=current_user))
+    num_user_locations = get_number_user_locations(user_id=current_user.id)
 
     if user_is_authenticated:
         current_user_id = current_user.id

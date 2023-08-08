@@ -3,6 +3,7 @@ import os
 from io import StringIO
 import csv
 
+import bleach
 import pdfkit
 from flask import make_response
 
@@ -11,12 +12,12 @@ from flask_login import login_required, current_user
 
 from app import app
 from database_functions import get_all_user_locations, find_items, \
-    get_all_item_types,\
+    get_all_item_types, \
     find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
-    get_users_for_inventory, get_user_inventory_by_id
+    get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -69,6 +70,8 @@ def items_load():
                 item_location = None
                 item_specific_location = None
 
+                base_column_headers = 0
+
                 for row in reader:
                     number_columns = len(row)
                     if line_count == 0:  # Header
@@ -95,28 +98,40 @@ def items_load():
 
                         if name_col_index != -1:
                             item_name = row[name_col_index]
+                            base_column_headers += 1
                         if description_col_index != -1:
                             item_description = row[description_col_index]
+                            base_column_headers += 1
                         if type_col_index != -1:
+                            base_column_headers += 1
                             item_type = row[type_col_index]
                         if tags_col_index != -1:
                             item_tags = row[tags_col_index]
-
+                            base_column_headers += 1
                         if location_col_index != -1:
                             item_location = row[location_col_index]
-
+                            base_column_headers += 1
                         if specific_location_col_index != -1:
                             item_specific_location = row[specific_location_col_index]
+                            base_column_headers += 1
 
                         # add item types
                         add_new_user_itemtype(name=item_type, user_id=current_user.id)
 
+                        location_id = None
+                        if item_location is not None:
+                            if item_location.strip() != "":
+                                location_data_ = get_or_add_new_location(location_name=item_location,
+                                                                         location_description=item_location,
+                                                                         to_user_id=current_user.id)
+                                location_id = location_data_["id"]
+
                         tag_array = item_tags.split(",")
 
-                        remaining_data_columns = number_columns - 4
+                        remaining_data_columns = number_columns - base_column_headers
                         for data_column_index in range(0, remaining_data_columns):
-                            custom_field_name = column_headers[4 + data_column_index]
-                            custom_field_value = row[4 + data_column_index]
+                            custom_field_name = column_headers[base_column_headers + data_column_index]
+                            custom_field_value = row[base_column_headers + data_column_index]
                             custom_fields[custom_field_name] = custom_field_value
 
                         for t in range(len(tag_array)):
@@ -126,7 +141,7 @@ def items_load():
                         add_item_to_inventory(item_name=item_name, item_desc=item_description,
                                               item_type=item_type,
                                               item_tags=tag_array, inventory_id=inventory_id,
-                                              item_location=item_location,
+                                              item_location_id=location_id,
                                               item_specific_location=item_specific_location,
                                               user_id=current_user.id, custom_fields=custom_fields)
                     line_count += 1
@@ -147,13 +162,32 @@ def items_move():
         return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
 
+@items_routes.route('/items/edit', methods=['POST'])
+@login_required
+def items_edit():
+    if request.method == 'POST':
+        json_data = request.json
+        username = json_data['username']
+        item_ids = json_data['item_ids']
+        location_id = json_data['location_id']
+        specific_location = json_data['specific_location']
+
+        specific_location = bleach.clean(specific_location)
+        if specific_location == "":
+            specific_location = None
+
+        edit_items_locations(item_ids=item_ids, user=current_user, location_id=location_id,
+                             specific_location=specific_location)
+        return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+
+
 @items_routes.route('/items/save-pdf', methods=['POST'])
 @login_required
 def items_save_pdf():
     if request.method == 'POST':
-        json_data = request.json
-        inventory_slug = json_data['inventory_slug']
-        username = json_data['username']
+        # json_data = request.json
+        # inventory_slug = json_data['inventory_slug']
+        # username = json_data['username']
 
         html = items_with_username_and_inventory(username="simon", inventory_slug="simon-s-inventory")
 
@@ -188,7 +222,7 @@ def items_save():
         dv_lower = [x.lower() for x in list(dv.keys())]
         field_set.update(dv_lower)
 
-    csv_headers = ["#name", "description", "tags", "type", "location", "specific location"]
+    csv_headers = ["name", "description", "tags", "type", "location", "specific location"]
     csv_headers.extend(field_set)
 
     csv_list = [csv_headers]

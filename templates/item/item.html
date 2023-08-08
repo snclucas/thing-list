@@ -92,7 +92,7 @@
                                     <h6><strong>Type:</strong> {{ item_type }}</h6>
 
                                     {% if item_access_level == 0 %}
-                                        <h6><strong>Location:</strong> {{ item_location.name }}</h6>
+                                        <h6><strong>Location:</strong> {{ item_location['name'] }}</h6>
 
                                         {% if item.specific_location is not none %}
                                             <h6><strong>Specific location #:</strong> {{ item.specific_location }}</h6>
