@@ -6,11 +6,7 @@
         <label class="form-label" for="items_location_edit">Location:</label>
         <select class="form-select" id="items_location_edit" name="items_location_edit">
 
-            {% if selected_item_location_id is none %}
-                <option value="0">Any</option>
-            {% else %}
-                <option value="0" selected>Any</option>
-            {% endif %}
+            <option value="0" selected>No change</option>
 
             {% for option in user_locations %}
                 {% if selected_item_location_id == option.id %}
@@ -27,6 +23,19 @@
         <input type="text" class="form-control" name="items_specific_location_edit"
                id="items_specific_location_edit"
                value="{{ item_specific_location }}">
+    </div>
+</div>
+
+<hr>
+
+<div class="row">
+    <div class="col-6">
+        <label class="form-label" for="items_public_edit">Item visibility:</label>
+        <select class="form-select" id="items_public_edit" name="items_public_edit">
+            <option value="-1" selected>No change</option>
+            <option value="0">Private</option>
+            <option value="2">Public</option>
+        </select>
     </div>
 </div>
 

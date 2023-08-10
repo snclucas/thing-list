@@ -27,9 +27,11 @@ def drop_then_create():
 
 def post_user_add_hook(new_user: User):
     with app.app_context():
-        add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory", public=False,
+        add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory",
+                           public=False,
                            user_id=new_user.id)
-        get_or_add_new_location(location_name=_NONE_, location_description="No location (default)", to_user_id=new_user.id)
+        get_or_add_new_location(location_name=_NONE_, location_description="No location (default)",
+                                to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
 
@@ -290,17 +292,20 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
         return sd
 
 
-def change_item_access_level(item_id: int, access_level: int, user_id: int):
+def change_item_access_level(item_ids: int, access_level: int, user_id: int):
+    if not isinstance(item_ids, list):
+        item_ids = [item_ids]
+
     with app.app_context():
         d = db.session.query(Item, InventoryItem) \
             .join(InventoryItem, InventoryItem.item_id == Item.id) \
             .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
             .join(UserInventory, UserInventory.user_id == Item.user_id) \
-            .filter(Item.id == item_id) \
+            .filter(Item.id.in_(item_ids))\
             .filter(Item.user_id == user_id)
 
-        item_, inventory_item_ = d.first()
-        if item_ is not None:
+        results_ = d.all()
+        for item_, inventory_item_ in results_:
             inventory_item_.access_level = access_level
 
         db.session.commit()
@@ -665,7 +670,9 @@ def edit_items_locations(item_ids: list, user: User, location_id: int, specific_
         results_ = db.session.execute(stmt).all()
 
         for item_ in results_:
-            item_[0].location_id = location_id
+            if location_id != 0:
+                item_[0].location_id = location_id
+
             if specific_location is not None:
                 item_[0].specific_location = specific_location
         db.session.commit()

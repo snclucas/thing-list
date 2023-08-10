@@ -17,7 +17,8 @@ from database_functions import get_all_user_locations, find_items, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
-    get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations
+    get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
+    change_item_access_level
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -170,14 +171,19 @@ def items_edit():
         username = json_data['username']
         item_ids = json_data['item_ids']
         location_id = json_data['location_id']
+        item_visibility = json_data['item_visibility']
         specific_location = json_data['specific_location']
 
+        access_level = int(item_visibility)
+
         specific_location = bleach.clean(specific_location)
-        if specific_location == "":
+        if specific_location == "" or specific_location == "None":
             specific_location = None
 
-        edit_items_locations(item_ids=item_ids, user=current_user, location_id=location_id,
+        edit_items_locations(item_ids=item_ids, user=current_user, location_id=int(location_id),
                              specific_location=specific_location)
+        if access_level != -1:
+            change_item_access_level(item_ids=item_ids, access_level=access_level, user_id=current_user.id)
         return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
 
@@ -282,10 +288,13 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     inventory_slug = inventory_slug.strip()
 
     user_locations_ = None
+    inventory_templates = None
+    users_in_this_inventory = None
 
     if user_is_authenticated:
         logged_in_user = current_user
         user_locations_ = get_all_user_locations(user=logged_in_user)
+        inventory_templates = get_user_templates(user=current_user)
 
     if username is None:
         username = current_user.username
@@ -312,6 +321,9 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     inventory_id, inventory_, inventory_field_template = _get_inventory(inventory_slug= inventory_slug,
                                                                         logged_in_user_id=logged_in_user_id)
 
+    if user_is_authenticated:
+        users_in_this_inventory = get_users_for_inventory(inventory_id=inventory_id, current_user_id=current_user.id)
+
     if inventory_ is None and inventory_slug != "all":
         return render_template('404.html', message="No such inventory"), 404
 
@@ -335,9 +347,8 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id,
                                                request_params=request_params)
 
-    inventory_templates = get_user_templates(user=current_user)
 
-    users_in_this_inventory = get_users_for_inventory(inventory_id=inventory_id, current_user_id=current_user.id)
+
 
     return render_template('item/items.html',
                            username=username,

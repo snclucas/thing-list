@@ -400,54 +400,56 @@
             let delete_collapse_btn_selector = $('#delete-items-btn-collapse');
             let delete_btn_selector = $('#delete-items-btn');
             let delete_span_selector = $('#delete-items-span');
-            let move_items_selector = $('#move-items-btn');
+
+            let move_items_btn_selector = $('#move-items-btn');
+            let move_items_span_selector = $('#move-items-span');
 
             let bulk_edit_items_btn_selector = $('#bulk-edit-items-btn');
             let bulk_edit_items_span_selector = $('#bulk-edit-items-span');
 
             if (number_selected > 0) {
                 delete_btn_selector.css("pointer-events", "auto");
-                move_items_selector.css("pointer-events", "auto");
+                move_items_btn_selector.css("pointer-events", "auto");
 
                 bulk_edit_items_btn_selector.css("pointer-events", "auto");
                 bulk_edit_items_span_selector.css("pointer-events", "auto");
 
                 delete_span_selector.css('color', 'red');
                 bulk_edit_items_span_selector.css('color', 'green');
-                $('#move-items-span').css('color', 'green');
+                move_items_span_selector.css('color', 'green');
 
                 delete_btn_selector.prop('disabled', false);
                 delete_collapse_btn_selector.prop('disabled', false);
-                move_items_selector.prop('disabled', false);
+                move_items_btn_selector.prop('disabled', false);
 
                 bulk_edit_items_btn_selector.prop('disabled', false);
                 bulk_edit_items_span_selector.prop('disabled', false);
 
                 delete_btn_selector.attr('disabled', 'disabled');
-                move_items_selector.attr('disabled', 'disabled');
+                move_items_btn_selector.attr('disabled', 'disabled');
 
                 bulk_edit_items_btn_selector.attr('disabled', 'disabled');
                 bulk_edit_items_span_selector.attr('disabled', 'disabled');
             } else {
                 delete_btn_selector.css("pointer-events", "none");
-                move_items_selector.css("pointer-events", "none");
+                move_items_btn_selector.css("pointer-events", "none");
 
                 bulk_edit_items_btn_selector.css("pointer-events", "none");
                 bulk_edit_items_span_selector.css("pointer-events", "none");
 
                 delete_span_selector.css('color', 'lightgray');
                 bulk_edit_items_span_selector.css('color', 'lightgray');
-                $('#move-items-span').css('color', 'lightgray');
+                move_items_span_selector.css('color', 'lightgray');
 
                 delete_btn_selector.prop('disabled', true);
                 delete_collapse_btn_selector.prop('disabled', true);
-                move_items_selector.prop('disabled', true);
+                move_items_btn_selector.prop('disabled', true);
 
                 bulk_edit_items_btn_selector.prop('disabled', true);
                 bulk_edit_items_span_selector.prop('disabled', true);
 
                 delete_btn_selector.removeAttr('disabled');
-                move_items_selector.removeAttr('disabled');
+                move_items_btn_selector.removeAttr('disabled');
 
                 bulk_edit_items_btn_selector.removeAttr('disabled');
                 bulk_edit_items_span_selector.removeAttr('disabled');
@@ -540,10 +542,11 @@
             });
 
             let location_selection = $('#items_location_edit')
-            let location_selection_option_text = location_selection.find(":selected").text();
             let location_selection_option_value = location_selection.find(":selected").val();
             let items_specific_location_edit_value = $('#items_specific_location_edit').val()
 
+            let visibility_selector = $('#items_public_edit')
+            let item_visibility_option_value = visibility_selector.find(":selected").val();
 
             $.ajax({
                 type: "POST",
@@ -557,7 +560,8 @@
                         'item_ids': number_selected,
                         'username': "{{ username }}",
                         'location_id': location_selection_option_value,
-                        'specific_location': items_specific_location_edit_value
+                        'specific_location': items_specific_location_edit_value,
+                        'item_visibility': item_visibility_option_value
                     }
                 ),
                 success: function () {
