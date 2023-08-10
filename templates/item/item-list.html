@@ -1,21 +1,4 @@
-
-
 {% if data_dict | length > 0 %}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
     <hr>
     <div>
         <table class="table collapse show dataTable" id="items-table">
@@ -27,14 +10,14 @@
                 {% if user_is_authenticated %}
                     <th>Location</th>
                     {% if inventory_slug == "all" %}
-                    <th>Inventory</th>
+                        <th>Inventory</th>
                     {% endif %}
                 {% endif %}
                 <th>Tags</th>
-                <th>
-                    <input class="form-check-input" type="checkbox" value=""
-                           id="all-selected-items">
-                </th>
+                {% if user_is_authenticated %}
+                    <th><input class="form-check-input" type="checkbox" value="" id="all-selected-items"></th>
+                    <th></th>
+                {% endif %}
             </tr>
             </thead>
             <tbody>
@@ -43,8 +26,7 @@
                 {% set item_type = item_data["types"] %}
                 {% set item_slug = item.slug %}
                 {% set item_location = item_data["location"] %}
-                {% set user_inventory = item_data["user_inventory"] %}
-
+                {% set item_visibility = item_data["user_inventory"] %}
                 <tr>
                     <td>
                         {% if inventory_slug == "default" %}
@@ -62,46 +44,35 @@
                             <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
                                 inventory_slug=inventory.slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
                         {% endif %}
-
                     </td>
                     <td>
                         {{ item.description }}
                     </td>
-
                     <td id="table_item_desc_{{ item['id'] }}">
                         <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory_slug) | replace('%40', '@') }}?type={{ item_type }}">{{ item_type }}</a>
                     </td>
-
                     {% if user_is_authenticated %}
                         <td id="table_item_tags_{{ item['id'] }}">
-
                             {% if item_location != "None" %}
                                 {{ item_location }}
                                 {% if item.specific_location != "None" %}
                                     <br> {{ item.specific_location }}
                                 {% endif %}
                             {% endif %}
-
                         </td>
-
-
-                         {% if inventory_slug == "all" %}
-                        <td>
-                            {% for inv in item.inventories %}
-
-                                {% if "__default__" not in  inv.name %}
-                                    <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inv.slug) | replace('%40', '@') }}">{{ inv.name }}</a>
-                                    <br>
-                                {% else %}
-                                    None
-                                {% endif %}
-
-                            {% endfor %}
-                        </td>
-                          {% endif %}
-
+                        {% if inventory_slug == "all" %}
+                            <td>
+                                {% for inv in item.inventories %}
+                                    {% if "__default__" not in  inv.name %}
+                                        <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inv.slug) | replace('%40', '@') }}">{{ inv.name }}</a>
+                                        <br>
+                                    {% else %}
+                                        None
+                                    {% endif %}
+                                {% endfor %}
+                            </td>
+                        {% endif %}
                     {% endif %}
-
                     <td>
                         {% for tag in item.tags %}
                             <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory_slug) | replace('%40', '@') }}?tags={{ tag.tag | replace('@#$', ' ') }}">
@@ -109,26 +80,25 @@
                             </a>
                         {% endfor %}
                     </td>
-
-                    <td>
-                        {% if user_is_authenticated %}
+                    {% if user_is_authenticated %}
+                        <td>
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" value="" data-item-id="{{ item.id }}"
-                                       id="selected-item-{{ item.id }}">
+                                <input class="form-check-input" type="checkbox" value="" data-item-id="{{ item.id }}" id="selected-item-{{ item.id }}">
                             </div>
-
-                        {% endif %}
-                    </td>
-
-
+                        </td>
+                        <td>
+                            {% if item_visibility == 0 %}
+                                <span class="fas fa-1x fa-lock" data-toggle="tooltip" data-placement="top" title="This inventory is not public"></span>
+                            {% else %}
+                                <span class="fas fa-1x fa-unlock" style="color: red;" data-toggle="tooltip" data-placement="top" title="This inventory is not public"></span>
+                            {% endif %}
+                        </td>
+                    {% endif %}
                 </tr>
-
             {% endfor %}
-
             </tbody>
         </table>
     </div>
-
 {% else %}
     <hr>
     <div class="row">

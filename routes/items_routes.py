@@ -347,9 +347,6 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id,
                                                request_params=request_params)
 
-
-
-
     return render_template('item/items.html',
                            username=username,
                            inventory=inventory_,
