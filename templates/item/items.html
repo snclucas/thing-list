@@ -1,14 +1,30 @@
 {% extends "base.html" %}
 
+{% if inventory is not none %}
+    {% if "__default__" in inventory.name %}
+        {% set inv_name = "Default/None" %}
+    {% else %}
+        {% set inv_name = inventory.name %}
+    {% endif %}
+{% else %}
+    {% set inv_name = "All" %}
+{% endif %}
+
 {% block title %}
     ThingList
-
     {% if inventory is not none %}
         | Items | {{ inventory.name }}
     {% else %}
         | Items
     {% endif %}
+{% endblock %}
 
+{% block metadata %}
+        <meta property="og:title" content="ThingList | @{{ username }} | {{ inv_name }}"/>
+        <meta property="og:type" content="website"/>
+        <meta property="og:description" content="{{ inventory.description }}"/>
+        <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
+        <meta property="og:url" content="{{ url_for(request.endpoint, username=username, inventory_slug=inventory_slug) }}"/>
 {% endblock %}
 
 {% block content %}

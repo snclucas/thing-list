@@ -4,12 +4,15 @@
 
 {% block head %}
     {{ super() }}
-    <meta property="og:title" content="ThingList | @{{ username }} | {{ item.name }}"/>
-    <meta property="og:type" content="website"/>
-    {% if item.main_image is not none %}
-        <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}"/>
-    {% endif %}
 
+    {% block metadata %}
+        <meta property="og:description" content="{{ item.description }}"/>
+        <meta property="og:title" content="ThingList | @{{ username }} | {{ item.name }}"/>
+        <meta property="og:type" content="website"/>
+        {% if item.main_image is not none %}
+            <meta property="og:image" content="{{ url_for('static', filename='uploads/' + item.main_image) }}"/>
+        {% endif %}
+    {% endblock %}
 
     <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
 {% endblock %}
@@ -122,12 +125,12 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                    {% for field_name, field in item_fields.items() %}
-                                        <tr>
-                                            <td><strong>{{ field_name|capitalize }}:</strong></td>
-                                            <td>{{ field.value }}</td>
-                                        </tr>
-                                    {% endfor %}
+                                {% for field_name, field in item_fields.items() %}
+                                    <tr>
+                                        <td><strong>{{ field_name|capitalize }}:</strong></td>
+                                        <td>{{ field.value }}</td>
+                                    </tr>
+                                {% endfor %}
                                 </tbody>
                             </table>
 

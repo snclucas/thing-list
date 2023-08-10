@@ -246,7 +246,7 @@ def add_to_inventory():
 
         add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
                               item_tags=item_tags,
-                              item_location=int(item_location), item_specific_location=item_specific_location,
+                              item_location_id=int(item_location), item_specific_location=item_specific_location,
                               inventory_id=inventory_id, user_id=current_user.id,
                               custom_fields=item_custom_fields)
 
