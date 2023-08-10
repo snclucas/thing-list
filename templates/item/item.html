@@ -231,9 +231,10 @@
 
             $('#item-field-table').DataTable({
                 "searching": true,
-                paging: true,
+                paging: false,
                 ordering: true,
-                info: true
+                info: true,
+                "pageLength": -1,
             });
             checkbox_count();
 
@@ -256,7 +257,7 @@
             // clear the search table to make sure the table is complete
             let table = $('#item-field-table').DataTable();
             table.search('').draw();
-            let csrf_token = "{{ csrf_token() }}";
+
             let all_checkboxes = $('input:checkbox[id^="selected-field-"]')
             let number_selected = [];
             $.each(all_checkboxes, function () {
