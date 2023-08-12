@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+
+
+{% block content %}
+    <div class="content">
+        <div class="container">
+            <div class="row">
+                <div class="col-md-12">
+                    <div class="card">
+                        <div class="card-body">
+
+
+                            <form method="POST" action="{{ url_for("items.items_load") }}">
+                                <label class="form-label" for="search_query">Search:</label>
+                                <input type="text" class="form-control" name="search_query" id="search_query" value="">
+                            </form>
+
+
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+{% endblock %}
+
+
+
+

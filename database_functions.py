@@ -246,9 +246,11 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
                 d = d.join(Inventory, Inventory.id == InventoryItem.inventory_id)
                 d = d.filter(InventoryItem.inventory_id == inventory_id)
             else:
-                d = db.session.query(Item, ItemType.name, Location.name) \
+                d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
                     .join(ItemType, ItemType.id == Item.item_type) \
                     .join(Location, Location.id == Item.location_id)
+
+                d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
 
             if logged_in_user_id is None:
                 if request_user_id is None:
@@ -922,6 +924,21 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
         add_new_item_field(new_item, custom_fields, app_context)
 
+        return_data = {
+            "item": {
+                "id": new_item.id,
+                "name": new_item.name,
+                "description": new_item.description,
+                "user_id": new_item.user_id,
+            }
+        }
+        return_data['item']['tags'] = []
+        item_tags = new_item.tags
+        for tag in item_tags:
+            return_data['item']['tags'].append({"tag": tag.tag})
+
+        return return_data
+
 
 def get_or_add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
     with app.app_context():
@@ -1429,3 +1446,10 @@ def set_field_status(item_id, field_ids, is_visible=True):
                 db.session.add(instance_)
 
             db.session.commit()
+
+
+def search():
+    with app.app_context():
+        pass
+
+

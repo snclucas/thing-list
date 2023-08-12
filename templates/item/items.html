@@ -518,6 +518,7 @@
                     {
                         'item_ids': number_selected,
                         'username': "{{ username }}",
+                        'inventory_slug': "{{ inventory_slug }}",
                         'location_id': location_selection_option_value,
                         'specific_location': items_specific_location_edit_value,
                         'item_visibility': item_visibility_option_value
@@ -656,6 +657,16 @@
             e.preventDefault();
             deselect_all_checkboxes();
             $("#collapseDeleteItems").collapse("toggle");
+        });
+
+        $("#import-cancel-btn").on("click", function (e) {
+            e.preventDefault();
+            $("#collapseImportItems").collapse("toggle");
+        });
+
+        $("#inv-users-cancel-btn").on("click", function (e) {
+            e.preventDefault();
+            $("#collapseManageUserAccess").collapse("toggle");
         });
 
 

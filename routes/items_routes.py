@@ -139,12 +139,16 @@ def items_load():
                             tag_array[t] = tag_array[t].strip()
                             tag_array[t] = tag_array[t].replace(" ", "@#$")
 
-                        add_item_to_inventory(item_name=item_name, item_desc=item_description,
+                        new_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
                                               item_type=item_type,
                                               item_tags=tag_array, inventory_id=inventory_id,
                                               item_location_id=location_id,
                                               item_specific_location=item_specific_location,
                                               user_id=current_user.id, custom_fields=custom_fields)
+
+                        payload = new_["item"]
+                        app.elasticsearch.index(index="items", id=payload['id'], body=payload)
+
                     line_count += 1
 
         return redirect(url_for('items.items_with_username_and_inventory',
@@ -170,6 +174,7 @@ def items_edit():
         json_data = request.json
         username = json_data['username']
         item_ids = json_data['item_ids']
+        inventory_slug = json_data['inventory_slug']
         location_id = json_data['location_id']
         item_visibility = json_data['item_visibility']
         specific_location = json_data['specific_location']
@@ -184,7 +189,9 @@ def items_edit():
                              specific_location=specific_location)
         if access_level != -1:
             change_item_access_level(item_ids=item_ids, access_level=access_level, user_id=current_user.id)
-        return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+
+        return redirect(url_for('items.items_with_username_and_inventory',
+                                username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
 
 @items_routes.route('/items/save-pdf', methods=['POST'])
@@ -415,13 +422,8 @@ def find_items_query(requested_user, logged_in_user, inventory_id, request_param
     data_dict = []
     for i in items_:
         item_id_list.append(i[0].id)
-        dat = {
-                "item": i[0],
-                "types": i[1],
-                "location": i[2]
-            }
-        if inventory_id is not None:
-            dat["user_inventory"] = i[3]
+        dat = {"item": i[0], "types": i[1], "location": i[2], "user_inventory": i[3]}
+
         data_dict.append(
             dat
         )

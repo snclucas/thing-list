@@ -88,9 +88,9 @@
                         </td>
                         <td>
                             {% if item_visibility == 0 %}
-                                <span class="fas fa-1x fa-lock" data-toggle="tooltip" data-placement="top" title="This inventory is not public"></span>
+                                <span class="fas fa-1x fa-lock" data-toggle="tooltip" data-placement="top" title="This item is not public"></span>
                             {% else %}
-                                <span class="fas fa-1x fa-unlock" style="color: red;" data-toggle="tooltip" data-placement="top" title="This inventory is not public"></span>
+                                <span class="fas fa-1x fa-unlock" style="color: red;" data-toggle="tooltip" data-placement="top" title="This item is public"></span>
                             {% endif %}
                         </td>
                     {% endif %}
@@ -111,6 +111,3 @@
         </div>
     </div>
 {% endif %}
-
-
-

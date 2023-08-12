@@ -1,5 +1,6 @@
 import os
 
+from elasticsearch import Elasticsearch
 from flask_qrcode import QRcode
 from flask_sqlalchemy import SQLAlchemy
 from flask import Flask, render_template
@@ -29,6 +30,8 @@ app.config['RESIZE_ROOT'] = os.environ.get('RESIZE_ROOT', '/tmp')
 
 resize = flask_resize.Resize(app)
 
+ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
+
 
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', '')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -42,6 +45,8 @@ app.config['MYSQL_DB'] = os.environ.get('MYSQL_DB', '')
 app.config['UPLOAD_FOLDER'] = os.environ.get('UPLOAD_FOLDER', '')
 
 app.config['FILE_UPLOADS'] = os.environ.get('FILE_UPLOADS', '')
+
+app.config['POSTS_PER_PAGE'] = os.environ.get('POSTS_PER_PAGE', 10)
 
 
 app.debug = os.environ.get('DEBUG', bool(os.environ.get('DEBUG', '')))
@@ -57,6 +62,12 @@ SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'mysql://{0}:{1}@{2}/{3}'.fo
                                                                                      app.config['MYSQL_PASSWORD'],
                                                                                      app.config['MYSQL_HOST'],
                                                                                      app.config['MYSQL_DB']))
+
+app.config['ELASTICSEARCH_URL'] = ELASTICSEARCH_URL
+
+app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
+        if app.config['ELASTICSEARCH_URL'] else None
+
 
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 
