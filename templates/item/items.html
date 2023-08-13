@@ -37,8 +37,14 @@
                 <div class="col-md-12">
                     <div class="card">
                         <div class="card-body">
+
+
+
+
+
+
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 order-sm-first order-last">
                                     <h4 class="mb-0">Items <small>| {{ data_dict| length }}
                                         {% if inventory is not none %}
                                             {% if "__default__" in inventory.name %}
@@ -56,7 +62,7 @@
                                 <div class="col-md-6">
                                     <div class="row">
                                         <div class="col-md-12">
-                                            <div class="text-end">
+                                            <div class="text-lg-end text-center">
                                                 {% if is_inventory_owner or inventory_access_level == 1 %}
                                                     <a data-bs-toggle="collapse" href="#collapseAddItem"
                                                        role="button" aria-expanded="false"
@@ -93,11 +99,19 @@
                                                       data-toggle="tooltip" data-placement="top"
                                                       title="Display help panel"
                                                       style="display: inline-block; margin-right: 20px;"></span>
+                                            <hr class="show-small">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
+
+
+
+
+
+
+
                             <div class="row">
                                 <div class="col-md-12">
                                     <div class="collapse" id="collapseButtonBar" aria-expanded="false">
@@ -163,16 +177,15 @@
                                 </div>
                             </div>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 show-big">
                                     Toggle column:
-                                    <a class="toggle-vis" data-column="1">Description</a> -
-                                    <a class="toggle-vis" data-column="2">Type</a> -
-                                    <a class="toggle-vis" data-column="3">Location</a> -
+                                    <a class="toggle-vis" data-column="1">Type</a> -
+                                    <a class="toggle-vis" data-column="2">Location</a> -
                                     {% if inventory_slug == "all" %}
-                                        <a class="toggle-vis" data-column="4">Inventory</a> -
-                                        <a class="toggle-vis" data-column="5">Tags</a>
-                                    {% else %}
+                                        <a class="toggle-vis" data-column="3">Inventory</a> -
                                         <a class="toggle-vis" data-column="4">Tags</a>
+                                    {% else %}
+                                        <a class="toggle-vis" data-column="5">Tags</a>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6">
@@ -229,13 +242,7 @@
                     details: false
                 },
                 stateSave: true,
-                "pageLength": 50,
-                columnDefs: [
-                    {
-                        target: 1,
-                        visible: false
-                    }
-                ]
+                "pageLength": 50
             });
 
             $('#item-field-table').DataTable({
