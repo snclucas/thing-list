@@ -20,11 +20,12 @@
 {% endblock %}
 
 {% block metadata %}
-        <meta property="og:title" content="ThingList | @{{ username }} | {{ inv_name }}"/>
-        <meta property="og:type" content="website"/>
-        <meta property="og:description" content="{{ inventory.description }}"/>
-        <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
-        <meta property="og:url" content="{{ url_for(request.endpoint, username=username, inventory_slug=inventory_slug) }}"/>
+    <meta property="og:title" content="ThingList | @{{ username }} | {{ inv_name }}"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:description" content="{{ inventory.description }}"/>
+    <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
+    <meta property="og:url"
+          content="{{ url_for(request.endpoint, username=username, inventory_slug=inventory_slug) }}"/>
 {% endblock %}
 
 {% block content %}
@@ -167,11 +168,11 @@
                                     <a class="toggle-vis" data-column="1">Description</a> -
                                     <a class="toggle-vis" data-column="2">Type</a> -
                                     <a class="toggle-vis" data-column="3">Location</a> -
-                                     {% if inventory_slug == "all" %}
-                                    <a class="toggle-vis" data-column="4">Inventory</a> -
-                                         <a class="toggle-vis" data-column="5">Tags</a>
-                                         {% else %}
-                                          <a class="toggle-vis" data-column="4">Tags</a>
+                                    {% if inventory_slug == "all" %}
+                                        <a class="toggle-vis" data-column="4">Inventory</a> -
+                                        <a class="toggle-vis" data-column="5">Tags</a>
+                                    {% else %}
+                                        <a class="toggle-vis" data-column="4">Tags</a>
                                     {% endif %}
                                 </div>
                                 <div class="col-md-6">
@@ -224,6 +225,9 @@
                 paging: true,
                 ordering: true,
                 info: true,
+                responsive: {
+                    details: false
+                },
                 stateSave: true,
                 "pageLength": 50,
                 columnDefs: [
@@ -233,7 +237,6 @@
                     }
                 ]
             });
-
 
             $('#item-field-table').DataTable({
                 "searching": true,
