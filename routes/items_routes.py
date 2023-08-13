@@ -448,7 +448,7 @@ def _process_url_query(req_, inventory_user):
     if requested_item_type_string is not None:
         item_type_ = find_type_by_text(type_text=requested_item_type_string, user_id=inventory_user.id)
         if item_type_ is not None:
-            requested_item_type_id = item_type_.id
+            requested_item_type_id = item_type_['id']
         else:
             requested_item_type_id = None
     else:

@@ -34,7 +34,7 @@
                                         <div class="text-end">
                                             <span class="fas fa-ellipsis-v fa-2x" data-bs-toggle="collapse"
                                                   href="#collapseButtonBar"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
+                                                  style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
                                         </div>
                                     {% endif %}
                                 </div>
@@ -139,63 +139,54 @@
                             <hr>
 
                             <div class="row">
-
                                 <div class="col-md-12">
                                     <h5>Inventories: </h5>
-
                                     {% for inventory in item.inventories %}
-
                                         <strong><a
                                                 href="{{ url_for('inv.inventory_by_slug', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">{{ inventory.name }}</a></strong>
                                         | <a href="#"> Remove</a> | <a href="#"> Move </a>
-
                                     {% endfor %}
-
                                 </div>
-
                             </div>
 
                             <hr>
 
-                            <div class="row">
+                            {% if item.images | length > 0 %}
+                                <div class="row">
 
-                                {% if item.images | length > 0 %}
-
-                                    <div class="col-md-6 text-center">
+                                    <div class="col-md-12 text-center">
                                         <button id="btn-remove-images" type="button" class="btn btn-sm btn-primary"
                                                 disabled>
-                                            Remove images
+                                            Remove
                                         </button>
-                                    </div>
-                                    <div class="col-md-6 text-center">
+
                                         <button id="btn-main-image" type="button" class="btn btn-sm btn-primary"
                                                 disabled>
-                                            Make main image
+                                            Make main
                                         </button>
                                     </div>
 
-                                {% endif %}
-
-                            </div>
-
-                            <br>
-
-                            <div class="row">
-
-                                <div class="grid" id="masonry">
-                                    {% for img in item.images %}
-
-                                        {% set image_url = url_for('static', filename="uploads/" + img.image_filename) %}
-                                        <div class="item">
-                                            <img width="300" class="image-checkbox" src="{{ image_url }}"
-                                                 data-image-url="{{ image_url }}"
-                                                 id="{{ img.id }}">
-                                        </div>
-                                    {% endfor %}
                                 </div>
-                            </div>
+                                <hr>
+                                <br>
 
-                            <hr>
+                                <div class="row">
+                                    <div class="grid" id="masonry">
+                                        {% for img in item.images %}
+                                            {% set image_url = url_for('static', filename="uploads/" + img.image_filename) %}
+                                            <div class="item">
+                                                <img width="300" class="image-checkbox" src="{{ image_url }}"
+                                                     data-image-url="{{ image_url }}"
+                                                     id="{{ img.id }}">
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                </div>
+
+                                <hr>
+
+                            {% endif %}
+
                             <div class="text-center">
                                 <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
                             </div>

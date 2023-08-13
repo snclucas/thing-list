@@ -1,5 +1,5 @@
 
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, url_for, request
 
 from models import Item
 from app import app
