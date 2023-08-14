@@ -2,29 +2,34 @@
 <hr>
 
 <div class="row">
-    <div class="col-12">
 
-        <div class="col-12">
-            <label class="form-label" for="destination_inventory">Inventory:</label>
-            <select class="form-select" id="destination_inventory" name="destination_inventory">
+    <div class="col-6">
+        <label class="form-label" for="destination_inventory">Inventory:</label>
+        <select class="form-select" id="destination_inventory" name="destination_inventory">
 
-                {% if inventory_slug is none %}
-                    <option value="-1" selected>None</option>
-                {% else %}
-                    <option value="-1">None</option>
+            {% if inventory_slug is none %}
+                <option value="-1" selected>None</option>
+            {% else %}
+                <option value="-1">None</option>
+            {% endif %}
+
+            {% for option in all_user_inventories %}
+                {% if "__default__" not in  option[1].name %}
+                    <option value="{{ option[1].id }}">{{ option[1].name }}</option>
                 {% endif %}
+            {% endfor %}
 
-                {% for option in all_user_inventories %}
-                    {% if "__default__" not in  option[1].name %}
-                        <option value="{{ option[1].id }}">{{ option[1].name }}</option>
-                    {% endif %}
-                {% endfor %}
-
-            </select>
-        </div>
-
-
+        </select>
     </div>
+
+    <div class="col-6">
+        <label class="form-label" for="move_type">Type:</label>
+        <select class="form-select" id="move_type" name="move_type">
+            <option value="0" selected>Move</option>
+            <option value="1">Copy</option>
+        </select>
+    </div>
+
 </div>
 
 <hr>
@@ -34,6 +39,6 @@
 
 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
 <div class="col-12">
-    <button id="btn_submit_move" type="submit" class="btn btn-primary">Move</button>
+    <button id="btn_submit_move" type="submit" class="btn btn-primary">Save</button>
     <button class="btn btn-primary">Cancel</button>
 </div>

@@ -18,7 +18,7 @@ from database_functions import get_all_user_locations, find_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
-    change_item_access_level
+    change_item_access_level, link_items, copy_items
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -146,9 +146,6 @@ def items_load():
                                               item_specific_location=item_specific_location,
                                               user_id=current_user.id, custom_fields=custom_fields)
 
-                        payload = new_["item"]
-                        app.elasticsearch.index(index="items", id=payload['id'], body=payload)
-
                     line_count += 1
 
         return redirect(url_for('items.items_with_username_and_inventory',
@@ -163,7 +160,20 @@ def items_move():
         item_ids = json_data['item_ids']
         username = json_data['username']
         to_inventory_id = json_data['to_inventory_id']
-        move_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+        move_type = int(json_data['move_type'])
+        """
+        link - just add new line in ItemInventory
+        move - change inventory id in ItemInventory
+        copy - duplicate item, add new line in ItemInventory
+        """
+
+        if move_type == 0:
+            move_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+        elif move_type == 1:
+            copy_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+        else:
+            link_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+
         return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
 
@@ -473,7 +483,6 @@ def _process_url_query(req_, inventory_user):
 @items_routes.route('/item/delete', methods=['POST'])
 @login_required
 def del_items():
-    print(request.json)
     if request.method == 'POST':
         json_data = request.json
         item_ids = json_data['item_ids']

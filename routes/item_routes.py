@@ -16,6 +16,7 @@ from database_functions import get_all_user_locations, \
     get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id
+from utils import correct_image_orientation
 
 item_routes = Blueprint('item', __name__)
 
@@ -255,31 +256,7 @@ def upload():
         in_mem_file = BytesIO(file.read())
         image = Image.open(in_mem_file)
 
-        if hasattr(image, '_getexif'):
-            exifdata = image._getexif()
-            try:
-                orientation = exifdata.get(274)
-            except:
-                orientation = 1
-        else:
-            orientation = 1
-
-        if orientation is 1:
-            pass
-        elif orientation is 2:
-            image = image.transpose(Image.FLIP_LEFT_RIGHT)
-        elif orientation is 3:
-            image = image.rotate(180)
-        elif orientation is 4:
-            image = image.rotate(180)
-        elif orientation is 5:
-            image = image.rotate(-90)
-        elif orientation is 6:
-            image = image.rotate(-90)
-        elif orientation is 7:
-            image = image.rotate(90)
-        elif orientation is 8:
-            image = image.rotate(90)
+        image = correct_image_orientation(image=image)
 
         image = image.convert('RGB')
         image.thumbnail((600, 600))

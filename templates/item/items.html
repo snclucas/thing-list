@@ -39,10 +39,6 @@
                         <div class="card-body">
 
 
-
-
-
-
                             <div class="row">
                                 <div class="col-md-6 order-sm-first order-last">
                                     <h4 class="mb-0">Items <small>| {{ data_dict| length }}
@@ -99,17 +95,12 @@
                                                       data-toggle="tooltip" data-placement="top"
                                                       title="Display help panel"
                                                       style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
-                                            <hr class="show-small">
+                                                <hr class="show-small">
                                             </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
-
-
-
-
 
 
                             <div class="row">
@@ -560,6 +551,10 @@
             let optionText = selection.find(":selected").text();
             let optionValue = selection.find(":selected").val();
 
+            let move_type_selector = $('#move_type')
+            let move_type = move_type_selector.find(":selected").val();
+
+
             $.ajax({
                 type: "POST",
                 url: "{{ url_for('items.items_move')}}",
@@ -571,7 +566,8 @@
                     {
                         'item_ids': number_selected,
                         'username': "{{ username }}",
-                        'to_inventory_id': optionValue
+                        'to_inventory_id': optionValue,
+                        'move_type': move_type
                     }
                 ),
                 success: function () {

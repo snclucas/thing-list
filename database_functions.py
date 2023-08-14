@@ -109,18 +109,7 @@ def delete_inventory(inventory_id: int, user: User):
                     db.session.commit()
 
 
-
-
-
-
-
-
-
-
-
-
 def delete_notification(notification_id: int, user: User):
-
     with app.app_context():
         notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
 
@@ -135,7 +124,6 @@ def delete_notification(notification_id: int, user: User):
             "success": False,
             "message": f"No notification with ID {notification_id} for user @{user.username}"
         }
-
 
 
 def get_item_custom_field_data(user_id: int, item_list=None):
@@ -303,7 +291,7 @@ def change_item_access_level(item_ids: int, access_level: int, user_id: int):
             .join(InventoryItem, InventoryItem.item_id == Item.id) \
             .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
             .join(UserInventory, UserInventory.user_id == Item.user_id) \
-            .filter(Item.id.in_(item_ids))\
+            .filter(Item.id.in_(item_ids)) \
             .filter(Item.user_id == user_id)
 
         results_ = d.all()
@@ -345,7 +333,6 @@ def get_item_types(item_id=None, user_id=None) -> list:
 
 def add_new_user_itemtype(name: str, user_id: int):
     with app.app_context():
-
         item_type_ = find_type_by_text(type_text=name, user_id=user_id)
 
         if item_type_ is None:
@@ -367,7 +354,7 @@ def find_type_by_text(type_text: str, user_id: int = None) -> Union[dict, None]:
         if user_id is None:
             item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()).one_or_none()
         else:
-            item_type_ = ItemType.query.filter_by(name=type_text.lower().strip())\
+            item_type_ = ItemType.query.filter_by(name=type_text.lower().strip()) \
                 .filter_by(user_id=user_id).one_or_none()
 
         if item_type_ is not None:
@@ -632,6 +619,7 @@ def update_item_by_id(item_data: dict, item_id: int, user: User):
 
 def delete_items(item_ids: list, user: User):
     with app.app_context():
+
         stmt = select(Item).join(User) \
             .where(Item.user_id == user.id) \
             .where(Item.id.in_(item_ids))
@@ -681,11 +669,54 @@ def edit_items_locations(item_ids: list, user: User, location_id: int, specific_
         return
 
 
-def move_items(item_ids: list, user: User, inventory_id: int, copy: bool = False):
+def copy_items(item_ids: list, user: User, inventory_id: int):
+    """
+        link - just add new line in ItemInventory
+        move - change inventory id in ItemInventory
+        copy - duplicate item, add new line in ItemInventory
+    """
+
+    with app.app_context():
+        if inventory_id == -1:
+            user_default_inventory = get_user_default_inventory(user_id=user.id)
+            inventory_id = user_default_inventory.id
+
+        stmt = db.session.query(Item, InventoryItem) \
+            .join(InventoryItem, InventoryItem.item_id == Item.id) \
+            .join(User) \
+            .where(Item.user_id == user.id) \
+            .where(Item.id.in_(item_ids))
+        results_ = db.session.execute(stmt).all()
+
+        for item_, inventory_item_ in results_:
+
+            tag_arr = []
+            for tag in item_.tags:
+                tag_arr.append(tag.tag.replace("@#$", " "))
+
+            new_ = add_item_to_inventory(item_name=item_.name, item_desc=item_.description,
+                                         item_type=item_.item_type,
+                                         item_tags=tag_arr, inventory_id=inventory_id,
+                                         item_location_id=item_.location_id,
+                                         item_specific_location=item_.specific_location,
+                                         user_id=user.id, custom_fields=item_.fields)
+
+        db.session.commit()
+
+    return
+
+
+def move_items(item_ids: list, user: User, inventory_id: int):
+    """
+        link - just add new line in ItemInventory
+        move - change inventory id in ItemInventory
+        copy - duplicate item, add new line in ItemInventory
+    """
+
     with app.app_context():
 
         if inventory_id == -1:
-            user_default_inventory = get_user_default_inventory(user=user)
+            user_default_inventory = get_user_default_inventory(user_id=user.id)
             inventory_id = user_default_inventory.id
 
         stmt = select(Item, InventoryItem) \
@@ -696,14 +727,36 @@ def move_items(item_ids: list, user: User, inventory_id: int, copy: bool = False
         results_ = db.session.execute(stmt).all()
 
         for item_, inventory_item_ in results_:
-            if copy:
-                pass
-            else:
-                inventory_item_.inventory_id = inventory_id
+            inventory_item_.inventory_id = inventory_id
 
         db.session.commit()
 
     return
+
+
+def link_items(item_ids: list, user: User, inventory_id: int):
+    with app.app_context():
+        if inventory_id == -1:
+            user_default_inventory = get_user_default_inventory(user_id=user.id)
+            inventory_id = user_default_inventory.id
+
+        stmt = db.session.query(Item, InventoryItem) \
+            .join(InventoryItem, InventoryItem.item_id == Item.id) \
+            .join(User) \
+            .where(Item.user_id == user.id) \
+            .where(Item.id.in_(item_ids))
+        results_ = db.session.execute(stmt).all()
+
+        for item_, inventory_item_ in results_:
+            if inventory_item_.inventory_id != inventory_id:
+                new_inventory_item_ = InventoryItem(inventory_id=inventory_id, item_id=item_.id,
+                                                    access_level=inventory_item_.access_level)
+
+                db.session.add(new_inventory_item_)
+
+        db.session.commit()
+
+        return
 
 
 def delete_items_from_inventory(item_ids: list, inventory_id: int, user: User):
@@ -862,17 +915,6 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "none"
 
-        # if item_location is not None:
-        #     item_location_dict = add_new_location(location_name=item_location,
-        #                                           location_description=item_location,
-        #                                           to_user_id=user_id)
-        # else:
-        #     item_location_dict = None
-
-        # item_location = None
-        # if item_location_dict is not None:
-        #     item_location = item_location_dict['id']
-
         new_item = Item(name=item_name, description=item_desc, user_id=user_id,
                         location_id=item_location_id, specific_location=item_specific_location)
 
@@ -885,16 +927,19 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "None"
 
-        item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(
-            user_id=user_id).one_or_none()
+        if isinstance(item_type, int):
+            new_item.item_type = item_type
+        else:
+            item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(
+                user_id=user_id).one_or_none()
 
-        if item_type_ is None:
-            item_type_ = ItemType(name=item_type, user_id=user_id)
-            db.session.add(item_type_)
-            db.session.commit()
-            db.session.flush()
+            if item_type_ is None:
+                item_type_ = ItemType(name=item_type, user_id=user_id)
+                db.session.add(item_type_)
+                db.session.commit()
+                db.session.flush()
 
-        new_item.item_type = item_type_.id
+            new_item.item_type = item_type_.id
 
         for tag in item_tags:
             if tag != '':
@@ -1074,7 +1119,7 @@ def get_item_by_slug(item_slug: str):
         .join(Location, Location.id == Item.location_id) \
         .where(Item.slug == item_slug)
 
-    result = db.session.execute(stmt).one_or_none()
+    result = db.session.execute(stmt).first()
     return result
 
 
@@ -1186,10 +1231,10 @@ def delete_item_from_inventory(user: User, inventory_id: int, item_id: int) -> N
 
 
 def edit_inventory_data(user: User, inventory_id: int, name: str,
-                        description: str, public: int,  access_level: int) -> None:
+                        description: str, public: int, access_level: int) -> None:
     session = db.session
 
-    stmt = select(UserInventory, Inventory).join(Inventory)\
+    stmt = select(UserInventory, Inventory).join(Inventory) \
         .where(UserInventory.user_id == user.id) \
         .where(UserInventory.inventory_id == inventory_id)
 
@@ -1451,5 +1496,3 @@ def set_field_status(item_id, field_ids, is_visible=True):
 def search():
     with app.app_context():
         pass
-
-
