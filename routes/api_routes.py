@@ -31,11 +31,11 @@ def locations():
     locations_ = get_all_user_locations(user=current_user)
     loc_array = []
     for loc_ in locations_:
-        loc_array.append(f"location:{loc_.name}")
+        loc_array.append(f"location:{loc_.name.lower()}")
 
     tags_ = get_all_user_tags(user_id=current_user.id)
     for tag_ in tags_:
-        loc_array.append(f"tags:{tag_.tag}")
+        loc_array.append(f"tags:{tag_.tag.lower()}")
 
     return loc_array
 
