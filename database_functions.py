@@ -5,13 +5,13 @@ from typing import Union, List
 import flask_bcrypt
 
 from slugify import slugify
-from sqlalchemy import select, and_, ClauseElement
+from sqlalchemy import select, and_, ClauseElement, or_
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.sql.functions import count, func
+from sqlalchemy.sql.functions import func
 
 from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification
+    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, ItemTag
 
 _NONE_ = "None"
 
@@ -176,6 +176,79 @@ def get_user_item_count(user_id: int):
         return item_count_
 
 
+def search_items(query: str, user_id: int):
+    items_arr = []
+    with app.app_context():
+
+        # see if there is a search modifier
+        if ':' in query:
+            search_modifier = query.split(':')[0]
+            query = query.split(':')[1]
+
+            if search_modifier.lower() == 'location':
+                locations_ = Location.query\
+                    .filter(Location.user_id == user_id)\
+                    .filter(Location.name.like(query)).all()
+
+                for location in locations_:
+                    loc_id_ = location.id
+                    items_ = Item.query.filter(or_(
+                        Item.location_id == loc_id_,
+                        Item.specific_location == query
+                    )
+                    ).all()
+
+                    if len(items_) > 0:
+                        for item in items_:
+                            items_arr.append(item.__dict__)
+
+                looking_for = '%{0}%'.format(query)
+                items_ = Item.query.filter(
+                    Item.specific_location.ilike(looking_for)
+                ).all()
+
+                if len(items_) > 0:
+                    for item in items_:
+                        items_arr.append(item.__dict__)
+
+            elif search_modifier.lower() == 'tags':
+                query = query.split(",")
+                q_ = Item.query
+
+                any_tags_found = False
+                for tag_ in query:
+                    tag_ = tag_.strip()
+                    tag_ = tag_.replace(" ", "@#$")
+                    t_ = find_tag(tag=tag_)
+
+                    if t_ is not None:
+                        any_tags_found = True
+                        q_ = q_.filter(Item.tags.contains(t_))
+
+                if any_tags_found:
+                    items_ = q_.all()
+
+                    if len(items_) > 0:
+                        for item in items_:
+                            items_arr.append(item.__dict__)
+
+        else:
+            # search simple string
+            looking_for = '%{0}%'.format(query)
+
+            items_ = Item.query.filter(or_(
+                Item.name.ilike(looking_for),
+                Item.description.ilike(looking_for)
+            )
+            ).all()
+
+            if len(items_) > 0:
+                for item in items_:
+                    items_arr.append(item.__dict__)
+
+        return items_arr
+
+
 def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
                item_tags=None, item_specific_location=None, item_location=None, logged_in_user=None,
                request_user=None):
@@ -314,6 +387,12 @@ def add_user(username: str, email: str, password: str) -> User:
 def get_all_user_locations(user: User) -> list[Location]:
     user_locations_ = Location.query.filter_by(user_id=user.id).all()
     return user_locations_
+
+
+def get_all_user_tags(user_id: int) -> list[Tag]:
+    with app.app_context():
+        res_ = db.session.query(Tag).filter(Tag.user_id == user_id).all()
+    return res_
 
 
 def get_all_item_types() -> list:
@@ -947,7 +1026,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
                 tag = tag.replace(" ", "@#$")
                 instance = db.session.query(Tag).filter_by(tag=tag).one_or_none()
                 if not instance:
-                    instance = Tag(tag=tag)
+                    instance = Tag(tag=tag, user_id=user_id)
 
                 new_item.tags.append(instance)
 

@@ -140,11 +140,11 @@ def items_load():
                             tag_array[t] = tag_array[t].replace(" ", "@#$")
 
                         new_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
-                                              item_type=item_type,
-                                              item_tags=tag_array, inventory_id=inventory_id,
-                                              item_location_id=location_id,
-                                              item_specific_location=item_specific_location,
-                                              user_id=current_user.id, custom_fields=custom_fields)
+                                                     item_type=item_type,
+                                                     item_tags=tag_array, inventory_id=inventory_id,
+                                                     item_location_id=location_id,
+                                                     item_specific_location=item_specific_location,
+                                                     user_id=current_user.id, custom_fields=custom_fields)
 
                     line_count += 1
 

@@ -2,7 +2,7 @@
 from flask import Blueprint
 from flask_login import login_required, current_user
 
-from database_functions import get_all_itemtypes_for_user
+from database_functions import get_all_itemtypes_for_user, get_all_user_locations, get_all_user_tags
 
 api_routes = Blueprint('api', __name__)
 
@@ -23,6 +23,21 @@ def my_utility_processor():
 def user_item_types():
     user_itemtypes_ = get_all_itemtypes_for_user(user_id=current_user.id)
     return user_itemtypes_
+
+
+@api_routes.route('/api/locations', methods=['GET'])
+@login_required
+def locations():
+    locations_ = get_all_user_locations(user=current_user)
+    loc_array = []
+    for loc_ in locations_:
+        loc_array.append(f"location:{loc_.name}")
+
+    tags_ = get_all_user_tags(user_id=current_user.id)
+    for tag_ in tags_:
+        loc_array.append(f"tags:{tag_.tag}")
+
+    return loc_array
 
 
 # @api_routes.route('/api/locations', methods=['GET'])

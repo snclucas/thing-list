@@ -211,12 +211,13 @@ class ItemType(db.Model):
     __table_args__ = (UniqueConstraint('name', 'user_id', name='_name_userid_uc'),)
 
 
-class Tag(SearchableMixin, db.Model):
+class Tag(db.Model):
     __tablename__ = "tags"
     __searchable__ = ['tag']
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     tag = db.Column(db.String(50), nullable=True, unique=True)
     items = db.relationship('Item', secondary='item_tags', back_populates='tags', cascade="all,delete")
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True)
 
 
 class ItemTag(db.Model):
