@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, abort,
 from flask_login import login_required, current_user
 
 from database_functions import find_template, add_new_template, update_template_by_id, get_user_templates, \
-    delete_template_from_db, get_all_fields, save_template_fields
+    delete_template_from_db, get_all_fields, save_template_fields, get_user_template_by_id
 from models import FieldTemplate
 
 field_template = Blueprint('field_template', __name__)
@@ -13,6 +13,23 @@ field_template = Blueprint('field_template', __name__)
 @login_required
 def templates():
     return templates_with_username(username=current_user.username)
+
+
+@field_template.route('/field-templates/<template_id>')
+@login_required
+def template(template_id):
+    all_fields = dict(get_all_fields())
+
+    user_template_ = get_user_template_by_id(template_id=template_id, user_id=current_user.id)
+
+    selected_field_ids = []
+    if user_template_ is not None:
+        for field_ in user_template_[0].fields:
+            selected_field_ids.append(field_.id)
+
+    return render_template('field_template/field_template.html', field_template_name=user_template_[0].name,
+                           username=current_user.username, all_fields=all_fields, user_template=user_template_,
+                           selected_field_ids=selected_field_ids)
 
 
 @field_template.route('/@<username>/field-templates')
@@ -44,7 +61,7 @@ def set_template_fields():
 
             save_template_fields(template_name=template_name, fields=field_ids, user=current_user)
 
-    return True
+    return redirect(url_for('field_template.templates'))
 
 
 @field_template.route('/field-templates/delete', methods=['POST'])
@@ -81,4 +98,4 @@ def add_template():
         else:
             update_template_by_id(template_data=new_template_data, user=current_user)
 
-        return redirect(url_for('field_templates.templates'))
+        return redirect(url_for('field_template.templates'))

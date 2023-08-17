@@ -18,7 +18,8 @@
 
             <tr>
                 <td>
-                    {{ template[0].name }}
+                     <a href="{{ url_for('field_template.template', template_id=template[0].id) }}">
+                         {{ template[0].name }}</a>
                 </td>
 
                 <td>

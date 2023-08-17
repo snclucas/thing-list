@@ -1403,7 +1403,14 @@ def get_user_templates(user: User):
     session = db.session
     stmt = select(FieldTemplate).join(User).where(User.id == user.id)
     r = session.execute(stmt).all()
+    return r
 
+
+def get_user_template_by_id(template_id: int, user_id: int):
+    session = db.session
+    stmt = select(FieldTemplate).join(User).where(FieldTemplate.id == template_id)\
+        .where(FieldTemplate.user_id == user_id)
+    r = session.execute(stmt).one_or_none()
     return r
 
 
@@ -1506,8 +1513,17 @@ def save_template_fields(template_name, fields, user):
                 if field_ is not None:
                     new_field_template_.fields.append(field_)
 
-            db.session.commit()
-            return
+        else:
+            field_template_.name = template_name
+
+            field_template_.fields = []
+            for field in fields:
+                field_ = Field.query.filter_by(id=field).one_or_none()
+                if field_ is not None:
+                    field_template_.fields.append(field_)
+
+        db.session.commit()
+        return
 
 
 def update_item_fields(data, item_id: int):

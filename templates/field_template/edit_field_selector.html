@@ -17,7 +17,7 @@
                         <td>
                             <input type='hidden' name='selected_fields[{{ item_field_name }}]' value='good'/>
 
-                            {% if field.id in inventory_default_fields %}
+                            {% if field.id in selected_field_ids %}
                                 <input class="form-check-input" type="checkbox" value="{{ item_field_name }}"
                                        id="selected-field-{{ field.id }}"
                                        data-itemfield-id="{{ field.id }}"
