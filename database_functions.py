@@ -183,12 +183,13 @@ def find_field_by_name(field_name: str):
 
 
 def search_by_field_value(field_id: int, user_id: int, query: str):
+    looking_for = '%{0}%'.format(query)
     with app.app_context():
         items_ = db.session.query(Item) \
             .join(ItemField, ItemField.item_id == Item.id) \
             .filter(ItemField.field_id == field_id) \
             .filter(ItemField.user_id == user_id) \
-            .filter(ItemField.value == query).all()
+            .filter(ItemField.value.ilike(looking_for)).all()
 
         return items_
 
