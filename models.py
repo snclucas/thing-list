@@ -141,7 +141,7 @@ class Inventory(db.Model):
     public = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
 
 
-class Item(SearchableMixin, db.Model):
+class Item(db.Model):
     __tablename__ = "items"
     __searchable__ = ['name', 'description']
 
@@ -167,6 +167,7 @@ class ItemField(db.Model):
     item_id = db.Column(db.Integer, db.ForeignKey('items.id', ondelete='CASCADE'))
     value = db.Column(db.String(255), nullable=True, unique=False)
     show = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
+    user_id = db.Column(db.Integer, nullable=True, unique=False, default=-1)
     __table_args__ = (UniqueConstraint('field_id', 'item_id', name='_item_field_uc'),
                       )
 

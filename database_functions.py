@@ -11,7 +11,7 @@ from sqlalchemy.sql.functions import func
 
 from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, ItemTag
+    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification
 
 _NONE_ = "None"
 
@@ -176,6 +176,23 @@ def get_user_item_count(user_id: int):
         return item_count_
 
 
+def find_field_by_name(field_name: str):
+    field_slug = slugify(field_name)
+    field_ = Field.query.filter(Field.slug == field_slug).one_or_none()
+    return field_
+
+
+def search_by_field_value(field_id: int, user_id: int, query: str):
+    with app.app_context():
+        items_ = db.session.query(Item) \
+            .join(ItemField, ItemField.item_id == Item.id) \
+            .filter(ItemField.field_id == field_id) \
+            .filter(ItemField.user_id == user_id) \
+            .filter(ItemField.value == query).all()
+
+        return items_
+
+
 def search_items(query: str, user_id: int):
     items_arr = []
     with app.app_context():
@@ -227,6 +244,16 @@ def search_items(query: str, user_id: int):
 
                 if any_tags_found:
                     items_ = q_.all()
+
+                    if len(items_) > 0:
+                        for item in items_:
+                            items_arr.append(item.__dict__)
+
+            else:  # we have a custom field
+                field_ = find_field_by_name(field_name=search_modifier)
+                if field_ is not None:
+                    field_id = field_.id
+                    items_ = search_by_field_value(field_id=field_id, user_id=user_id, query=query)
 
                     if len(items_) > 0:
                         for item in items_:
@@ -1046,7 +1073,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
         db.session.commit()
 
-        add_new_item_field(new_item, custom_fields, app_context)
+        add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
 
         return_data = {
             "item": {
@@ -1170,7 +1197,7 @@ def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_u
                     else:  # the username does not exist
                         return False
                 else:
-                    return False  # dont support owner change right now
+                    return False  # don't support owner change right now
             else:  # current user was not the inventory owner
                 return False
         else:  # inventory was not found
@@ -1486,7 +1513,7 @@ def get_all_fields():
 def set_inventory_default_fields(inventory_id, user, default_fields):
     with app.app_context():
         if inventory_id == '':
-            inventory_ = get_user_default_inventory(user=user)
+            inventory_ = get_user_default_inventory(user_id=user.id)
         else:
             inventory_ = Inventory.query.filter_by(id=inventory_id).first()
 
@@ -1542,7 +1569,7 @@ def update_item_fields(data, item_id: int):
         db.session.commit()
 
 
-def add_new_item_field(item, custom_fields, app_context=None):
+def add_new_item_field(item, custom_fields, user_id, app_context=None):
     if app_context is None:
         app_context = app.app_context()
 
@@ -1565,6 +1592,7 @@ def add_new_item_field(item, custom_fields, app_context=None):
             item_field_ = ItemField.query.filter_by(field_id=field_id).filter_by(item_id=item.id).one_or_none()
             item_field_.value = field_value
             item_field_.show = True
+            item_field_.user_id=user_id
 
             db.session.commit()
 
