@@ -2,7 +2,8 @@
 from flask import Blueprint
 from flask_login import login_required, current_user
 
-from database_functions import get_all_itemtypes_for_user, get_all_user_locations, get_all_user_tags, find_items
+from database_functions import get_all_itemtypes_for_user, get_all_user_locations, get_all_user_tags, find_items, \
+    get_all_item_types
 
 api_routes = Blueprint('api', __name__)
 
@@ -47,6 +48,10 @@ def locations():
     tags_ = get_all_user_tags(user_id=current_user.id)
     for tag_ in tags_:
         loc_array.append(f"tags:{tag_.tag.lower()}")
+
+    item_types_ = get_all_item_types()
+    for item_type_ in item_types_:
+        loc_array.append(f"type:{item_type_.name.lower()}")
 
     return loc_array
 

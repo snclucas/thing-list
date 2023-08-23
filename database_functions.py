@@ -259,6 +259,23 @@ def search_items(query: str, user_id: int):
                         for item in items_:
                             items_arr.append(item.__dict__)
 
+            elif search_modifier.lower() == 'type':
+                query = query.split(",")
+
+                types_ = ItemType.query \
+                    .filter(ItemType.user_id == user_id) \
+                    .filter(ItemType.name.like(query)).all()
+
+                type_ids = []
+                for type_ in types_:
+                    type_ids.append(type_.id)
+
+                items_ = Item.query.filter(Item.user_id == user_id).filter(Item.item_type.in_([type_ids])).all()
+
+                if len(items_) > 0:
+                    for item in items_:
+                        items_arr.append(item.__dict__)
+
             else:  # we have a custom field
                 field_ = _find_field_by_name(field_name=search_modifier)
                 if field_ is not None:
