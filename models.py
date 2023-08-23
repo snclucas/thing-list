@@ -86,20 +86,6 @@ class Inventory(db.Model):
     public = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
 
 
-# class RelatedItem(Base):
-#     __tablename__ = "friendships"
-#     #id = db.Column(db.Integer, primary_key=True)
-#     friend_a_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
-#     friend_b_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
-
-
-
-# friendship = db.Table(
-#     'friendships', Base.metadata,
-#     db.Column('friend_a_id', db.Integer, db.ForeignKey('items.id'), primary_key=True),
-#     db.Column('friend_b_id', db.Integer, db.ForeignKey('items.id'), primary_key=True)
-# )
-
 class Relateditems(db.Model):
     __tablename__ = "friendships"
     item_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
@@ -128,38 +114,6 @@ class Item(db.Model):
                            primaryjoin=id == Relateditems.item_id,
                            secondaryjoin=id == Relateditems.related_item_id,
                            )
-
-
-    # related_items = db.relationship('Item', secondary='related_items', back_populates='items', lazy='subquery')  # , foreign_keys=[related_item_id])
-    # parents = relation(
-    #     'Volume', secondary=VolumeRelationship,
-    #     primaryjoin=VolumeRelationship.c.VolumeID == id,
-    #     secondaryjoin=VolumeRelationship.c.ParentID == id,
-    #     backref="children")
-    # related_items = db.relationship(
-    #     "items",
-    #     secondary=RelatedItem,
-    #     primaryjoin=id == RelatedItem.item_id,
-    #     secondaryjoin=id == RelatedItem.related_item_id,
-    #     backref="left_nodes",
-    # )
-
-    # childrenCompany = db.relationship('Item', remote_side='Item.id',
-                                      #backref=db.backref('related_items'))  # parent Company
-
-    #related_items = db.relationship('Item', remote_side=[id], backref=db.backref('related'), uselist=False)
-
-    #children = db.relationship("Item", back_populates="parent")
-    #related_items = db.relationship("Item", back_populates="related_items", remote_side=[id])
-
-    #parent_id = db.Column(db.Integer, db.ForeignKey("items.id"))
-    #children = db.relationship("Item",
-    #                        backref=db.backref('relateditem', remote_side=[id])
-    #                        )
-    #relateditem_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)
-    #related_items = db.relationship('Item',
-    #                             backref=db.backref('relateditem', remote_side=[id])
-    #                             )
 
 
 class ItemField(db.Model):

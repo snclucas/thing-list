@@ -604,7 +604,7 @@ def unrelate_items_by_id(item1_id, item2_id):
             db.session.commit()
 
 
-def relate_items(item1_id, item2_id):
+def relate_items_by_id(item1_id, item2_id):
     with app.app_context():
         item1_ = Item.query.filter(Item.id == item1_id).one_or_none()
         item2_ = Item.query.filter(Item.id == item2_id).one_or_none()
@@ -742,7 +742,7 @@ def update_item_by_id(item_data: dict, item_id: int, user: User):
         for tag in item_tags_list:
             instance = db.session.query(Tag).filter_by(tag=tag).one_or_none()
             if not instance:
-                instance = Tag(tag=tag)
+                instance = Tag(tag=tag, user_id=user.id)
 
             r[0].tags.append(instance)
 

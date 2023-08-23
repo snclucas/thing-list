@@ -13,11 +13,11 @@ from app import app, __VIEWER__
 from database_functions import get_all_user_locations, \
     get_all_item_types, \
     update_item_by_id, get_item_by_slug, add_images_to_item, delete_images_from_item, set_item_main_image, \
-    find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
+    find_inventory_by_slug, \
     get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
-    relate_items, find_item_by_slug
+    find_item_by_slug, relate_items_by_id
 from utils import correct_image_orientation
 
 item_routes = Blueprint('item', __name__)
@@ -32,17 +32,6 @@ def my_utility_processor():
         return ",".join(tag_arr)
 
     return dict(item_tag_to_string=item_tag_to_string)
-
-
-@item_routes.route('/unrelate_items', methods=['POST'])
-def unrelate_items():
-    if request.method == 'POST':
-        json_data = request.json
-        item1 = json_data['item1']
-        item2 = json_data['item2']
-        item1 = int(item1)
-        item2 = int(item2)
-        unrelate_items_by_id(item1_id=item1, item2_id=item2)
 
 
 @item_routes.route('/@<username>/<inventory_slug>/<item_slug>')
@@ -212,8 +201,8 @@ def save_inventory_template():
                                 username=current_user.username, inventory_slug=inventory_slug))
 
 
-@item_routes.route("/item/set-related", methods=["POST"])
-def set_related():
+@item_routes.route("/item/relate-items", methods=["POST"])
+def relate_items():
     if request.method == 'POST':
         item_id = bleach.clean(request.form.get("item_id"))
         item_id = int(item_id)
@@ -224,7 +213,7 @@ def set_related():
         relateditem_ = find_item_by_slug(item_slug=relateditem_slug, user_id=current_user.id)
 
         if relateditem_.id != item_id:
-            relate_items(item1_id=item_id, item2_id=relateditem_.id)
+            relate_items_by_id(item1_id=item_id, item2_id=relateditem_.id)
 
         return redirect(url_for('item.item_with_username_and_inventory',
                                 username=current_user.username,
@@ -232,6 +221,15 @@ def set_related():
                                 item_slug=item_slug))
 
 
+@item_routes.route('/unrelate-items', methods=['POST'])
+def unrelate_items():
+    if request.method == 'POST':
+        json_data = request.json
+        item1 = json_data['item1']
+        item2 = json_data['item2']
+        item1 = int(item1)
+        item2 = int(item2)
+        unrelate_items_by_id(item1_id=item1, item2_id=item2)
 
 
 @item_routes.route("/item/images/remove", methods=["POST"])
