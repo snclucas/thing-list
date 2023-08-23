@@ -62,6 +62,12 @@ def add_user_inventory(name, description, public, user_id: int):
                 to_user.inventories.append(new_inventory)
                 db.session.commit()
                 db.session.expunge_all()
+
+                ret["name"] = name
+                ret["description"] = description
+                ret["slug"] = slug
+                ret["public"] = public
+
                 return ret, "success"
 
         except SQLAlchemyError:
@@ -76,7 +82,7 @@ def get_user_default_inventory(user_id: int):
         return user_default_inventory_
 
 
-def delete_inventory(inventory_id: int, user: User):
+def delete_inventory_by_id(inventory_id: int, user_id: int):
     """
     If the User has Items within the Inventory - re-link Items to Users default Inventory via the ItemInventory table
     Delete the UserInventory for the user
@@ -84,16 +90,19 @@ def delete_inventory(inventory_id: int, user: User):
     """
 
     with app.app_context():
-        user_inventory_ = UserInventory.query.filter_by(user_id=user.id).filter_by(inventory_id=inventory_id).first()
+        # Get the user_inventory bu user_id and inventory_id
+        user_inventory_ = UserInventory.query.filter_by(user_id=user_id).filter_by(inventory_id=inventory_id).first()
 
         if user_inventory_ is not None:
             # Find out if any other users point to this inventory, if not delete it
             inventory_id_to_delete = user_inventory_.inventory_id
 
-            user_default_inventory_ = get_user_default_inventory(user_id=user.id)
+            # Get the current user's default inventory
+            user_default_inventory_ = get_user_default_inventory(user_id=user_id)
 
             inv_items_ = InventoryItem.query.filter_by(inventory_id=inventory_id_to_delete).all()
             for row in inv_items_:
+                # Add the items that are in this inventory to the user's default
                 row.inventory_id = user_default_inventory_.id
 
             # Delete the UserInventory for the user
@@ -109,7 +118,7 @@ def delete_inventory(inventory_id: int, user: User):
                     db.session.commit()
 
 
-def delete_notification(notification_id: int, user: User):
+def delete_notification_by_id(notification_id: int, user: User):
     with app.app_context():
         notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
 
@@ -176,13 +185,13 @@ def get_user_item_count(user_id: int):
         return item_count_
 
 
-def find_field_by_name(field_name: str):
+def _find_field_by_name(field_name: str):
     field_slug = slugify(field_name)
     field_ = Field.query.filter(Field.slug == field_slug).one_or_none()
     return field_
 
 
-def search_by_field_value(field_id: int, user_id: int, query: str):
+def _search_by_field_value(field_id: int, user_id: int, query: str):
     looking_for = '%{0}%'.format(query)
     with app.app_context():
         items_ = db.session.query(Item) \
@@ -251,10 +260,10 @@ def search_items(query: str, user_id: int):
                             items_arr.append(item.__dict__)
 
             else:  # we have a custom field
-                field_ = find_field_by_name(field_name=search_modifier)
+                field_ = _find_field_by_name(field_name=search_modifier)
                 if field_ is not None:
                     field_id = field_.id
-                    items_ = search_by_field_value(field_id=field_id, user_id=user_id, query=query)
+                    items_ = _search_by_field_value(field_id=field_id, user_id=user_id, query=query)
 
                     if len(items_) > 0:
                         for item in items_:
@@ -510,6 +519,14 @@ def find_item(item_id: int, user_id: int = None) -> Item:
     return item_
 
 
+def find_item_by_slug(item_slug: int, user_id: int = None) -> Item:
+    if user_id is None:
+        item_ = Item.query.filter_by(slug=item_slug).first()
+    else:
+        item_ = Item.query.filter_by(slug=item_slug).filter_by(user_id=user_id).first()
+    return item_
+
+
 def find_tag(tag: str) -> User:
     tag_ = Tag.query.filter_by(tag=tag).first()
     return tag_
@@ -576,6 +593,27 @@ def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Invento
     return inventory_, user_inventory_
 
 
+def unrelate_items_by_id(item1_id, item2_id):
+    with app.app_context():
+        item1_ = Item.query.filter(Item.id == item1_id).one_or_none()
+        item2_ = Item.query.filter(Item.id == item2_id).one_or_none()
+        if item1_ is not None and item2_ is not None:
+            item1_.related_items.remove(item2_)
+            db.session.commit()
+            item2_.related_items.remove(item1_)
+            db.session.commit()
+
+
+def relate_items(item1_id, item2_id):
+    with app.app_context():
+        item1_ = Item.query.filter(Item.id == item1_id).one_or_none()
+        item2_ = Item.query.filter(Item.id == item2_id).one_or_none()
+        if item1_ is not None and item2_ is not None:
+            item1_.related_items.append(item2_)
+            item2_.related_items.append(item1_)
+            db.session.commit()
+
+
 def add_item_inventory(item, inventory):
     with app.app_context():
         stmt = select(Item).where(Item.id == item)
@@ -637,8 +675,8 @@ def delete_images_from_item(item_id, image_ids, user: User):
                 item_.images.remove(image_)
 
                 try:
-                    os.remove(os.path.join(app.config['UPLOAD_FOLDER'], image_.image_filename))
-                except OSError:
+                    os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], image_.image_filename))
+                except OSError as er:
                     pass
 
         if item_.main_image is None:
@@ -1337,12 +1375,12 @@ def delete_item_from_inventory(user: User, inventory_id: int, item_id: int) -> N
         db.session.commit()
 
 
-def edit_inventory_data(user: User, inventory_id: int, name: str,
+def edit_inventory_data(user_id: int, inventory_id: int, name: str,
                         description: str, public: int, access_level: int) -> None:
     session = db.session
 
     stmt = select(UserInventory, Inventory).join(Inventory) \
-        .where(UserInventory.user_id == user.id) \
+        .where(UserInventory.user_id == user_id) \
         .where(UserInventory.inventory_id == inventory_id)
 
     r = session.execute(stmt)
@@ -1615,8 +1653,3 @@ def set_field_status(item_id, field_ids, is_visible=True):
                 db.session.add(instance_)
 
             db.session.commit()
-
-
-def search():
-    with app.app_context():
-        pass

@@ -4,66 +4,11 @@ from flask_login import UserMixin
 from sqlalchemy import UniqueConstraint
 
 from app import db
-from search import query_index, add_to_index, remove_from_index
-
-
-class SearchableMixin(object):
-    @classmethod
-    def search(cls, expression, page, per_page):
-        ids, total = query_index(cls.__tablename__, expression, page, per_page)
-        if total == 0:
-            return cls.query.filter_by(id=0), 0
-        when = []
-        for i in range(len(ids)):
-            when.append((ids[i], i))
-        return cls.query.filter(cls.id.in_(ids)).order_by(
-            db.case(when, value=cls.id)), total
-
-    @classmethod
-    def before_commit(cls, session):
-        session._changes = {
-            'add': list(session.new),
-            'update': list(session.dirty),
-            'delete': list(session.deleted)
-        }
-
-    @classmethod
-    def after_commit(cls, session):
-        for obj in session._changes['add']:
-            if isinstance(obj, Tag):
-                add_to_index(obj.__tablename__, obj.__dict__)
-            if isinstance(obj, SearchableMixin):
-                add_to_index(obj.__tablename__, obj)
-        for obj in session._changes['update']:
-            # if isinstance(obj, Item):
-            #
-            #     dict_tags = []
-            #     tags = obj.tags
-            #     for tag in tags:
-            #
-            #         dict_tags.append({'tag': tag.tag, 'id': tag.id})
-            #     obj.tags = dict_tags
-            #
-            #     add_to_index(obj.__tablename__, obj)
-
-
-
-            if isinstance(obj, SearchableMixin):
-                add_to_index(obj.__tablename__, obj)
-        for obj in session._changes['delete']:
-            if isinstance(obj, SearchableMixin):
-                remove_from_index(obj.__tablename__, obj)
-        session._changes = None
-
-    @classmethod
-    def reindex(cls):
-        for obj in cls.query:
-            add_to_index(cls.__tablename__, obj)
-
+from sqlalchemy.ext.declarative import declarative_base
 
 #db.event.listen(db.session, 'before_commit', SearchableMixin.before_commit)
 #db.event.listen(db.session, 'after_commit', SearchableMixin.after_commit)
-
+Base = declarative_base()
 
 class User(UserMixin, db.Model):
     __tablename__ = "users"
@@ -141,9 +86,28 @@ class Inventory(db.Model):
     public = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
 
 
+# class RelatedItem(Base):
+#     __tablename__ = "friendships"
+#     #id = db.Column(db.Integer, primary_key=True)
+#     friend_a_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
+#     friend_b_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
+
+
+
+# friendship = db.Table(
+#     'friendships', Base.metadata,
+#     db.Column('friend_a_id', db.Integer, db.ForeignKey('items.id'), primary_key=True),
+#     db.Column('friend_b_id', db.Integer, db.ForeignKey('items.id'), primary_key=True)
+# )
+
+class Relateditems(db.Model):
+    __tablename__ = "friendships"
+    item_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
+    related_item_id = db.Column(db.Integer, db.ForeignKey('items.id'), primary_key=True)
+
+
 class Item(db.Model):
     __tablename__ = "items"
-    __searchable__ = ['name', 'description']
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     item_type = db.Column(db.Integer, db.ForeignKey('item_type.id'), nullable=True)
@@ -158,6 +122,44 @@ class Item(db.Model):
     images = db.relationship('Image', secondary='item_images', back_populates='items', lazy='subquery')
     main_image = db.Column(db.String(255), nullable=True, unique=False)
     fields = db.relationship('Field', secondary='item_fields', back_populates='items', lazy='subquery')
+
+    # this relationship is used for persistence
+    related_items = db.relationship("Item", secondary=Relateditems.__table__,
+                           primaryjoin=id == Relateditems.item_id,
+                           secondaryjoin=id == Relateditems.related_item_id,
+                           )
+
+
+    # related_items = db.relationship('Item', secondary='related_items', back_populates='items', lazy='subquery')  # , foreign_keys=[related_item_id])
+    # parents = relation(
+    #     'Volume', secondary=VolumeRelationship,
+    #     primaryjoin=VolumeRelationship.c.VolumeID == id,
+    #     secondaryjoin=VolumeRelationship.c.ParentID == id,
+    #     backref="children")
+    # related_items = db.relationship(
+    #     "items",
+    #     secondary=RelatedItem,
+    #     primaryjoin=id == RelatedItem.item_id,
+    #     secondaryjoin=id == RelatedItem.related_item_id,
+    #     backref="left_nodes",
+    # )
+
+    # childrenCompany = db.relationship('Item', remote_side='Item.id',
+                                      #backref=db.backref('related_items'))  # parent Company
+
+    #related_items = db.relationship('Item', remote_side=[id], backref=db.backref('related'), uselist=False)
+
+    #children = db.relationship("Item", back_populates="parent")
+    #related_items = db.relationship("Item", back_populates="related_items", remote_side=[id])
+
+    #parent_id = db.Column(db.Integer, db.ForeignKey("items.id"))
+    #children = db.relationship("Item",
+    #                        backref=db.backref('relateditem', remote_side=[id])
+    #                        )
+    #relateditem_id = db.Column(db.Integer, db.ForeignKey('items.id'), nullable=True)
+    #related_items = db.relationship('Item',
+    #                             backref=db.backref('relateditem', remote_side=[id])
+    #                             )
 
 
 class ItemField(db.Model):

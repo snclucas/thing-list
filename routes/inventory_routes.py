@@ -6,7 +6,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     add_item_to_inventory, \
     get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
     find_user_by_username, edit_inventory_data, get_all_user_locations, \
-    delete_inventory, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory
+    delete_inventory_by_id, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory
 
 inv = Blueprint('inv', __name__)
 
@@ -96,7 +96,7 @@ def del_inventory():
         username = json_data['username']
         inventory_id = json_data['inventory_id']
         inventory_slug = json_data['inventory_slug']
-        delete_inventory(inventory_id=inventory_id, user=current_user)
+        delete_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
 
         # raise abort(500, message="Unable to determine domain permissions")
 
@@ -115,7 +115,7 @@ def edit_inventory():
         if "inventory_public" in request.form:
             inventory_public = 1
 
-        edit_inventory_data(user=current_user, inventory_id=int(inventory_id), name=inventory_name,
+        edit_inventory_data(user_id=current_user.id, inventory_id=int(inventory_id), name=inventory_name,
                             description=inventory_description, public=inventory_public,
                             access_level=int(0))
 
