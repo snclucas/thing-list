@@ -24,7 +24,8 @@ class User(UserMixin, db.Model):
                                   back_populates='users', cascade="all,delete", lazy='subquery')
 
     notifications = db.relationship('Notification', backref='users')
-
+    activated = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
+    token = db.Column(db.String(255), nullable=True, unique=False)
 
 class Notification(db.Model):
     __tablename__ = "notifications"
@@ -109,11 +110,12 @@ class Item(db.Model):
     main_image = db.Column(db.String(255), nullable=True, unique=False)
     fields = db.relationship('Field', secondary='item_fields', back_populates='items', lazy='subquery')
 
+
     # this relationship is used for persistence
     related_items = db.relationship("Item", secondary=Relateditems.__table__,
-                           primaryjoin=id == Relateditems.item_id,
-                           secondaryjoin=id == Relateditems.related_item_id,
-                           )
+                                    primaryjoin=id == Relateditems.item_id,
+                                    secondaryjoin=id == Relateditems.related_item_id,
+                                    )
 
 
 class ItemField(db.Model):

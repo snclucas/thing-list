@@ -6,6 +6,7 @@ flask_resize
 flask_wtf
 Flask-QRcode
 flask_login
+Flask-mail
 bleach~=6.0.0
 pdfkit~=1.0.0
 python-slugify

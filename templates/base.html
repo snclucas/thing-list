@@ -13,11 +13,11 @@
         </title>
 
         {% block metadata %}
-        <meta property="og:title" content="ThingList | A list of all your things"/>
-        <meta property="og:type" content="website"/>
-        <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
-        <meta property="og:url"
-              content="https://thinglist.org"/>
+            <meta property="og:title" content="ThingList | A list of all your things"/>
+            <meta property="og:type" content="website"/>
+            <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
+            <meta property="og:url"
+                  content="https://thinglist.org"/>
         {% endblock %}
 
         <link href="{{ url_for('static', filename='vendor/bootstrap/css/bootstrap.min.css') }}" rel="stylesheet">
@@ -27,6 +27,8 @@
         <link href="{{ url_for('static', filename='css/master.css') }}" rel="stylesheet">
         <link href="{{ url_for('static', filename='DataTables/datatables.min.css') }}" rel="stylesheet"/>
         <link href="{{ url_for('static', filename='css/gallery.css') }}" rel="stylesheet">
+
+        <link href="{{ url_for('static', filename='assets/css/ct-ultimate-gdpr.css') }}" rel="stylesheet" type='text/css'>
 
         <link href='http://fonts.googleapis.com/css?family=Roboto:400,300,700' rel='stylesheet' type='text/css'>
 
@@ -50,14 +52,16 @@
     <script src="{{ url_for('static', filename='vendor/bootstrap/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ url_for('static', filename='DataTables/datatables.min.js') }}"></script>
 
+    <script src="{{ url_for('static', filename='assets/js/ct-ultimate-gdpr.js') }}"></script>
+    <script src="{{ url_for('static', filename='assets/js/init.js') }}"></script>
+
+
+
     <div class="container">
         <footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top">
             <div class="col-md-4 d-flex align-items-center">
-                <a href="/" class="mb-3 me-2 mb-md-0 text-body-secondary text-decoration-none lh-1">
-                    <svg class="bi" width="30" height="24">
-                        <use xlink:href="#bootstrap"></use>
-                    </svg>
-                </a>
+
+
                 <span class="mb-3 mb-md-0 text-body-secondary">© 2023 ThingList.org</span>
             </div>
         </footer>

@@ -1,13 +1,13 @@
 import os
 
-from elasticsearch import Elasticsearch
 from flask_qrcode import QRcode
 from flask_sqlalchemy import SQLAlchemy
-from flask import Flask, render_template
+from flask import Flask, render_template, request
 import flask_resize
 from flask_login import LoginManager
 from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
+from flask_mail import Mail
 
 
 from dotenv import load_dotenv
@@ -48,8 +48,20 @@ app.config['FILE_UPLOADS'] = os.environ.get('FILE_UPLOADS', '')
 
 app.config['POSTS_PER_PAGE'] = os.environ.get('POSTS_PER_PAGE', 10)
 
-
 app.debug = os.environ.get('DEBUG', bool(os.environ.get('DEBUG', '')))
+
+
+app.config['MAIL_SERVER'] = os.environ.get('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.environ.get('MAIL_PORT') or 25)
+app.config['MAIL_USE_TLS'] = os.environ.get('MAIL_USE_TLS') is not None
+app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
+app.config['MAIL_DEBUG'] = os.environ.get('MAIL_DEBUG')
+app.config['ADMINS'] = os.environ.get('ADMINS')
+
+app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
+
+app.config['ALLOW_REGISTRATIONS'] = os.environ.get('ALLOW_REGISTRATIONS', 0)
 
 csrf = CSRFProtect(app)
 
@@ -65,10 +77,6 @@ SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'mysql://{0}:{1}@{2}/{3}'.fo
 
 app.config['ELASTICSEARCH_URL'] = ELASTICSEARCH_URL
 
-app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
-        if app.config['ELASTICSEARCH_URL'] else None
-
-
 app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
 
 db = SQLAlchemy(app, session_options={"expire_on_commit": "False"})
@@ -80,7 +88,28 @@ flask_bcrypt = Bcrypt(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 
+mail = Mail(app)
+
+
+@app.context_processor
+def inject_template_scope():
+    injections = dict()
+
+    def cookies_check():
+        value = request.cookies.get('cookie_consent')
+        return value == 'true'
+
+    injections.update(cookies_check=cookies_check)
+
+    return injections
+
 
 @app.errorhandler(404)
 def page_not_found(error):
     return render_template('404.html', title='404', error=error), 404
+
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500

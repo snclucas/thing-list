@@ -519,6 +519,16 @@ def find_user_by_username(username: str) -> User:
     return user
 
 
+def find_user_by_email(email: str) -> User:
+    user = User.query.filter_by(email=email).first()
+    return user
+
+
+def find_user_by_token(token: str) -> User:
+    user = User.query.filter_by(token=token).first()
+    return user
+
+
 def find_user_by_id(user_id: int) -> User:
     with app.app_context():
         user_ = db.session.query(User).filter(User.id == user_id).one()
@@ -526,6 +536,30 @@ def find_user_by_id(user_id: int) -> User:
         db.session.expunge_all()
         db.session.close()
         return user_
+
+
+def save_new_user(user_: User):
+    with app.app_context():
+        potential_user_ = find_user_by_username(username=user_.username)
+        if potential_user_ is not None:
+            return False, "Username taken"
+
+        potential_user_ = find_user_by_email(email=user_.email)
+        if potential_user_ is not None:
+            return False, "Username taken"
+
+        db.session.add(user_)
+        db.session.commit()
+
+        post_user_add_hook(new_user=user_)
+        return True, "success"
+
+
+def activate_user_in_db(user_id: int):
+    with app.app_context():
+        user_ = db.session.query(User).filter(User.id == user_id).one()
+        user_.activated = True
+        db.session.commit()
 
 
 def find_item(item_id: int, user_id: int = None) -> Item:
