@@ -110,7 +110,6 @@ class Item(db.Model):
     main_image = db.Column(db.String(255), nullable=True, unique=False)
     fields = db.relationship('Field', secondary='item_fields', back_populates='items', lazy='subquery')
 
-
     # this relationship is used for persistence
     related_items = db.relationship("Item", secondary=Relateditems.__table__,
                                     primaryjoin=id == Relateditems.item_id,
