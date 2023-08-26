@@ -19,7 +19,7 @@ def load_fields():
         for row in reader:
             print(', '.join(row))
             if line_count != 0:
-                get_or_create(model=Field, field=row[0], slug=slugify(row[1]), type=row[2], data=row[3])
+                get_or_create(model=Field, field=row[0], slug=slugify(row[1]), type=row[2])
             line_count += 1
 
 
