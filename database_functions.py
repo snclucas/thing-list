@@ -431,7 +431,7 @@ def change_item_access_level(item_ids: int, access_level: int, user_id: int):
 def add_user(username: str, email: str, password: str) -> User:
     with app.app_context():
         password_hash = flask_bcrypt.generate_password_hash(password)
-        user = User(username=username, email=email, password=password_hash)
+        user = User(username=username, email=email, password=password_hash, activated=True)
         db.session.add(user)
         db.session.commit()
         post_user_add_hook(new_user=user)

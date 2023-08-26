@@ -10,6 +10,7 @@ from sqlalchemy.ext.declarative import declarative_base
 #db.event.listen(db.session, 'after_commit', SearchableMixin.after_commit)
 Base = declarative_base()
 
+
 class User(UserMixin, db.Model):
     __tablename__ = "users"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
