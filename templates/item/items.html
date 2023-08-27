@@ -222,6 +222,8 @@
 {% block footer %}
     {{ super() }}
     <script src="{{ url_for('static', filename='js/autoComplete.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/thinglist.js') }}"></script>
+
     <script>
         $(document).ready(function () {
             const table = new DataTable('#items-table', {
@@ -347,15 +349,8 @@
         });
 
 
-        function checkbox_count() {
-            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-            let number_selected = 0;
-            $.each(all_checkboxes, function () {
-                let $this = $(this);
-                if ($this.is(":checked")) {
-                    number_selected += 1
-                }
-            });
+        function run_over_checkboxes() {
+            let number_selected = checkbox_count("selected-item-")
 
             let delete_collapse_btn_selector = $('#delete-items-btn-collapse');
             let delete_btn_selector = $('#delete-items-btn');
@@ -368,6 +363,7 @@
             let bulk_edit_items_span_selector = $('#bulk-edit-items-span');
 
             if (number_selected > 0) {
+                delete_collapse_btn_selector.attr('href', '#collapseDeleteItems');
                 delete_btn_selector.css("pointer-events", "auto");
                 move_items_btn_selector.css("pointer-events", "auto");
 
@@ -391,6 +387,9 @@
                 bulk_edit_items_btn_selector.attr('disabled', 'disabled');
                 bulk_edit_items_span_selector.attr('disabled', 'disabled');
             } else {
+                 $("#collapseDeleteItems").collapse("hide");
+                delete_collapse_btn_selector.removeAttr('href');
+
                 delete_btn_selector.css("pointer-events", "none");
                 move_items_btn_selector.css("pointer-events", "none");
 
@@ -418,7 +417,7 @@
         }
 
         $(document).ready(function () {
-            checkbox_count();
+            run_over_checkboxes();
 
             $('#invtable').DataTable({
                 "searching": true,
@@ -430,7 +429,7 @@
 
 
         $('input:checkbox[id^="selected-item-"]').on("click", function (e) {
-            checkbox_count();
+            run_over_checkboxes();
         });
 
         $("#all-selected-items").on("click", function (e) {
@@ -442,18 +441,9 @@
                 let $this = $(this);
                 $this.attr('checked', is_checked);
             });
-            checkbox_count();
+            run_over_checkboxes();
         });
 
-        let deselect_all_checkboxes = function () {
-
-            let all_checkboxes = $('input:checkbox[id^="selected-item-"]')
-            $.each(all_checkboxes, function () {
-                let $this = $(this);
-                $this.prop('checked', false);
-            });
-            checkbox_count();
-        };
 
         $("#confirm-delete-items-btn").on("click", function (e) {
             e.preventDefault();
@@ -661,8 +651,10 @@
 
         $("#cancel-delete-items-btn").on("click", function (e) {
             e.preventDefault();
-            deselect_all_checkboxes();
-            $("#collapseDeleteItems").collapse("toggle");
+            deselect_all_checkboxes("selected-item-");
+            $("#collapseDeleteItems").collapse("hide");
+            run_over_checkboxes();
+
         });
 
         $("#import-cancel-btn").on("click", function (e) {

@@ -1,4 +1,6 @@
 import datetime
+import secrets
+import string
 
 from flask_login import UserMixin
 from sqlalchemy import UniqueConstraint
@@ -27,6 +29,7 @@ class User(UserMixin, db.Model):
     notifications = db.relationship('Notification', backref='users')
     activated = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
     token = db.Column(db.String(255), nullable=True, unique=False)
+
 
 class Notification(db.Model):
     __tablename__ = "notifications"
@@ -85,7 +88,7 @@ class Inventory(db.Model):
     items = db.relationship('Item', secondary='inventory_items', back_populates='inventories', lazy='subquery')
     default_fields = db.Column(db.String(1000), default="-1")
     field_template = db.Column(db.Integer, db.ForeignKey('field_templates.id'), nullable=True)
-    public = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
+    public = db.Column(db.Boolean(), nullable=False, unique=False, default=False)
 
 
 class Relateditems(db.Model):

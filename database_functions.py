@@ -70,7 +70,7 @@ def add_user_inventory(name, description, public, user_id: int):
 
                 return ret, "success"
 
-        except SQLAlchemyError:
+        except SQLAlchemyError as error:
             return None, "Could not add inventory"
 
 
@@ -1454,24 +1454,40 @@ def delete_template_from_db(user: User, template_id: int) -> None:
         db.session.commit()
 
 
-def delete_location(user_id: int, location_id: int) -> dict:
-    location_ = Location.query.filter_by(id=location_id).filter_by(user_id=user_id).one_or_none()
+def delete_location(user_id: int, location_ids) -> dict:
+    if not isinstance(location_ids, list):
+        location_ids = [location_ids]
 
-    if location_ is not None:
-        try:
-            # find any items with this location and chnge to None
-            user_default_location_ = Location.query.filter_by(name="None").filter_by(user_id=user_id).one_or_none()
-            if user_default_location_ is not None:
-                items_ = Item.query.filter_by(location_id=location_id).filter_by(user_id=user_id).all()
-                for row in items_:
-                    row.location_id = user_default_location_.id
-                db.session.commit()
+    stmt = select(Location).join(User) \
+        .where(Location.user_id == user_id) \
+        .where(Location.id.in_(location_ids))
+    locations_ = db.session.execute(stmt).all()
 
-            db.session.delete(location_)
-            db.session.commit()
-            return {"success": True}
-        except SQLAlchemyError as err:
-            return {"success": False}
+    number_items_deleted = 0
+    user_default_location_ = Location.query.filter_by(name="None") \
+        .filter_by(user_id=user_id).one_or_none()
+
+    for location_ in locations_:
+        if location_[0] is not None:
+            location_ = location_[0]
+
+            if location_ is not None:
+                location_id = location_.id
+                try:
+                    # find any items with this location and chnge to None
+                    if user_default_location_ is not None:
+                        items_ = Item.query.filter_by(location_id=location_id)\
+                            .filter_by(user_id=user_id).all()
+                        for row in items_:
+                            row.location_id = user_default_location_.id
+                        db.session.commit()
+
+                    db.session.delete(location_)
+                    db.session.commit()
+
+                except SQLAlchemyError as err:
+                    return {"success": False}
+    return {"success": True}
 
 
 def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1):

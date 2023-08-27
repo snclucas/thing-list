@@ -83,8 +83,10 @@ def add_inventory():
         if "inventory_public" in request.form:
             inventory_public_ = 1
 
-        add_user_inventory(name=inventory_name_, description=inventory_description_,
-                           public=inventory_public_, user_id=current_user.id)
+        new_inventory_data, msg = add_user_inventory(name=inventory_name_, description=inventory_description_,
+                                                     public=inventory_public_, user_id=current_user.id)
+        return redirect(url_for('items.items_with_username_and_inventory', username=current_user.username,
+                                inventory_slug=new_inventory_data["slug"]))
     return redirect(url_for('inv.inventories'))
 
 
@@ -171,46 +173,6 @@ def add_user_to_inv():
             return redirect(url_for('inv.inventories'))
         else:
             return redirect(url_for('inv.inventories'))
-
-
-@inv.route('/inventory/@<username>/<inventory_slug>')
-def inventory_by_slug(username: str, inventory_slug: str):
-    user_is_authenticated = current_user.is_authenticated
-
-    if user_is_authenticated:
-        inventory_, user_inventory_ = \
-            find_inventory_by_slug(inventory_slug=inventory_slug, user_id=current_user.id)
-        user_locations_ = get_all_user_locations(user=current_user)
-    else:
-        inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug)
-        user_locations_ = None
-
-    inventory_access_level = user_inventory_.access_level
-    all_access_levels = {
-        0: "Private",
-        2: "Public"
-    }
-
-    if user_inventory_ is None:
-        return render_template('404.html', message="You do not have access to this inventory"), 404
-    else:
-
-        item_types_ = get_all_item_types()
-
-        user_ = find_user_by_username(username=username)
-        # work on this to show public inventories
-        is_inventory_owner = (user_inventory_.access_level == 0)
-
-        if user_ in inventory_.users:
-            items_ = get_items_for_inventory(inventory_id=inventory_.id, user=current_user)
-            return render_template('inventory/inventory.html', username=username,
-                                   inventory_items={"items": items_, "inventory": inventory_},
-                                   item_types=item_types_,
-                                   user_locations=user_locations_, inventory_access_level=inventory_access_level,
-                                   all_access_levels=all_access_levels,
-                                   is_inventory_owner=is_inventory_owner, user_is_authenticated=user_is_authenticated)
-        else:
-            return render_template('404.html'), 404
 
 
 @inv.route('/inventory/@<username>/<inventory_slug>/delete/<item_id>', methods=['POST'])

@@ -21,8 +21,9 @@ def locations():
 def del_location():
     if request.method == 'POST':
         json_data = request.json
-        location_id = json_data["location_id"]
-        delete_location(user_id=current_user.id, location_id=int(location_id))
+        location_ids = json_data["location_ids"]
+        location_ids = [int(x) for x in location_ids]
+        delete_location(user_id=current_user.id, location_ids=location_ids)
     return redirect(url_for('location.locations'))
 
 

@@ -34,6 +34,14 @@ def my_utility_processor():
     return dict(item_tag_to_string=item_tag_to_string)
 
 
+@item_routes.route('/item/save-pdf', methods=['POST'])
+@login_required
+def items_save_pdf():
+    if request.method == 'POST':
+        html = render_template('users.html', userDetails=userDetails)
+        return item_with_username_and_inventory()
+
+
 @item_routes.route('/@<username>/<inventory_slug>/<item_slug>')
 def item_with_username_and_inventory(username: str, inventory_slug: str, item_slug: str):
 

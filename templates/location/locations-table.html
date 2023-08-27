@@ -15,38 +15,14 @@
                         {{ location['name'] }}  </a>
                 </td>
                 <td>{{ location['description'] }}</td>
-                <td>
 
+                <td>
                     {% if  location['name'] != "None" %}
-
-                        <span class="fas fa-edit fa-2x" data-bs-toggle="collapse"
-                              id="locationEdit-{{ location['id'] }}"
-                              href="#collapseLocationEdit"
-                              data-location-id="{{ location['id'] }}"
-                              data-location-name="{{ location['name'] }}"
-                              data-location-description="{{ location['description'] }}"
-                              data-toggle="tooltip" data-placement="top" title="Edit location"
-                              style="display: inline-block; margin-right: 20px;"></span>
-
-                        <span id="delete-locatione-btn-{{ location['id'] }}"
-                              data-bs-toggle="collapse"
-                              href="#confirmLocationDelete-{{ location['id'] }}"
-                              class="fas fa-times fa-2x "
-                              style="color:red; display: inline-block; margin-right: 20px;">
-
-                        </span>
-
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" data-location-id="{{ location['id'] }}"
+                               id="selected-item-{{ location['id'] }}">
+                    </div>
                     {% endif %}
-
-                </td>
-                <td>
-                  <span class="collapse" id="confirmLocationDelete-{{ location['id'] }}" aria-expanded="false">
-                            <span id="confirmLocationDelete-{{ location['id'] }}" aria-expanded="false"
-                                  href="#confirmLocationDelete-{{ location['id'] }}"
-                                  data-location-id="{{ location['id'] }}"
-                                  class="collapse fas fa-check fa-2x "
-                                  style="color:green; display: inline-block; margin-right: 20px;"></span>
-                        </span>
                 </td>
             </tr>
         {% endfor %}
