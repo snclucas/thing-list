@@ -13,7 +13,7 @@ function checkbox_count(checkbox_selector) {
     return number_selected
 }
 
-function get_selected_checkbox_ids(checkbox_selector) {
+function get_selected_checkbox_ids(checkbox_selector, id_selector) {
 
     let all_checkboxes = $('input:checkbox[id^=' + checkbox_selector + ']')
     let selected_list = [];
@@ -21,7 +21,7 @@ function get_selected_checkbox_ids(checkbox_selector) {
     $.each(all_checkboxes, function () {
         let $this = $(this);
         if ($this.is(":checked")) {
-            selected_list.push($this.attr('data-location-id'));
+            selected_list.push($this.attr(id_selector));
         }
     });
 

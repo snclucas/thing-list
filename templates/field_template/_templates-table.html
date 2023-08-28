@@ -1,6 +1,5 @@
 
 
-
 {% if templates | length > 0 %}
 
     <table class="table table-striped dataTable" id="my-templates-table">
@@ -34,21 +33,12 @@
                     {% endfor %}
                 </td>
 
-                <td>
-                    <div class="text-center">
-                    <span id="delete-template-btn-{{ template[0]['id'] }}" data-bs-toggle="collapse"
-                          href="#confirmFieldTemplateDelete-{{ template[0]['id'] }}"
-                          class="fas fa-times fa-2x "
-                          style="color:red; display: inline-block; margin-right: 20px;"></span>
-
-                    <div class="collapse" id="confirmFieldTemplateDelete-{{ template[0]['id'] }}" aria-expanded="false">
-                        <button type="button" class="btn btn-primary btn-sm"
-                                id="confirmFieldTemplateDelete-{{ template[0]['id'] }}"
-                                data-template-id="{{ template[0]['id'] }}">Confirm delete
-                        </button>
+            <td>
+                <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" data-template-id="{{ template[0]['id'] }}"
+                               id="selected-item-{{ template[0]['id'] }}">
                     </div>
-                    </div>
-                </td>
+            </td>
             </tr>
         {% endfor %}
         </tbody>

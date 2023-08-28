@@ -1447,10 +1447,17 @@ def edit_inventory_data(user_id: int, inventory_id: int, name: str,
         db.session.commit()
 
 
-def delete_template_from_db(user: User, template_id: int) -> None:
-    template_ = FieldTemplate.query.filter_by(id=template_id).filter_by(user_id=user.id).first()
+def delete_templates_from_db(user_id: str, template_ids) -> None:
+    if not isinstance(template_ids, list):
+        template_ids = [template_ids]
 
-    if template_ is not None:
+    stmt = select(FieldTemplate).join(User) \
+        .where(FieldTemplate.user_id == user_id) \
+        .where(FieldTemplate.id.in_(template_ids))
+    templates_ = db.session.execute(stmt).all()
+
+    for template_ in templates_:
+        template_ = template_[0]
         db.session.delete(template_)
         db.session.commit()
 

@@ -3,7 +3,7 @@ from flask import Blueprint, render_template, redirect, url_for, request, abort,
 from flask_login import login_required, current_user
 
 from database_functions import find_template, add_new_template, update_template_by_id, get_user_templates, \
-    delete_template_from_db, get_all_fields, save_template_fields, get_user_template_by_id
+    get_all_fields, save_template_fields, get_user_template_by_id, delete_templates_from_db
 from models import FieldTemplate
 
 field_template = Blueprint('field_template', __name__)
@@ -69,8 +69,8 @@ def set_template_fields():
 def delete_template():
     if request.method == 'POST':
         json_data = request.json
-        template_id = json_data['template_id']
-        delete_template_from_db(user=current_user, template_id=template_id)
+        template_ids = json_data['template_ids']
+        delete_templates_from_db(user_id=current_user.id, template_ids=template_ids)
         return redirect(url_for('field_template.templates'))
 
 

@@ -134,7 +134,7 @@
         $("#confirm-delete-locations-btn").on("click", function (e) {
             e.preventDefault();
 
-            let selected_list = get_selected_checkbox_ids("selected-item-")
+            let selected_list = get_selected_checkbox_ids("selected-item-", "data-location-id")
 
             $.ajax({
                 type: "POST",

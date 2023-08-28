@@ -8,6 +8,7 @@ import bleach
 from PIL import Image
 from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
+# from flask_weasyprint import render_pdf, HTML
 
 from app import app, __VIEWER__
 from database_functions import get_all_user_locations, \
@@ -34,12 +35,15 @@ def my_utility_processor():
     return dict(item_tag_to_string=item_tag_to_string)
 
 
-@item_routes.route('/item/save-pdf', methods=['POST'])
-@login_required
-def items_save_pdf():
-    if request.method == 'POST':
-        html = render_template('users.html', userDetails=userDetails)
-        return item_with_username_and_inventory()
+# @item_routes.route('/item/save-pdf', methods=['POST'])
+# @login_required
+# def items_save_pdf():
+#     if request.method == 'POST':
+#         html = item_with_username_and_inventory()
+#
+#         return render_pdf(HTML(string=html))
+
+        #return item_with_username_and_inventory()
 
 
 @item_routes.route('/@<username>/<inventory_slug>/<item_slug>')
