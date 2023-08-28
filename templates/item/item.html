@@ -98,6 +98,8 @@
 
                                 </div>
 
+                            <h6><strong>Quantity:</strong> {{ item.quantity }}</h6>
+
                                 <div class="col-md-4">
                                     {% if item.main_image is not none %}
                                         {% set image_url = url_for('static', filename="uploads/" + item.main_image) %}

@@ -22,9 +22,13 @@
             <hr>
 
             <div class="row">
-                <div class="col-12">
+                <div class="col-6">
                     <label class="form-label" for="autoComplete">Type:</label>
                     <input id="autoComplete" name="item_type" type="text" class="form-control" value="{{ item_type }}">
+                </div>
+                 <div class="col-6">
+                    <label class="form-label" for="item_quantity">Quantity:</label>
+                    <input id="item_quantity" name="item_quantity" type="text" class="form-control" value="{{ item.quantity }}">
                 </div>
             </div>
 

@@ -777,6 +777,7 @@ def update_item_by_id(item_data: dict, item_id: int, user: User):
         new_item_slug = f"{str(r[0].id)}-{slugify(item_data['name'])}"
         r[0].slug = new_item_slug
         r[0].description = item_data['description']
+        r[0].quantity = item_data['item_quantity']
         r[0].location_id = item_data['item_location']
         r[0].specific_location = item_data['item_specific_location']
 

@@ -16,7 +16,7 @@ ct_$('html').ultimateGDPR({
     popup_options: {
         parent_container: 'body', // append plugin html to this element selector
         always_show: false, // true, false, when true popup is displayed always even when consent is given
-        gear_display: true, // true, false when true displays icon with cookie settings
+        gear_display: false, // true, false when true displays icon with cookie settings
         popup_title: 'Cookies Information', // title for popup
         popup_text: 'To make this site work properly, we sometimes place small data files called cookies on your device. Most websites do this.', // text for popup
         accept_button_text: 'Accept', // string, text for accept button

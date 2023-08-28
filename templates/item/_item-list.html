@@ -26,22 +26,29 @@
                 {% set item_slug = item.slug %}
                 {% set item_location = item_data["location"] %}
                 {% set item_visibility = item_data["user_inventory"] %}
+                {% set quantity = item.quantity %}
+                {% if quantity > 1 %}
+                    {% set quantity_string = " (" +  quantity|string  +')' %}
+                {% else %}
+                    {% set quantity_string = "" %}
+                    {% endif %}
+
                 <tr>
                     <td>
                         {% if inventory_slug == "default" %}
                             <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
-                                inventory_slug="d", item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                                inventory_slug="d", item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }} {{ quantity_string }}</a>
                         {% elif inventory_slug == "all" %}
 
                             {% if item.inventories | length > 0 %}
                                 <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
-                                inventory_slug=item.inventories[0].slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                                inventory_slug=item.inventories[0].slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }} {{ quantity_string }}</a>
                             {% else %}
-                                {{ item.name }}
+                                {{ item.name }} {{ quantity_string }}
                             {% endif %}
                         {% else %}
                             <a href="{{ url_for('item.item_with_username_and_inventory', username=username,
-                                inventory_slug=inventory.slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }}</a>
+                                inventory_slug=inventory.slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }} {{ quantity_string }}</a>
                         {% endif %}
                     </td>
                     <td id="table_item_desc_{{ item['id'] }}">

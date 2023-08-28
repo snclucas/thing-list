@@ -124,9 +124,11 @@ def edit_item(item_id):
 
         item_name = request.form.get("item_name")
         item_description = request.form.get("item_description")
+        item_quantity = request.form.get("item_quantity")
 
         del form_data["item_name"]
         del form_data["item_description"]
+        del form_data["item_quantity"]
 
         item_tags = request.form.get("item_tags")
         if item_tags != '':
@@ -152,6 +154,7 @@ def edit_item(item_id):
             "name": item_name,
             "description": item_description,
             "item_type": item_type,
+            "item_quantity": item_quantity,
             "item_location": item_location,
             "item_specific_location": item_specific_location,
             "item_tags": item_tags
