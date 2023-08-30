@@ -1,3 +1,4 @@
+import collections
 import os
 import pathlib
 import random
@@ -88,7 +89,23 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
     if item_ is None or inventory_item_ is None:
         return render_template('404.html', message="No such item or you do not have access to this item"), 404
 
-    item_fields = dict(get_item_fields(item_id=item_.id))
+    item_fields = get_item_fields(item_id=item_.id)
+
+    ii = {}
+    for field_data in item_fields:
+        field_ = field_data[0]
+        item_field_ = field_data[1]
+        template_field_ = field_data[2]
+        ii[template_field_.order] = [field_, item_field_]
+
+    od = collections.OrderedDict(sorted(ii.items()))
+
+    dfdf = {}
+    for k, v in od.items():
+        dfdf[v[0]] = v[1]
+
+    item_fields = dict(dfdf)
+
     all_item_fields = dict(get_all_item_fields(item_id=item_.id))
     all_fields = dict(get_all_fields())
 

@@ -11,7 +11,7 @@ from sqlalchemy.sql.functions import func
 
 from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification
+    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, TemplateField
 
 _NONE_ = "None"
 
@@ -1555,6 +1555,39 @@ def get_user_template_by_id(template_id: int, user_id: int):
     return r
 
 
+def get_template_fields_by_id(template_id: int):
+    session = db.session
+    stmt = select(TemplateField, Field) \
+        .join(FieldTemplate) \
+        .join(Field)\
+        .where(FieldTemplate.id == template_id)
+    r = session.execute(stmt).all()
+    return r
+
+
+def set_template_fields_orders(field_data, template_id: int, user_id: int):
+    session = db.session
+
+    user_template_ = get_user_template_by_id(template_id=template_id, user_id=user_id)
+    if user_template_ is not None:
+
+        for field_order, field_dict in field_data.items():
+            field_id = field_dict[1]
+
+            stmt = select(TemplateField).where(FieldTemplate.id == template_id)\
+                .join(FieldTemplate)\
+                .where(TemplateField.field_id == field_id)
+            r = session.execute(stmt).one_or_none()
+
+            if r is not None:
+                r = r[0]
+                r.order = field_order
+
+        db.session.commit()
+
+        return
+
+
 def save_inventory_fieldtemplate(inventory_id, inventory_template, user_id: int):
     with app.app_context():
         inventory_, user_inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=user_id)
@@ -1602,10 +1635,18 @@ def get_user_location_by_id(location_id: str, user_id: int):
 
 def get_item_fields(item_id: int):
     with app.app_context():
-        stmt = select(Field.field, ItemField).join(Item).join(Field, ItemField.field_id == Field.id) \
+        # stmt = select(Field.field, ItemField).join(Item).join(Field, ItemField.field_id == Field.id) \
+        #     .filter(ItemField.item_id == item_id) \
+        #     .filter(ItemField.show == True)
+        # ddd = db.session.execute(stmt).all()
+
+        stmt = select(Field, ItemField, TemplateField) \
+            .join(Field, ItemField.field_id == Field.id) \
+            .join(TemplateField, TemplateField.field_id == Field.id) \
             .filter(ItemField.item_id == item_id) \
             .filter(ItemField.show == True)
         ddd = db.session.execute(stmt).all()
+
         return ddd
 
 
@@ -1646,13 +1687,13 @@ def save_template_fields(template_name, fields, user):
 
         if field_template_ is None:
 
-            new_field_template_ = FieldTemplate(name=template_name, user_id=user.id)
-            db.session.add(new_field_template_)
+            field_template_ = FieldTemplate(name=template_name, user_id=user.id)
+            db.session.add(field_template_)
 
             for field in fields:
                 field_ = Field.query.filter_by(id=field).one_or_none()
                 if field_ is not None:
-                    new_field_template_.fields.append(field_)
+                    field_template_.fields.append(field_)
 
         else:
             field_template_.name = template_name
@@ -1664,6 +1705,20 @@ def save_template_fields(template_name, fields, user):
                     field_template_.fields.append(field_)
 
         db.session.commit()
+
+        # now do the sorting
+        stmt = select(TemplateField).where(FieldTemplate.id == field_template_.id)
+        r = db.session.execute(stmt).all()
+
+        max_order = db.session.query(func.max(TemplateField.order)).scalar()
+
+        for row in r:
+            if row[0].order == 0:
+                max_order += 1
+                row[0].order = max_order
+
+        db.session.commit()
+
         return
 
 

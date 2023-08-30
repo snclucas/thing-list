@@ -119,10 +119,10 @@
                                 </tr>
                                 </thead>
                                 <tbody>
-                                {% for field_name, field in item_fields.items() %}
+                                {% for field, item_field in item_fields.items() %}
                                     <tr>
-                                        <td><strong>{{ field_name|capitalize }}:</strong></td>
-                                        <td>{{ field.value }}</td>
+                                        <td><strong>{{ field.field|capitalize }}:</strong></td>
+                                        <td>{{ item_field.value }}</td>
                                     </tr>
                                 {% endfor %}
                                 </tbody>

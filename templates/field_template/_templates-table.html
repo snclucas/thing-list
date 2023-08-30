@@ -9,6 +9,7 @@
             <th></th>
             <th></th>
             <th></th>
+            <th></th>
         </tr>
 
         </thead>
@@ -23,17 +24,19 @@
 
                 <td>
                     {% for field in template[0].fields %}
-
-                        {% if not loop.last %}
-                            {{ field.field }},
-                        {% else %}
-                            {{ field.field }}
-                        {% endif %}
-
+                        {{ field.field }}
+                        <br>
                     {% endfor %}
                 </td>
 
             <td>
+                 <a href="{{ url_for('field_template.sort_template', template_id=template[0].id) }}">
+                 <span id="sort-template-span" class="fas fa-sort fa-2x" style=" display: inline-block; margin-right: 20px;"></span>
+                     </a>
+            </td>
+
+            <td>
+
                 <div class="form-check">
                         <input class="form-check-input" type="checkbox" value="" data-template-id="{{ template[0]['id'] }}"
                                id="selected-item-{{ template[0]['id'] }}">

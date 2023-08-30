@@ -1,9 +1,14 @@
+import collections
+import json
+
 import bleach
 from flask import Blueprint, render_template, redirect, url_for, request, abort, Response
 from flask_login import login_required, current_user
 
 from database_functions import find_template, add_new_template, update_template_by_id, get_user_templates, \
-    get_all_fields, save_template_fields, get_user_template_by_id, delete_templates_from_db
+    get_all_fields, save_template_fields, get_user_template_by_id, delete_templates_from_db, \
+    set_template_fields_orders, \
+    get_template_fields_by_id
 from models import FieldTemplate
 
 field_template = Blueprint('field_template', __name__)
@@ -13,6 +18,41 @@ field_template = Blueprint('field_template', __name__)
 @login_required
 def templates():
     return templates_with_username(username=current_user.username)
+
+
+@field_template.route('/field-templates/<template_id>/sort', methods=['GET', 'POST'])
+@login_required
+def sort_template(template_id):
+    if request.method == 'GET':
+        all_fields = dict(get_all_fields())
+
+        user_template_ = get_user_template_by_id(template_id=template_id, user_id=current_user.id)
+
+        selected_field_ids = []
+        if user_template_ is not None:
+            for field_ in user_template_[0].fields:
+                selected_field_ids.append(field_.id)
+
+        sdds = get_template_fields_by_id(template_id=template_id)
+
+        selected_field_ids = {}
+        for entry in sdds:
+            template_field_, field_ = entry
+
+            selected_field_ids[template_field_.order] = {"name": field_.field, "id": field_.id}
+
+        od = collections.OrderedDict(sorted(selected_field_ids.items()))
+
+        return render_template('field_template/_sort_template_fields.html', field_template_name=user_template_[0].name,
+                               username=current_user.username, all_fields=all_fields, user_template=user_template_,
+                               selected_field_ids=selected_field_ids, template_id=template_id, fields=od)
+
+    else:
+        json_data = request.json
+        dd = json_data["dd"]
+        set_template_fields_orders(field_data=dd, template_id=template_id, user_id=current_user.id)
+
+        return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
 
 
 @field_template.route('/field-templates/<template_id>')
@@ -29,7 +69,7 @@ def template(template_id):
 
     return render_template('field_template/field_template.html', field_template_name=user_template_[0].name,
                            username=current_user.username, all_fields=all_fields, user_template=user_template_,
-                           selected_field_ids=selected_field_ids)
+                           selected_field_ids=selected_field_ids, template_id=template_id)
 
 
 @field_template.route('/@<username>/field-templates')

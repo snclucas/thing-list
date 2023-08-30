@@ -4,6 +4,7 @@ import string
 
 from flask_login import UserMixin
 from sqlalchemy import UniqueConstraint
+from sqlalchemy.event import listen
 
 from app import db
 from sqlalchemy.ext.declarative import declarative_base
@@ -44,7 +45,6 @@ class FieldTemplate(db.Model):
     __tablename__ = "field_templates"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50))
-    # fields = db.Column(db.String(1000), default="-1")
     fields = db.relationship('Field', secondary='fieldtemplate_fields',
                              back_populates='field_templates', lazy='subquery')
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
@@ -55,6 +55,7 @@ class TemplateField(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     field_id = db.Column(db.Integer, db.ForeignKey('fields.id', ondelete='CASCADE'))
     template_id = db.Column(db.Integer, db.ForeignKey('field_templates.id', ondelete='CASCADE'))
+    order = db.Column(db.Integer, nullable=False, default=0)
 
 
 class Field(db.Model):

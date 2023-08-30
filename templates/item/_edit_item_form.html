@@ -65,15 +65,15 @@
 
         <div class="col-6">
 
-            {% for field_name, field in item_fields.items() %}
+            {% for field, item_field in item_fields.items() %}
                 <div class="row">
                     <div class="col-12">
 
-                        <label for="form_item_{{ field_name }}" class="form-label">{{ field_name }}</label>
+                        <label for="form_item_{{ field.field }}" class="form-label">{{ field.field }}</label>
                         <input type="text" class="form-control" name="{{ field.field_id }}"
-                               id="form_item_{{ field_name }}"
+                               id="form_item_{{ field.field }}"
                                placeholder=""
-                               value="{{ field.value }}">
+                               value="{{ item_field.value }}">
 
                     </div>
                 </div>
