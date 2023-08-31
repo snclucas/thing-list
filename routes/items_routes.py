@@ -18,7 +18,7 @@ from database_functions import get_all_user_locations, find_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
-    change_item_access_level, link_items, copy_items
+    change_item_access_level, link_items, copy_items, commit
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -145,6 +145,7 @@ def items_load():
                                                      item_location_id=location_id,
                                                      item_specific_location=item_specific_location,
                                                      user_id=current_user.id, custom_fields=custom_fields)
+                        commit()
 
                     line_count += 1
 

@@ -11,7 +11,7 @@ from sqlalchemy.sql.functions import func
 
 from app import db, app, __PUBLIC__, __OWNER__
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, TemplateField
+    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, TemplateField, Relateditems
 
 _NONE_ = "None"
 
@@ -827,6 +827,13 @@ def delete_items(item_ids: list, user: User):
         for item_ in items_:
             if item_[0] is not None:
 
+                # remove related item relationships
+                related_items_ = Relateditems.query.filter(or_(Relateditems.item_id == item_[0].id,
+                                                               Relateditems.related_item_id == item_[0].id)).all()
+                for related_item_ in related_items_:
+                    db.session.delete(related_item_)
+                db.session.commit()
+
                 item_images_ = ItemImage.query.filter_by(item_id=item_[0].id).all()
                 for item_image_ in item_images_:
                     if item_image_ is not None:
@@ -1099,6 +1106,9 @@ def get_user_default_item_type(user_id: int):
         user_default_item_type = ItemType.query.filter_by(user_id=user_id, name="none").one_or_none()
         return user_default_item_type
 
+def commit():
+    db.session.commit()
+
 
 def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
                           item_location_id=None, item_specific_location="", custom_fields=None):
@@ -1162,7 +1172,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
 
         db.session.add(new_item)
 
-        db.session.commit()
+        #db.session.commit()
 
         add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
 
