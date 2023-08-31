@@ -1456,8 +1456,17 @@ def delete_templates_from_db(user_id: str, template_ids) -> None:
         .where(FieldTemplate.id.in_(template_ids))
     templates_ = db.session.execute(stmt).all()
 
+    # get all the niventories that use this template
+
     for template_ in templates_:
         template_ = template_[0]
+
+        inventories_ = Inventory.query.filter(Inventory.field_template == template_.id).all()
+        for inventory_ in inventories_:
+            inventory_.field_template = None
+
+        db.session.commit()
+
         db.session.delete(template_)
         db.session.commit()
 

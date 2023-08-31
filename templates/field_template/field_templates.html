@@ -119,9 +119,6 @@
             let delete_btn_selector = $('#delete-templates-btn');
             let delete_span_selector = $('#delete-templates-span');
 
-            let sort_btn_selector = $('#sort-template-btn')
-            let sort_span_selector = $('#sort-template-span')
-
             if (number_selected > 0) {
                 delete_collapse_btn_selector.attr('href', '#collapseDeleteTemplates');
                 delete_btn_selector.css("pointer-events", "auto");
@@ -129,16 +126,6 @@
                 delete_btn_selector.prop('disabled', false);
                 delete_collapse_btn_selector.prop('disabled', false);
                 delete_btn_selector.attr('disabled', 'disabled');
-
-                if (number_selected === 1) {
-                    sort_span_selector.css('color', 'black');
-                    sort_btn_selector.prop('disabled', false);
-                    sort_btn_selector.attr('disabled', 'disabled');
-                } else {
-                    sort_span_selector.css('color', 'lightgray');
-                    sort_btn_selector.prop('disabled', true);
-                    sort_btn_selector.removeAttr('disabled');
-                }
 
             } else {
                 $("#collapseDeleteLocations").collapse("hide");
@@ -149,9 +136,6 @@
                 delete_collapse_btn_selector.prop('disabled', true);
                 delete_btn_selector.removeAttr('disabled');
 
-                sort_span_selector.css('color', 'lightgray');
-                sort_btn_selector.prop('disabled', true);
-                sort_btn_selector.removeAttr('disabled');
             }
         }
 
