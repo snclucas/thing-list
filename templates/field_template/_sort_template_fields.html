@@ -9,6 +9,11 @@
                     <div class="card">
                         <div class="card-body">
 
+                         <div class="row">
+                                <div class="col-md-12">
+                                    <h4>Drag to sort the template fields</h4>
+                                </div>
+                         </div>
 
                             <div class="row">
                                 <div class="col-md-11">
@@ -33,7 +38,7 @@
                                         {% endfor %}
                                         </tbody>
                                     </table>
-                                    <button id="egg" class="btn btn-primary">Save</button>
+                                    <button id="save-order-btn" class="btn btn-primary">Save</button>
 
                                 </div>
                             </div>
@@ -54,10 +59,13 @@
     <script>
         $(document).ready(function () {
             let table = $('#sort-field-table').DataTable({
-                "searching": true,
+                "searching": false,
                 paging: false,
                 info: true,
-                columnDefs: [{targets: 0, visible: false}, {targets: 1, visible: false}],
+                columnDefs: [
+                    {targets: 0, visible: false},
+                    {targets: 1, visible: false}
+                ],
                 rowReorder: {
                     selector: 'tr'
                 }
@@ -74,12 +82,12 @@
                 });
             });
 
-            $("#egg").on("click", function (e) {
+            $("#save-order-btn").on("click", function (e) {
                 e.preventDefault();
 
-                let dd = {}
+                let row_order = {}
                 table.rows().every(function (rowIdx, tableLoop, rowLoop) {
-                    dd[rowLoop] = this.data()
+                    row_order[rowLoop] = this.data()
                 });
 
                 $.ajax({
@@ -91,7 +99,7 @@
                     },
                     data: JSON.stringify(
                         {
-                            'dd': dd
+                            'row_order': row_order
                         }
                     ),
                     success: function () {

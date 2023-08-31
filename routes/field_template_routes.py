@@ -49,10 +49,10 @@ def sort_template(template_id):
 
     else:
         json_data = request.json
-        dd = json_data["dd"]
-        set_template_fields_orders(field_data=dd, template_id=template_id, user_id=current_user.id)
+        row_order = json_data["row_order"]
+        set_template_fields_orders(field_data=row_order, template_id=template_id, user_id=current_user.id)
 
-        return json.dumps({'success':True}), 200, {'ContentType':'application/json'}
+        return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
 
 
 @field_template.route('/field-templates/<template_id>')
@@ -117,7 +117,6 @@ def delete_template():
 @field_template.route('/field-templates/add', methods=['POST'])
 @login_required
 def add_template():
-
     if request.method == 'POST':
         template_id = request.form.get("template_id")
         template_name = request.form.get("template_name")

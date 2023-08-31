@@ -147,11 +147,16 @@ def edit_item(item_id):
         item_description = request.form.get("item_description")
         item_quantity = request.form.get("item_quantity")
 
+        item_name = bleach.clean(item_name)
+        item_description = bleach.clean(item_description)
+        item_quantity = bleach.clean(item_quantity)
+
         del form_data["item_name"]
         del form_data["item_description"]
         del form_data["item_quantity"]
 
         item_tags = request.form.get("item_tags")
+        item_tags = bleach.clean(item_tags)
         if item_tags != '':
             item_tags = item_tags.strip().split(",")
         else:

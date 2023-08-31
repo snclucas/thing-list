@@ -32,14 +32,9 @@
                                                       style="color:lightgray; display: inline-block; margin-right: 20px;cursor: pointer;"></span>
                                         </a>
 
-                                        <a id="sort-template-btn" role="button">
-                                                <span id="sort-template-span" class="fas fa-sort fa-2x"
-                                                      style=" display: inline-block; margin-right: 20px;"></span>
-                                        </a>
-
                                         <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
                                               href="#collapseTemplateHelp"
-                                              style="display: inline-block; margin-right: 20px;"></span>
+                                              style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
 
                                     </div>
                                 </div>
@@ -57,9 +52,9 @@
                                     </div>
 
                                     <div class="collapse" id="collapseTemplateHelp" aria-expanded="false">
-                                        <div class="card card-body">
+
                                             {% include 'field_template/_field_template_help.html' %}
-                                        </div>
+
                                     </div>
 
                                     <div class="collapse" id="collapseDeleteTemplates" aria-expanded="false">
