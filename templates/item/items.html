@@ -54,7 +54,10 @@
                                         {% endif %}
                                     </small>
                                     </h4>
+
                                 </div>
+
+
                                 <div class="col-md-6">
                                     <div class="row">
                                         <div class="col-md-12">
@@ -99,6 +102,28 @@
                                             </div>
                                         </div>
                                     </div>
+                                </div>
+                            </div>
+
+
+                            <div class="row">
+                                <div class="col-12">
+
+                                    {% with messages = get_flashed_messages() %}
+                                        {% if messages %}
+                                            <br>
+                                            {% for message in messages %}
+                                                <div class="alert alert-primary alert-dismissible fade show"
+                                                     role="alert">
+                                                    <strong>{{ message }}</strong>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="alert"
+                                                            aria-label="Close"></button>
+                                                </div>
+                                            {% endfor %}
+                                        {% endif %}
+                                    {% endwith %}
+
+
                                 </div>
                             </div>
 
@@ -388,7 +413,7 @@
                 bulk_edit_items_btn_selector.attr('disabled', 'disabled');
                 bulk_edit_items_span_selector.attr('disabled', 'disabled');
             } else {
-                 $("#collapseDeleteItems").collapse("hide");
+                $("#collapseDeleteItems").collapse("hide");
                 delete_collapse_btn_selector.removeAttr('href');
 
                 delete_btn_selector.css("pointer-events", "none");

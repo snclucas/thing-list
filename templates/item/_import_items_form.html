@@ -2,8 +2,8 @@
 <div class="card card-body">
     <form method="POST" action="{{ url_for("items.items_load") }}"
           enctype="multipart/form-data">
-        <input class="form-control" type="file" name="file">
-        <input type="hidden" name="inventory_slug" value="{{ inventory.slug }}">
+        <input class="form-control" type="file" name="file" accept=".csv,.txt">
+        <input type="hidden" name="inventory_slug" value="{{ inventory_slug}}">
         <input type="hidden" name="inventory_id" value="{{ inventory.id }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <hr>
