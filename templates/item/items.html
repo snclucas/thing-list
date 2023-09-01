@@ -292,6 +292,12 @@
 
         });
 
+        $("#load-items-btn").on("click", function (e) {
+            e.preventDefault();
+            document.getElementById("load-items-span").style.removeProperty("display");
+            $('#load-items-form').submit()
+        });
+
         $("#btn-apply-filter").on("click", function (e) {
             e.preventDefault();
             let searchParams = new URLSearchParams(window.location.search);

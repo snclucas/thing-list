@@ -77,6 +77,7 @@ def items_load():
                     tags_col_index = None
                     location_col_index = None
                     specific_location_col_index = None
+                    quantity_col_index = None
 
                     item_location = None
                     item_specific_location = None
@@ -102,6 +103,7 @@ def items_load():
                             tags_col_index = _find_list_index(column_headers, "tags")
                             location_col_index = _find_list_index(column_headers, "location")
                             specific_location_col_index = _find_list_index(column_headers, "specific location")
+                            quantity_col_index = _find_list_index(column_headers, "quantity")
 
                         else:
                             if len(row) < number_columns:
@@ -124,6 +126,9 @@ def items_load():
                                 base_column_headers += 1
                             if specific_location_col_index != -1:
                                 item_specific_location = row[specific_location_col_index]
+                                base_column_headers += 1
+                            if quantity_col_index != -1:
+                                item_quantity = row[quantity_col_index]
                                 base_column_headers += 1
 
                             # add item types
@@ -150,7 +155,7 @@ def items_load():
                                 tag_array[t] = tag_array[t].replace(" ", "@#$")
 
                             new_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
-                                                         item_type=item_type,
+                                                         item_type=item_type, item_quantity=item_quantity,
                                                          item_tags=tag_array, inventory_id=inventory_id,
                                                          item_location_id=location_id,
                                                          item_specific_location=item_specific_location,
@@ -259,7 +264,7 @@ def items_save():
         dv_lower = [x.lower() for x in list(dv.keys())]
         field_set.update(dv_lower)
 
-    csv_headers = ["name", "description", "tags", "type", "location", "specific location"]
+    csv_headers = ["name", "description", "tags", "type", "location", "specific location", "quantity"]
     csv_headers.extend(field_set)
 
     csv_list = [csv_headers]
@@ -277,6 +282,7 @@ def items_save():
             row["types"],
             row["location"],
             item_.specific_location,
+            item_.quantity
         ]
         # add the custom values
         wewe = {k.lower(): v for k, v in wewe.items()}

@@ -140,7 +140,8 @@ def get_item_custom_field_data(user_id: int, item_list=None):
         item_field_data_ = db.session.query(Item.id, Field.field, ItemField.value) \
             .join(ItemField, ItemField.field_id == Field.id) \
             .join(Item, ItemField.item_id == Item.id) \
-            .filter(Item.user_id == user_id)
+            .filter(Item.user_id == user_id) \
+            .filter(ItemField.show == True)
 
         if item_list is not None:
             if isinstance(item_list, list):
@@ -1114,7 +1115,8 @@ def commit():
     db.session.commit()
 
 
-def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, inventory_id=None, user_id=None,
+def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
+                          inventory_id=None, user_id=None, item_quantity=None,
                           item_location_id=None, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
 
@@ -1126,7 +1128,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None, 
         if item_type is None:
             item_type = "none"
 
-        new_item = Item(name=item_name, description=item_desc, user_id=user_id,
+        new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
                         location_id=item_location_id, specific_location=item_specific_location)
 
         db.session.add(new_item)
