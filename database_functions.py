@@ -158,25 +158,29 @@ def get_item_custom_field_data(user_id: int, item_list=None):
         return sdsd
 
 
-def delete_item_type_from_db(itemtype_id: int, user: User) -> (bool, str):
+def delete_itemtypes_from_db(itemtype_ids, user_id: int) -> (bool, str):
     with app.app_context():
-        itemtype_ = ItemType.query.filter_by(user_id=user.id).filter_by(id=itemtype_id).first()
+        if not isinstance(itemtype_ids, list):
+            itemtype_ids = [itemtype_ids]
 
-        user_none_type_ = ItemType.query.filter_by(user_id=user.id).filter_by(name=_NONE_).first()
+        user_none_type_ = ItemType.query.filter_by(user_id=user_id).filter_by(name=_NONE_).first()
 
-        if itemtype_ is not None:
-            # find items with this item type
-            d = Item.query.filter_by(user_id=user.id).filter_by(item_type=itemtype_id).all()
+        stmt = select(ItemType).join(User) \
+            .where(ItemType.user_id == user_id) \
+            .where(ItemType.id.in_(itemtype_ids))
+        itemtypes_ = db.session.execute(stmt).all()
+
+        for itemtype_ in itemtypes_:
+            itemtype_ = itemtype_[0]
+
+            d = Item.query.filter_by(user_id=user_id).filter_by(item_type=itemtype_.id).all()
             for row in d:
                 row.item_type = user_none_type_.id
 
-            try:
-                db.session.commit()
-                db.session.delete(itemtype_)
-                db.session.commit()
-                return True, "Item type successfully deleted"
-            except SQLAlchemyError:
-                return False, "Error deleting item type"
+            db.session.commit()
+
+            db.session.delete(itemtype_)
+            db.session.commit()
 
 
 def get_user_item_count(user_id: int):

@@ -1,16 +1,11 @@
 import datetime
-import secrets
-import string
 
 from flask_login import UserMixin
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.event import listen
 
 from app import db
 from sqlalchemy.ext.declarative import declarative_base
 
-#db.event.listen(db.session, 'before_commit', SearchableMixin.before_commit)
-#db.event.listen(db.session, 'after_commit', SearchableMixin.after_commit)
 Base = declarative_base()
 
 

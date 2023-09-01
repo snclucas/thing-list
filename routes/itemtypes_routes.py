@@ -7,9 +7,8 @@ from flask_login import login_required, current_user
 
 from app import app
 
-from database_functions import get_all_itemtypes_for_user, delete_item_type_from_db, find_type_by_text, \
-    add_new_user_itemtype
-
+from database_functions import get_all_itemtypes_for_user, find_type_by_text, \
+    add_new_user_itemtype, delete_itemtypes_from_db
 
 types = Blueprint('types', __name__)
 
@@ -26,8 +25,8 @@ def item_types():
 def delete_item_type():
     if request.method == 'POST':
         json_data = request.json
-        itemtype_id = json_data['itemtype_id']
-        delete_item_type_from_db(itemtype_id=int(itemtype_id), user=current_user)
+        itemtype_ids = json_data['itemtype_ids']
+        delete_itemtypes_from_db(itemtype_ids=itemtype_ids, user_id=current_user.id)
         return redirect(url_for('types.item_types'))
 
 

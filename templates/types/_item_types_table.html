@@ -1,6 +1,6 @@
 {% if user_item_types | length > 1 %}
 
-    <table class="table table-striped dataTable" id="my-inventories-table">
+    <table class="table table-striped dataTable" id="my-itemtypes-table">
         <thead class="success">
 
         <tr>
@@ -17,24 +17,15 @@
                     <td>
                         <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug="all") | replace('%40', '@') }}?type={{ user_item_type.name }}">{{ user_item_type.name }}</a>
                     </td>
-                    <td>
 
-                <span id="delete-itemtype-btn-{{ user_item_type.id }}"
-                      data-bs-toggle="collapse"
-                      href="#confirmItemTypeDelete-{{ user_item_type.id }}"
-                      class="fas fa-times fa-2x "
-                      style="color:red; display: inline-block; margin-right: 20px;"></span>
+                     <td>
 
-                        <div class="collapse" id="confirmItemTypeDelete-{{ user_item_type.id }}" aria-expanded="false">
-                            <button type="button"
-                                    class="btn btn-primary btn-sm"
-                                    id="confirmItemTypeDelete-{{ user_item_type.id }}"
-                                    data-itemtype-id="{{ user_item_type.id }}">
-                                Confirm delete
-                            </button>
-                        </div>
+                <div class="form-check">
+                        <input class="form-check-input" type="checkbox" value="" data-itemtype-id="{{ user_item_type.id }}"
+                               id="selected-item-{{ user_item_type.id }}">
+                    </div>
+            </td>
 
-                    </td>
 
                 </tr>
             {% endif %}
