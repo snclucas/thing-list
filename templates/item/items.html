@@ -41,17 +41,18 @@
 
                             <div class="row">
                                 <div class="col-md-6 order-sm-first order-last">
-                                    <h4 class="mb-0">Items <small>| {{ data_dict| length }}
+                                    <h4 class="mb-0"> <small>
                                         {% if inventory is not none %}
                                             {% if "__default__" in inventory.name %}
                                                 {% set inv_name = "Default/None" %}
                                             {% else %}
                                                 {% set inv_name = inventory.name %}
                                             {% endif %}
-                                            | {{ inv_name }}
+                                            {{ inv_name }}
                                         {% else %}
-                                            | All item(s)
+                                            All item(s)
                                         {% endif %}
+                                        | {{ data_dict| length }}
                                     </small>
                                     </h4>
 
