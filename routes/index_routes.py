@@ -15,9 +15,9 @@ def index():
         return render_template('index.html')
 
 
-@main.route('/test')
-def test():
-    return render_template('test.html')
+@main.route('/about')
+def about():
+    return render_template('about.html')
 
 @main.route('/privacy-policy')
 def privacy():
