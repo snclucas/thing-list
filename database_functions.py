@@ -886,36 +886,42 @@ def copy_items(item_ids: list, user: User, inventory_id: int):
     """
 
     with app.app_context():
-        if inventory_id == -1:
-            user_default_inventory = get_user_default_inventory(user_id=user.id)
-            inventory_id = user_default_inventory.id
+        try:
+            if inventory_id == -1:
+                user_default_inventory = get_user_default_inventory(user_id=user.id)
+                inventory_id = user_default_inventory.id
 
-        stmt = db.session.query(Item, InventoryItem) \
-            .join(InventoryItem, InventoryItem.item_id == Item.id) \
-            .join(User) \
-            .where(Item.user_id == user.id) \
-            .where(Item.id.in_(item_ids))
-        results_ = db.session.execute(stmt).all()
+            stmt = db.session.query(Item, InventoryItem) \
+                .join(InventoryItem, InventoryItem.item_id == Item.id) \
+                .join(User) \
+                .where(Item.user_id == user.id) \
+                .where(Item.id.in_(item_ids))
+            results_ = db.session.execute(stmt).all()
 
-        for item_, inventory_item_ in results_:
+            for item_, inventory_item_ in results_:
 
-            tag_arr = []
-            for tag in item_.tags:
-                tag_arr.append(tag.tag.replace("@#$", " "))
+                tag_arr = []
+                for tag in item_.tags:
+                    tag_arr.append(tag.tag.replace("@#$", " "))
 
-            new_ = add_item_to_inventory(item_name=item_.name, item_desc=item_.description,
-                                         item_type=item_.item_type,
-                                         item_tags=tag_arr, inventory_id=inventory_id,
-                                         item_location_id=item_.location_id,
-                                         item_specific_location=item_.specific_location,
-                                         user_id=user.id, custom_fields=item_.fields)
+                new_ = add_item_to_inventory(item_name=item_.name, item_desc=item_.description,
+                                             item_type=item_.item_type,
+                                             item_tags=tag_arr, inventory_id=inventory_id,
+                                             item_location_id=item_.location_id,
+                                             item_specific_location=item_.specific_location,
+                                             user_id=user.id, custom_fields=item_.fields)
+                if new_["status"] == "error":
+                    # log this error
+                    return {"status": "error", "count": 0}
 
-        db.session.commit()
+            db.session.commit()
+            return {"status": "success", "count": len(results_)}
+        except Exception as e:
+            # log this error
+            return {"status": "error", "count": 0}
 
-    return
 
-
-def move_items(item_ids: list, user: User, inventory_id: int):
+def move_items(item_ids: list, user: User, inventory_id: int) -> dict:
     """
         link - just add new line in ItemInventory
         move - change inventory id in ItemInventory
@@ -924,48 +930,55 @@ def move_items(item_ids: list, user: User, inventory_id: int):
 
     with app.app_context():
 
-        if inventory_id == -1:
-            user_default_inventory = get_user_default_inventory(user_id=user.id)
-            inventory_id = user_default_inventory.id
+        try:
+            if inventory_id == -1:
+                user_default_inventory = get_user_default_inventory(user_id=user.id)
+                inventory_id = user_default_inventory.id
 
-        stmt = select(Item, InventoryItem) \
-            .join(InventoryItem, InventoryItem.item_id == Item.id) \
-            .join(User) \
-            .where(Item.user_id == user.id) \
-            .where(Item.id.in_(item_ids))
-        results_ = db.session.execute(stmt).all()
+            stmt = select(Item, InventoryItem) \
+                .join(InventoryItem, InventoryItem.item_id == Item.id) \
+                .join(User) \
+                .where(Item.user_id == user.id) \
+                .where(Item.id.in_(item_ids))
+            results_ = db.session.execute(stmt).all()
 
-        for item_, inventory_item_ in results_:
-            inventory_item_.inventory_id = inventory_id
+            for item_, inventory_item_ in results_:
+                inventory_item_.inventory_id = inventory_id
 
-        db.session.commit()
+            db.session.commit()
+            return {"status": "success", "count": len(results_)}
 
-    return
+        except Exception as e:
+            return {"status": "error", "count": 0}
 
 
 def link_items(item_ids: list, user: User, inventory_id: int):
     with app.app_context():
-        if inventory_id == -1:
-            user_default_inventory = get_user_default_inventory(user_id=user.id)
-            inventory_id = user_default_inventory.id
+        try:
+            if inventory_id == -1:
+                user_default_inventory = get_user_default_inventory(user_id=user.id)
+                inventory_id = user_default_inventory.id
 
-        stmt = db.session.query(Item, InventoryItem) \
-            .join(InventoryItem, InventoryItem.item_id == Item.id) \
-            .join(User) \
-            .where(Item.user_id == user.id) \
-            .where(Item.id.in_(item_ids))
-        results_ = db.session.execute(stmt).all()
+            stmt = db.session.query(Item, InventoryItem) \
+                .join(InventoryItem, InventoryItem.item_id == Item.id) \
+                .join(User) \
+                .where(Item.user_id == user.id) \
+                .where(Item.id.in_(item_ids))
+            results_ = db.session.execute(stmt).all()
 
-        for item_, inventory_item_ in results_:
-            if inventory_item_.inventory_id != inventory_id:
-                new_inventory_item_ = InventoryItem(inventory_id=inventory_id, item_id=item_.id,
-                                                    access_level=inventory_item_.access_level)
+            for item_, inventory_item_ in results_:
+                if inventory_item_.inventory_id != inventory_id:
+                    new_inventory_item_ = InventoryItem(inventory_id=inventory_id, item_id=item_.id,
+                                                        access_level=inventory_item_.access_level)
 
-                db.session.add(new_inventory_item_)
+                    db.session.add(new_inventory_item_)
 
-        db.session.commit()
+            db.session.commit()
 
-        return
+            return {"status": "success", "count": len(results_)}
+
+        except Exception as e:
+            return {"status": "error", "count": 0}
 
 
 def delete_items_from_inventory(item_ids: list, inventory_id: int, user: User):
@@ -1122,78 +1135,86 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
 
     with app_context:
 
-        if custom_fields is None:
-            custom_fields = {}
+        try:
 
-        if item_type is None:
-            item_type = "none"
+            if custom_fields is None:
+                custom_fields = {}
 
-        new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
-                        location_id=item_location_id, specific_location=item_specific_location)
+            if item_type is None:
+                item_type = "none"
 
-        db.session.add(new_item)
-        # get new item ID
-        db.session.flush()
-        item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
-        new_item.slug = item_slug
+            new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
+                            location_id=item_location_id, specific_location=item_specific_location)
 
-        if item_type is None:
-            item_type = "None"
+            db.session.add(new_item)
+            # get new item ID
+            db.session.flush()
+            item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
+            new_item.slug = item_slug
 
-        if isinstance(item_type, int):
-            new_item.item_type = item_type
-        else:
-            item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(
-                user_id=user_id).one_or_none()
+            if item_type is None:
+                item_type = "None"
 
-            if item_type_ is None:
-                item_type_ = ItemType(name=item_type, user_id=user_id)
-                db.session.add(item_type_)
-                db.session.commit()
-                db.session.flush()
+            if isinstance(item_type, int):
+                new_item.item_type = item_type
+            else:
+                item_type_ = db.session.query(ItemType).filter_by(name=item_type.lower()).filter_by(
+                    user_id=user_id).one_or_none()
 
-            new_item.item_type = item_type_.id
+                if item_type_ is None:
+                    item_type_ = ItemType(name=item_type, user_id=user_id)
+                    db.session.add(item_type_)
+                    db.session.commit()
+                    db.session.flush()
 
-        for tag in item_tags:
-            if tag != '':
-                tag = tag.strip()
-                tag = tag.replace(" ", "@#$")
-                instance = db.session.query(Tag).filter_by(tag=tag).one_or_none()
-                if not instance:
-                    instance = Tag(tag=tag, user_id=user_id)
+                new_item.item_type = item_type_.id
 
-                new_item.tags.append(instance)
+            for tag in item_tags:
+                if tag != '':
+                    tag = tag.strip()
+                    tag = tag.replace(" ", "@#$")
+                    instance = db.session.query(Tag).filter_by(tag=tag).one_or_none()
+                    if not instance:
+                        instance = Tag(tag=tag, user_id=user_id)
 
-        if inventory_id is None or inventory_id == '':
-            default_user_inventory_ = get_user_default_inventory(user_id=user_id)
-            if default_user_inventory_ is not None:
-                default_user_inventory_id_ = default_user_inventory_.id
-                stmt = db.session.query(Inventory).where(Inventory.id == default_user_inventory_id_)
+                    new_item.tags.append(instance)
+
+            if inventory_id is None or inventory_id == '':
+                default_user_inventory_ = get_user_default_inventory(user_id=user_id)
+                if default_user_inventory_ is not None:
+                    default_user_inventory_id_ = default_user_inventory_.id
+                    stmt = db.session.query(Inventory).where(Inventory.id == default_user_inventory_id_)
+                    inventory_ = db.session.execute(stmt).first()[0]
+            else:
+                stmt = db.session.query(Inventory).where(Inventory.id == inventory_id)
                 inventory_ = db.session.execute(stmt).first()[0]
-        else:
-            stmt = db.session.query(Inventory).where(Inventory.id == inventory_id)
-            inventory_ = db.session.execute(stmt).first()[0]
 
-        inventory_.items.append(new_item)
+            inventory_.items.append(new_item)
 
-        db.session.add(new_item)
+            db.session.add(new_item)
 
-        #db.session.commit()
+            add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
 
-        add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
-
-        return_data = {
-            "item": {
-                "id": new_item.id,
-                "name": new_item.name,
-                "description": new_item.description,
-                "user_id": new_item.user_id,
+            return_data = {
+                "status": "success",
+                "item": {
+                    "id": new_item.id,
+                    "name": new_item.name,
+                    "description": new_item.description,
+                    "user_id": new_item.user_id,
+                }
             }
-        }
-        return_data['item']['tags'] = []
-        item_tags = new_item.tags
-        for tag in item_tags:
-            return_data['item']['tags'].append({"tag": tag.tag})
+            return_data['item']['tags'] = []
+            item_tags = new_item.tags
+            for tag in item_tags:
+                return_data['item']['tags'].append({"tag": tag.tag})
+
+        except Exception as e:
+            return_data = {
+                "status": "error",
+                "item": {}
+            }
+            # log this error
 
         return return_data
 

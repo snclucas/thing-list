@@ -57,115 +57,113 @@ def items_load():
             uploaded_file.save(filepath)
 
             import mimetypes
-            import_file_mimetype =  mimetypes.MimeTypes().guess_type(filepath)[0]
+            import_file_mimetype = mimetypes.MimeTypes().guess_type(filepath)[0]
             if "text/csv" not in import_file_mimetype:
                 flash("Uploaded file does not seem to be a CSV file.")
 
                 return redirect(url_for('items.items_with_username_and_inventory',
                                         username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
-            try:
+            with open(filepath) as csvfile:
+                line_count = 0
+                reader = csv.reader(csvfile, delimiter=',', quotechar='"')
+                column_headers = None
+                custom_fields = {}
+                name_col_index = None
+                description_col_index = None
+                type_col_index = None
+                tags_col_index = None
+                location_col_index = None
+                specific_location_col_index = None
+                quantity_col_index = None
 
-                with open(filepath) as csvfile:
-                    line_count = 0
-                    reader = csv.reader(csvfile, delimiter=',', quotechar='"')
-                    column_headers = None
-                    custom_fields = {}
-                    name_col_index = None
-                    description_col_index = None
-                    type_col_index = None
-                    tags_col_index = None
-                    location_col_index = None
-                    specific_location_col_index = None
-                    quantity_col_index = None
+                item_location = None
+                item_specific_location = None
 
-                    item_location = None
-                    item_specific_location = None
+                base_column_headers = 0
 
-                    base_column_headers = 0
+                for row in reader:
+                    number_columns = len(row)
+                    if line_count == 0:  # Header
+                        #  Get column headers and convert to lower case
+                        column_headers = row
+                        column_headers = [str(x).lower() for x in column_headers]
 
-                    for row in reader:
-                        number_columns = len(row)
-                        if line_count == 0:  # Header
-                            #  Get column headers and convert to lower case
-                            column_headers = row
-                            column_headers = [str(x).lower() for x in column_headers]
+                        name_col_index = _find_list_index(column_headers, "name")
+                        description_col_index = _find_list_index(column_headers, "description")
 
-                            name_col_index = _find_list_index(column_headers, "name")
-                            description_col_index = _find_list_index(column_headers, "description")
+                        if name_col_index == -1 or description_col_index == -1:
+                            return redirect(url_for('items.items_with_username_and_inventory',
+                                                    username=username,
+                                                    inventory_slug=inventory_slug).replace('%40', '@'))
 
-                            if name_col_index == -1 or description_col_index == -1:
-                                return redirect(url_for('items.items_with_username_and_inventory',
-                                                        username=username,
-                                                        inventory_slug=inventory_slug).replace('%40', '@'))
+                        type_col_index = _find_list_index(column_headers, "type")
+                        tags_col_index = _find_list_index(column_headers, "tags")
+                        location_col_index = _find_list_index(column_headers, "location")
+                        specific_location_col_index = _find_list_index(column_headers, "specific location")
+                        quantity_col_index = _find_list_index(column_headers, "quantity")
 
-                            type_col_index = _find_list_index(column_headers, "type")
-                            tags_col_index = _find_list_index(column_headers, "tags")
-                            location_col_index = _find_list_index(column_headers, "location")
-                            specific_location_col_index = _find_list_index(column_headers, "specific location")
-                            quantity_col_index = _find_list_index(column_headers, "quantity")
+                    else:
+                        if len(row) < number_columns:
+                            break
 
-                        else:
-                            if len(row) < number_columns:
-                                break
+                        if name_col_index != -1:
+                            item_name = row[name_col_index]
+                            base_column_headers += 1
+                        if description_col_index != -1:
+                            item_description = row[description_col_index]
+                            base_column_headers += 1
+                        if type_col_index != -1:
+                            base_column_headers += 1
+                            item_type = row[type_col_index]
+                        if tags_col_index != -1:
+                            item_tags = row[tags_col_index]
+                            base_column_headers += 1
+                        if location_col_index != -1:
+                            item_location = row[location_col_index]
+                            base_column_headers += 1
+                        if specific_location_col_index != -1:
+                            item_specific_location = row[specific_location_col_index]
+                            base_column_headers += 1
+                        if quantity_col_index != -1:
+                            item_quantity = row[quantity_col_index]
+                            base_column_headers += 1
 
-                            if name_col_index != -1:
-                                item_name = row[name_col_index]
-                                base_column_headers += 1
-                            if description_col_index != -1:
-                                item_description = row[description_col_index]
-                                base_column_headers += 1
-                            if type_col_index != -1:
-                                base_column_headers += 1
-                                item_type = row[type_col_index]
-                            if tags_col_index != -1:
-                                item_tags = row[tags_col_index]
-                                base_column_headers += 1
-                            if location_col_index != -1:
-                                item_location = row[location_col_index]
-                                base_column_headers += 1
-                            if specific_location_col_index != -1:
-                                item_specific_location = row[specific_location_col_index]
-                                base_column_headers += 1
-                            if quantity_col_index != -1:
-                                item_quantity = row[quantity_col_index]
-                                base_column_headers += 1
+                        # add item types
+                        add_new_user_itemtype(name=item_type, user_id=current_user.id)
 
-                            # add item types
-                            add_new_user_itemtype(name=item_type, user_id=current_user.id)
+                        location_id = None
+                        if item_location is not None:
+                            if item_location.strip() != "":
+                                location_data_ = get_or_add_new_location(location_name=item_location,
+                                                                         location_description=item_location,
+                                                                         to_user_id=current_user.id)
+                                location_id = location_data_["id"]
 
-                            location_id = None
-                            if item_location is not None:
-                                if item_location.strip() != "":
-                                    location_data_ = get_or_add_new_location(location_name=item_location,
-                                                                             location_description=item_location,
-                                                                             to_user_id=current_user.id)
-                                    location_id = location_data_["id"]
+                        tag_array = item_tags.split(",")
 
-                            tag_array = item_tags.split(",")
+                        remaining_data_columns = number_columns - base_column_headers
+                        for data_column_index in range(0, remaining_data_columns):
+                            custom_field_name = column_headers[base_column_headers + data_column_index]
+                            custom_field_value = row[base_column_headers + data_column_index]
+                            custom_fields[custom_field_name] = custom_field_value
 
-                            remaining_data_columns = number_columns - base_column_headers
-                            for data_column_index in range(0, remaining_data_columns):
-                                custom_field_name = column_headers[base_column_headers + data_column_index]
-                                custom_field_value = row[base_column_headers + data_column_index]
-                                custom_fields[custom_field_name] = custom_field_value
+                        for t in range(len(tag_array)):
+                            tag_array[t] = tag_array[t].strip()
+                            tag_array[t] = tag_array[t].replace(" ", "@#$")
 
-                            for t in range(len(tag_array)):
-                                tag_array[t] = tag_array[t].strip()
-                                tag_array[t] = tag_array[t].replace(" ", "@#$")
+                        new_item_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
+                                                          item_type=item_type, item_quantity=item_quantity,
+                                                          item_tags=tag_array, inventory_id=inventory_id,
+                                                          item_location_id=location_id,
+                                                          item_specific_location=item_specific_location,
+                                                          user_id=current_user.id, custom_fields=custom_fields)
+                        commit()
 
-                            new_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
-                                                         item_type=item_type, item_quantity=item_quantity,
-                                                         item_tags=tag_array, inventory_id=inventory_id,
-                                                         item_location_id=location_id,
-                                                         item_specific_location=item_specific_location,
-                                                         user_id=current_user.id, custom_fields=custom_fields)
-                            commit()
+                    line_count += 1
 
-                        line_count += 1
-
-            except Exception as e:
-                flash("Sorry, there was an error importing these things.")
+                    if new_item_["status"] == "error":
+                        flash("Sorry, there was an error importing these things.")
 
         return redirect(url_for('items.items_with_username_and_inventory',
                                 username=username, inventory_slug=inventory_slug).replace('%40', '@'))
@@ -187,11 +185,17 @@ def items_move():
         """
 
         if move_type == 0:
-            move_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            result = move_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            if result["status"] == "error":
+                flash("There was a problem moving your things!")
         elif move_type == 1:
-            copy_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            result = copy_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            if result["status"] == "error":
+                flash("There was a problem copying your things!")
         else:
-            link_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            result = link_items(item_ids=item_ids, user=current_user, inventory_id=int(to_inventory_id))
+            if result["status"] == "error":
+                flash("There was a problem copying your things!")
 
         return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
@@ -246,7 +250,6 @@ def items_save_pdf():
 @items_routes.route('/items/save', methods=['POST'])
 @login_required
 def items_save():
-
     inventory_slug = request.form.get("inventory_slug")
 
     filename = f"{current_user.username}_{inventory_slug}_export.csv"
@@ -355,7 +358,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     else:
         all_user_inventories = None
 
-    inventory_id, inventory_, inventory_field_template = _get_inventory(inventory_slug= inventory_slug,
+    inventory_id, inventory_, inventory_field_template = _get_inventory(inventory_slug=inventory_slug,
                                                                         logged_in_user_id=logged_in_user_id)
 
     if user_is_authenticated:
@@ -408,7 +411,6 @@ def items_with_inventory(inventory_slug=None):
 
 
 def _get_inventory(inventory_slug: str, logged_in_user_id):
-
     if inventory_slug == "default":
         inventory_slug_to_use = f"default-{current_user.username}"
     elif inventory_slug is None or inventory_slug == '':
@@ -439,7 +441,6 @@ def _get_inventory(inventory_slug: str, logged_in_user_id):
 
 
 def find_items_query(requested_user, logged_in_user, inventory_id, request_params):
-
     items_ = find_items(inventory_id=inventory_id,
                         item_type=request_params["requested_item_type_id"],
                         item_location=request_params["requested_item_location_id"],
