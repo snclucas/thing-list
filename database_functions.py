@@ -1,5 +1,6 @@
 import os
 import pathlib
+import uuid
 from typing import Union, List
 
 import flask_bcrypt
@@ -10,6 +11,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.sql.functions import func
 
 from app import db, app, __PUBLIC__, __OWNER__
+from email_utils import send_email
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
     Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, TemplateField, Relateditems
 
@@ -28,12 +30,22 @@ def drop_then_create():
 def post_user_add_hook(new_user: User):
     with app.app_context():
         add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory",
-                           public=False,
+                           access_level=0,
                            user_id=new_user.id)
         get_or_add_new_location(location_name=_NONE_, location_description="No location (default)",
                                 to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
+
+
+def send_inventory_invite(recipient_username, text_body, html_body):
+    recipient_user_ = find_user_by_username(username=recipient_username)
+    if recipient_user_ is not None:
+        send_email("New user registration", recipients=[recipient_user_.email], text_body=text_body, html_body=html_body)
+
+
+def confirm_inventory_invite_():
+    pass
 
 
 def backup_to_json():
@@ -44,7 +56,7 @@ def backup_to_json():
 # --- INVENTORIES ---
 
 
-def add_user_inventory(name, description, public, user_id: int):
+def add_user_inventory(name, description, access_level, user_id: int):
     ret = {}
     slug = slugify(name)
 
@@ -52,7 +64,8 @@ def add_user_inventory(name, description, public, user_id: int):
         try:
             # add it initially private
             to_user = User.query.filter_by(id=user_id).first()
-            new_inventory = Inventory(name=name, description=description, slug=slug, owner=to_user, public=public)
+            new_inventory = Inventory(name=name, description=description,
+                                      slug=slug, owner=to_user, access_level=access_level)
 
             if to_user is not None:
                 db.session.expire_on_commit = False
@@ -66,7 +79,7 @@ def add_user_inventory(name, description, public, user_id: int):
                 ret["name"] = name
                 ret["description"] = description
                 ret["slug"] = slug
-                ret["public"] = public
+                ret["access_level"] = access_level
 
                 return ret, "success"
 
@@ -308,8 +321,233 @@ def search_items(query: str, user_id: int):
         return items_arr
 
 
-def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
-               item_tags=None, item_specific_location=None, item_location=None, logged_in_user=None,
+def find_item(logged_in_user_id, request_user_id, item_id, item_slug):
+    d = db.session.query(Item, ItemType.name, Location.name,
+                         UserInventory, InventoryItem.access_level) \
+        .join(InventoryItem, InventoryItem.item_id == Item.id) \
+        .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
+        .join(ItemType, ItemType.id == Item.item_type) \
+        .join(Location, Location.id == Item.location_id)
+
+    if logged_in_user_id is None:
+        if request_user_id is None:
+            d = d.filter(InventoryItem.access_level == __PUBLIC__)
+        else:
+            d = d.filter(Item.user_id == request_user_id)
+            d = d.filter(InventoryItem.access_level == __PUBLIC__)
+
+    else:
+        if request_user_id is None:
+            d = d.filter(Item.user_id == logged_in_user_id)
+        else:
+            if request_user_id != logged_in_user_id:
+                d = d.filter(Item.user_id == request_user_id)
+                d = d.filter(InventoryItem.access_level == __PUBLIC__)
+            else:
+                d = d.filter(Item.user_id == request_user_id)
+
+    if item_id is not None:
+        d = d.filter(Item.id == item_id)
+
+    if item_slug is not None:
+        d = d.filter(Item.slug == item_slug)
+
+    return d.first()
+
+
+def _find_query_parameters(query_, query_params):
+    item_type = query_params['item_type']
+    item_location = query_params['item_location']
+    item_specific_location = query_params['item_specific_location']
+    item_tags = query_params['item_tags']
+
+    if item_type is not None and item_type != '':
+        query_ = query_.filter(Item.item_type == item_type)
+
+    if item_location is not None and item_location != '':
+        query_ = query_.filter(Location.id == item_location)
+
+    if item_specific_location is not None and item_specific_location != '':
+        query_ = query_.filter(Item.specific_location == item_specific_location)
+
+    if item_tags is not None and item_tags != "":
+        item_tags = item_tags.split(",")
+
+        for tag_ in item_tags:
+            tag_ = tag_.strip()
+            tag_ = tag_.replace(" ", "@#$")
+            t_ = find_tag(tag=tag_)
+
+            if t_ is not None:
+                query_ = query_.filter(Item.tags.contains(t_))
+
+    return query_
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def _find_my_items(logged_in_user: User, inventory_id, query_params):
+    with app.app_context():
+        if inventory_id is not None and inventory_id != '':
+            query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level, UserInventory) \
+                .join(ItemType, ItemType.id == Item.item_type) \
+                .join(Location, Location.id == Item.location_id)
+
+            query = query.join(InventoryItem, InventoryItem.item_id == Item.id)
+            query = query.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+            query = query.filter(InventoryItem.inventory_id == inventory_id)
+
+            query = query.filter(UserInventory.inventory_id == inventory_id)
+            query = query.filter(UserInventory.user_id == logged_in_user.id)
+        else:
+            query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+                .join(ItemType, ItemType.id == Item.item_type) \
+                .join(Location, Location.id == Item.location_id)
+
+            query = query.join(InventoryItem, InventoryItem.item_id == Item.id)
+
+        query = query.filter(Item.user_id == logged_in_user.id)
+
+        query = _find_query_parameters(query_=query, query_params=query_params)
+
+        results_ = query.all()
+
+        return results_
+
+
+"""
+inventory access
+0 - owner
+1 - 
+"""
+
+
+def _find_someone_elses_items_loggedin(logged_in_user: User, request_user_id, inventory_id, query_params):
+    with app.app_context():
+
+        query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+            .join(ItemType, ItemType.id == Item.item_type) \
+            .join(Location, Location.id == Item.location_id)
+
+        query = query.join(InventoryItem, InventoryItem.item_id == Item.id)
+        query = query.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+        query = query.filter(InventoryItem.inventory_id == inventory_id)
+
+        query = query.filter(and_(
+            UserInventory.user_id == logged_in_user.id,
+            UserInventory.inventory_id == inventory_id))
+
+        query = query.filter(Item.user_id == request_user_id)
+        #query = query.filter(InventoryItem.access_level == 2)
+
+        query = _find_query_parameters(query_=query, query_params=query_params)
+
+        results_ = query.all()
+
+        return results_
+
+
+def _find_someone_elses_items_notloggedin(request_user_id, inventory_id, query_params):
+    with app.app_context():
+
+        query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+            .join(ItemType, ItemType.id == Item.item_type) \
+            .join(Location, Location.id == Item.location_id)
+
+        query = query.join(InventoryItem, InventoryItem.item_id == Item.id)
+        query = query.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+        query = query.filter(InventoryItem.inventory_id == inventory_id)
+
+        query = query.filter(and_(
+            #UserInventory.user_id == logged_in_user.id,
+            UserInventory.inventory_id == inventory_id))
+
+        query = query.filter(Item.user_id == request_user_id)
+        #query = query.filter(InventoryItem.access_level == 2)
+
+        query = _find_query_parameters(query_=query, query_params=query_params)
+
+        results_ = query.all()
+
+        return results_
+
+
+def find_items_new(logged_in_user=None, requested_username=None, inventory_id=None, query_params=None):
+    logged_in_user_id = None
+    request_user_id = None
+    requested_user = None
+
+    if logged_in_user is not None:
+        logged_in_user_id = logged_in_user.id
+
+    if requested_username is None:
+        request_user_id = None
+    else:
+        if logged_in_user is not None:
+            if requested_username == logged_in_user.username:
+                requested_user = logged_in_user
+            else:
+                requested_user = find_user_by_username(username=requested_username)
+        else:
+            requested_user = find_user_by_username(username=requested_username)
+
+        if requested_user is not None:
+            request_user_id = requested_user.id
+
+    if logged_in_user is None and requested_user is None:
+        return {}
+
+    if logged_in_user is not None and requested_user is None:
+        return _find_my_items(logged_in_user=logged_in_user, inventory_id=inventory_id, query_params=query_params)
+
+    if logged_in_user is not None and logged_in_user_id == request_user_id:
+        return _find_my_items(logged_in_user=logged_in_user, inventory_id=inventory_id, query_params=query_params)
+
+    if logged_in_user is not None:
+        # if logged_in_user is not None:
+        return _find_someone_elses_items_loggedin(request_user_id=request_user_id, inventory_id=inventory_id,
+                                                  query_params=query_params, logged_in_user=logged_in_user)
+    else:
+        return _find_someone_elses_items_notloggedin(request_user_id=request_user_id, inventory_id=inventory_id,
+                                                     query_params=query_params)
+
+
+
+
+
+
+def find_items(inventory_id=None, item_type=None,
+               item_tags=None, item_specific_location=None,
+               item_location=None, logged_in_user=None,
                request_user=None):
     if logged_in_user is None:
         logged_in_user_id = None
@@ -323,95 +561,116 @@ def find_items(item_id=None, item_slug=None, inventory_id=None, item_type=None,
 
     with app.app_context():
 
-        if item_id is not None or item_slug is not None:
-            d = db.session.query(Item, ItemType.name, Location.name,
-                                 UserInventory, InventoryItem.access_level) \
-                .join(InventoryItem, InventoryItem.item_id == Item.id) \
-                .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
+        if inventory_id is not None and inventory_id != '':
+            d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level, UserInventory) \
                 .join(ItemType, ItemType.id == Item.item_type) \
                 .join(Location, Location.id == Item.location_id)
 
-            if logged_in_user_id is None:
-                if request_user_id is None:
-                    d = d.filter(InventoryItem.access_level == __PUBLIC__)
-                else:
-                    d = d.filter(Item.user_id == request_user_id)
-                    d = d.filter(InventoryItem.access_level == __PUBLIC__)
+            d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
+            d = d.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+            d = d.filter(InventoryItem.inventory_id == inventory_id)
+        else:
+            d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+                .join(ItemType, ItemType.id == Item.item_type) \
+                .join(Location, Location.id == Item.location_id)
 
+            d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
+
+        if logged_in_user_id is None:
+            if request_user_id is None:
+                d = d.filter(InventoryItem.access_level == 2)
             else:
-                if request_user_id is None:
-                    d = d.filter(Item.user_id == logged_in_user_id)
-                else:
-                    if request_user_id != logged_in_user_id:
-                        d = d.filter(Item.user_id == request_user_id)
-                        d = d.filter(InventoryItem.access_level == __PUBLIC__)
-                    else:
-                        d = d.filter(Item.user_id == request_user_id)
-
-            if item_id is not None:
-                d = d.filter(Item.id == item_id)
-
-            if item_slug is not None:
-                d = d.filter(Item.slug == item_slug)
-
-            return d.first()
+                d = d.filter(Item.user_id == request_user_id)
+                d = d.filter(InventoryItem.access_level == 2)
 
         else:
-            if inventory_id is not None and inventory_id != '':
-                d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
-                    .join(ItemType, ItemType.id == Item.item_type) \
-                    .join(Location, Location.id == Item.location_id)
-
-                d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
-                d = d.join(Inventory, Inventory.id == InventoryItem.inventory_id)
-                d = d.filter(InventoryItem.inventory_id == inventory_id)
+            if request_user_id is None:
+                d = d.filter(Item.user_id == logged_in_user_id)
             else:
-                d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
-                    .join(ItemType, ItemType.id == Item.item_type) \
-                    .join(Location, Location.id == Item.location_id)
-
-                d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
-
-            if logged_in_user_id is None:
-                if request_user_id is None:
+                if request_user_id != logged_in_user_id:
+                    d = d.filter(Item.user_id == request_user_id)
                     d = d.filter(InventoryItem.access_level == 2)
                 else:
                     d = d.filter(Item.user_id == request_user_id)
-                    d = d.filter(InventoryItem.access_level == 2)
 
+        d = _find_query_parameters(d, item_type, item_location, item_specific_location, item_tags)
+
+    sd = d.all()
+
+    return sd
+
+
+def find_items_orig(inventory_id=None, item_type=None,
+               item_tags=None, item_specific_location=None,
+               item_location=None, logged_in_user=None,
+               request_user=None):
+    if logged_in_user is None:
+        logged_in_user_id = None
+    else:
+        logged_in_user_id = logged_in_user.id
+
+    if request_user is None:
+        request_user_id = None
+    else:
+        request_user_id = request_user.id
+
+    with app.app_context():
+
+        if inventory_id is not None and inventory_id != '':
+            d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+                .join(ItemType, ItemType.id == Item.item_type) \
+                .join(Location, Location.id == Item.location_id)
+
+            d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
+            d = d.join(Inventory, Inventory.id == InventoryItem.inventory_id)
+            d = d.filter(InventoryItem.inventory_id == inventory_id)
+        else:
+            d = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
+                .join(ItemType, ItemType.id == Item.item_type) \
+                .join(Location, Location.id == Item.location_id)
+
+            d = d.join(InventoryItem, InventoryItem.item_id == Item.id)
+
+        if logged_in_user_id is None:
+            if request_user_id is None:
+                d = d.filter(InventoryItem.access_level == 2)
             else:
-                if request_user_id is None:
-                    d = d.filter(Item.user_id == logged_in_user_id)
+                d = d.filter(Item.user_id == request_user_id)
+                d = d.filter(InventoryItem.access_level == 2)
+
+        else:
+            if request_user_id is None:
+                d = d.filter(Item.user_id == logged_in_user_id)
+            else:
+                if request_user_id != logged_in_user_id:
+                    d = d.filter(Item.user_id == request_user_id)
+                    d = d.filter(InventoryItem.access_level == 2)
                 else:
-                    if request_user_id != logged_in_user_id:
-                        d = d.filter(Item.user_id == request_user_id)
-                        d = d.filter(InventoryItem.access_level == 2)
-                    else:
-                        d = d.filter(Item.user_id == request_user_id)
+                    d = d.filter(Item.user_id == request_user_id)
 
-            if item_type is not None and item_type != '':
-                d = d.filter(Item.item_type == item_type)
+        if item_type is not None and item_type != '':
+            d = d.filter(Item.item_type == item_type)
 
-            if item_location is not None and item_location != '':
-                d = d.filter(Location.id == item_location)
+        if item_location is not None and item_location != '':
+            d = d.filter(Location.id == item_location)
 
-            if item_specific_location is not None and item_specific_location != '':
-                d = d.filter(Item.specific_location == item_specific_location)
+        if item_specific_location is not None and item_specific_location != '':
+            d = d.filter(Item.specific_location == item_specific_location)
 
-            if item_tags is not None and item_tags != "":
-                item_tags = item_tags.split(",")
+        if item_tags is not None and item_tags != "":
+            item_tags = item_tags.split(",")
 
-                for tag_ in item_tags:
-                    tag_ = tag_.strip()
-                    tag_ = tag_.replace(" ", "@#$")
-                    t_ = find_tag(tag=tag_)
+            for tag_ in item_tags:
+                tag_ = tag_.strip()
+                tag_ = tag_.replace(" ", "@#$")
+                t_ = find_tag(tag=tag_)
 
-                    if t_ is not None:
-                        d = d.filter(Item.tags.contains(t_))
+                if t_ is not None:
+                    d = d.filter(Item.tags.contains(t_))
 
-        sd = d.all()
+    sd = d.all()
 
-        return sd
+    return sd
 
 
 def change_item_access_level(item_ids: int, access_level: int, user_id: int):
@@ -616,6 +875,9 @@ def find_inventory_by_id(inventory_id: int, user_id: int) -> (Inventory, UserInv
         .filter_by(inventory_id=inventory_.id).filter_by(user_id=user_id).first()
     return inventory_, user_inventory_
 
+__PRIVATE = 0
+__PUBLIC = 1
+
 
 def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Inventory, UserInventory):
     # if user is None then they are not logged in
@@ -637,7 +899,7 @@ def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Invento
 
     else:  # get the inventory if it is public
         stmt = db.session.query(Inventory) \
-            .filter(Inventory.public == 1) \
+            .filter(Inventory.access_level == __PUBLIC) \
             .filter(Inventory.slug == inventory_slug)
 
         res = db.session.execute(stmt).first()
@@ -1465,22 +1727,20 @@ def delete_item_from_inventory(user: User, inventory_id: int, item_id: int) -> N
 
 
 def edit_inventory_data(user_id: int, inventory_id: int, name: str,
-                        description: str, public: int, access_level: int) -> None:
+                        description: str, access_level: int) -> None:
     session = db.session
 
     stmt = select(UserInventory, Inventory).join(Inventory) \
         .where(UserInventory.user_id == user_id) \
         .where(UserInventory.inventory_id == inventory_id)
 
-    r = session.execute(stmt)
+    results_ = session.execute(stmt).one_or_none()
 
-    ff = r.one_or_none()
-
-    if ff is not None:
-        ff[1].name = name
-        ff[1].description = description
-        ff[1].public = public
-        ff[0].access_level = access_level
+    if results_ is not None:
+        results_[1].name = name
+        results_[1].description = description
+        results_[1].access_level = access_level
+        #results_[0].access_level = access_level
         db.session.commit()
 
 
@@ -1576,10 +1836,10 @@ def get_user_inventories(current_user_id: int, requesting_user_id: int, access_l
                 "inventory_name": inv.name,
                 "inventory_description": inv.description,
                 "inventory_slug": inv.slug,
-                "inventory_public": inv.public,
+                "inventory_access_level": inv.access_level,
                 "inventory_owner": inv.owner.username,
                 "inventory_item_count": len(inv.items),
-                "inventory_access_level": user_inv.access_level
+                "userinventory_access_level": user_inv.access_level
             }
             ret_results.append(d)
 

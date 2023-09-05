@@ -7,6 +7,7 @@
             <th></th>
             {% if user_is_authenticated %}
                 <th></th>
+
             {% endif %}
         </tr>
         </thead>
@@ -22,7 +23,7 @@
                     <td>
                         {{ inventory_data['inventory_item_count'] }} item(s) | @{{ inventory_data['inventory_owner'] }}
                         |
-                        {% if  inventory_data['inventory_public'] == 1 %}
+                        {% if  inventory_data['inventory_access_level'] == 1 %}
                             <span class="fas fa-unlock" style="color:red;"
                                   data-toggle="tooltip" data-placement="top" title="This inventory is public"
                             ></span>
@@ -31,14 +32,17 @@
                             data-toggle="tooltip" data-placement="top" title="This inventory is not public"
                             ></span>
                         {% endif %}
-                        {% if inventory_data['inventory_access_level'] == 1 %}
-                            | User
-                        {% elif inventory_data['inventory_access_level'] == 2 %}
+                        {% if inventory_data['userinventory_access_level'] == 1 %}
+                            | Collaborator
+                        {% elif inventory_data['userinventory_access_level'] == 2 %}
                             | Viewer
                         {% endif %}
                     </td>
 
                     {% if user_is_authenticated %}
+
+                        {% if inventory_data['userinventory_access_level'] == 0 %}
+
                         <td>
                             <span class="fas fa-edit fa-2x" data-bs-toggle="collapse"
                                   id="inventoryEdit-{{ inventory_data['inventory_id'] }}"
@@ -47,7 +51,7 @@
                                   data-inventory-name="{{ inventory_data['inventory_name'] }}"
                                   data-inventory-description="{{ inventory_data['inventory_description'] }}"
                                   data-inventory-slug="{{ inventory_data['inventory_slug'] }}"
-                                  data-inventory-public="{{ inventory_data['inventory_public'] }}"
+                                  data-inventory-public="{{ inventory_data['inventory_access_level'] }}"
 
 
                                   data-toggle="tooltip" data-placement="top" title="Edit inventory"
@@ -69,6 +73,12 @@
                                 </button>
                             </div>
                         </td>
+
+
+                            {% else %}
+                            <td>Remove</td>
+                        {% endif %}
+
                     {% endif %}
                 </tr>
             {% endif %}

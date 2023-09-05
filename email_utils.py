@@ -13,12 +13,27 @@ def threading(f):
 
 
 @threading
-def send_email(subject, sender, recipients, text_body, html_body):
+def send_email(subject, sender=None, recipients=None, text_body=None, html_body=None):
+    if sender is None:
+        sender = app.config['ADMINS'][0]
+
     with app.app_context():
         msg = Message(subject, sender=sender, recipients=recipients)
         msg.body = text_body
         msg.html = html_body
         mail.send(msg)
+
+
+def inventory_invite_email(user, token: str):
+    text_body = render_template('email/inventory_invite.txt', user=user.username, token=token)
+    html_body = render_template('email/inventory_invite.html', user=user.username, token=token)
+
+    send_email("New user registration",
+               sender=app.config['ADMINS'][0],
+               recipients=[user.email],
+               text_body=text_body,
+               html_body=html_body)
+
 
 
 def new_registration_email(user, token: str):

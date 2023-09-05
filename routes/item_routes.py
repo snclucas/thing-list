@@ -19,7 +19,7 @@ from database_functions import get_all_user_locations, \
     get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
-    find_item_by_slug, relate_items_by_id
+    find_item_by_slug, relate_items_by_id, __PUBLIC
 from utils import correct_image_orientation
 
 item_routes = Blueprint('item', __name__)
@@ -75,7 +75,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
 
     item_access_level = __VIEWER__
     if user_inventory_ is None:
-        if not inventory_.public:
+        if inventory_.access_level != __PUBLIC:
             return render_template('404.html', message="No such item or you do not have access to this item"), 404
     else:
         item_access_level = user_inventory_.access_level

@@ -10,7 +10,7 @@
         <label class="form-label" for="access_level">Access level:</label>
         <select class="form-select" id="access_level" name="access_level">
             <option value="2" selected>Read only</option>
-            <option value="1">Read/Write</option>
+            <option value="1">Collaborator</option>
         </select>
         <hr>
         <button id="btn_submit_move" type="submit" class="btn btn-primary">
@@ -46,12 +46,12 @@
                     <tr>
                         <td>@{{ user.username }}</td>
                         <td>
+
                             {% if access_level == 0 %}
                                 Owner
-                            {% elif access_level == 2 %}
-                                View
+                            {% elif access_level == 1 %}
+                                Viewer
                             {% else %}
-                                Collaborator
                             {% endif %}
 
                         </td>

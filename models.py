@@ -84,7 +84,7 @@ class Inventory(db.Model):
     items = db.relationship('Item', secondary='inventory_items', back_populates='inventories', lazy='subquery')
     default_fields = db.Column(db.String(1000), default="-1")
     field_template = db.Column(db.Integer, db.ForeignKey('field_templates.id'), nullable=True)
-    public = db.Column(db.Boolean(), nullable=False, unique=False, default=False)
+    access_level = db.Column(db.Integer, nullable=False, unique=False, default=False)
 
 
 class Relateditems(db.Model):

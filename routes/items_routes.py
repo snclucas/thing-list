@@ -18,7 +18,7 @@ from database_functions import get_all_user_locations, find_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
-    change_item_access_level, link_items, copy_items, commit
+    change_item_access_level, link_items, copy_items, commit, find_items_new, __PUBLIC, __PRIVATE
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -128,6 +128,8 @@ def items_load():
                         if quantity_col_index != -1:
                             item_quantity = row[quantity_col_index]
                             base_column_headers += 1
+                        else:
+                            item_quantity = 1
 
                         # add item types
                         add_new_user_itemtype(name=item_type, user_id=current_user.id)
@@ -160,10 +162,15 @@ def items_load():
                                                           user_id=current_user.id, custom_fields=custom_fields)
                         commit()
 
+                        if new_item_["status"] == "error":
+                            flash("Sorry, there was an error importing these things.")
+                            return redirect(url_for('items.items_with_username_and_inventory',
+                                                    username=username, inventory_slug=inventory_slug).replace('%40',
+                                                                                                              '@'))
+
                     line_count += 1
 
-                    if new_item_["status"] == "error":
-                        flash("Sorry, there was an error importing these things.")
+
 
         return redirect(url_for('items.items_with_username_and_inventory',
                                 username=username, inventory_slug=inventory_slug).replace('%40', '@'))
@@ -336,22 +343,24 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
         user_locations_ = get_all_user_locations(user=logged_in_user)
         inventory_templates = get_user_templates(user=current_user)
 
-    if username is None:
-        username = current_user.username
-    else:
-        requested_user = find_user(username_or_email=username)
-        if requested_user is not None:
-            username = requested_user.username
-        else:
-            return render_template('404.html', message="Not found"), 404
+    requested_username = username
+
+    # if username is None:
+    #     username = current_user.username
+    # else:
+    #     requested_user = find_user(username_or_email=username)
+    #     if requested_user is not None:
+    #         username = requested_user.username
+    #     else:
+    #         return render_template('404.html', message="Not found"), 404
 
     if logged_in_user is not None:
         logged_in_user_id = logged_in_user.id
-
-    if requested_user is not None:
-        requested_user_id = requested_user.id
-    else:
-        requested_user = current_user
+    #
+    # if requested_user is not None:
+    #     requested_user_id = requested_user.id
+    # else:
+    #     requested_user = current_user
 
     if user_is_authenticated:
         all_user_inventories = final_all_user_inventories(user=current_user)
@@ -367,24 +376,34 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     if inventory_ is None and inventory_slug != "all":
         return render_template('404.html', message="No such inventory"), 404
 
-    # Get the user inventory entry
-    if inventory_slug != "all":
-        user_inventory_ = get_user_inventory_by_id(user_id=requested_user.id, inventory_id=inventory_id)
-        if user_inventory_ is not None:
-            inventory_access_level = user_inventory_[0].access_level
-        else:
-            return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
+    if not user_is_authenticated and inventory_.access_level == __PRIVATE:
+        return render_template('404.html', message="No such inventory"), 404
 
-        is_inventory_owner = (inventory_.owner_id == logged_in_user_id)
+    if not user_is_authenticated and inventory_.access_level == __PUBLIC:
+        is_inventory_owner = False
+        inventory_access_level = 2
     else:
-        is_inventory_owner = True
-        inventory_access_level = 0
+
+        # Get the user inventory entry
+        # 0 - owner
+        # 1 - view
+        if inventory_slug != "all":
+            user_inventory_ = get_user_inventory_by_id(user_id=current_user.id, inventory_id=inventory_id)
+            if user_inventory_ is not None:
+                inventory_access_level = user_inventory_[0].access_level
+            else:
+                return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
+
+            is_inventory_owner = (inventory_.owner_id == logged_in_user_id) or inventory_access_level == 0
+        else:
+            is_inventory_owner = True
+            inventory_access_level = 0
 
     item_types_ = get_all_item_types()
     all_fields = dict(get_all_fields())
 
     request_params = _process_url_query(req_=request, inventory_user=requested_user)
-    data_dict, item_id_list = find_items_query(requested_user, logged_in_user, inventory_id,
+    data_dict, item_id_list = find_items_query(requested_username=requested_username, logged_in_user=logged_in_user, inventory_id=inventory_id,
                                                request_params=request_params)
 
     return render_template('item/items.html',
@@ -440,20 +459,33 @@ def _get_inventory(inventory_slug: str, logged_in_user_id):
     return inventory_id, inventory_, field_template_
 
 
-def find_items_query(requested_user, logged_in_user, inventory_id, request_params):
-    items_ = find_items(inventory_id=inventory_id,
-                        item_type=request_params["requested_item_type_id"],
-                        item_location=request_params["requested_item_location_id"],
-                        item_tags=request_params["requested_tag_strings"],
-                        item_specific_location=request_params["requested_item_specific_location"],
-                        request_user=requested_user,
-                        logged_in_user=logged_in_user)
+def find_items_query(requested_username, logged_in_user, inventory_id, request_params):
+
+    query_params = {
+        'item_type': request_params["requested_item_type_id"],
+        'item_location': request_params["requested_item_location_id"],
+        'item_specific_location': request_params["requested_item_specific_location"],
+        'item_tags': request_params["requested_tag_strings"],
+    }
+
+    items_ = find_items_new(inventory_id=inventory_id,
+                            query_params=query_params,
+                            requested_username=requested_username,
+                            logged_in_user=logged_in_user)
+
+    # items_ = find_items(inventory_id=inventory_id,
+    #                     item_type=request_params["requested_item_type_id"],
+    #                     item_location=request_params["requested_item_location_id"],
+    #                     item_tags=request_params["requested_tag_strings"],
+    #                     item_specific_location=request_params["requested_item_specific_location"],
+    #                     request_user=requested_user,
+    #                     logged_in_user=logged_in_user)
 
     item_id_list = []
     data_dict = []
     for i in items_:
         item_id_list.append(i[0].id)
-        dat = {"item": i[0], "types": i[1], "location": i[2], "user_inventory": i[3]}
+        dat = {"item": i[0], "types": i[1], "location": i[2], "item_access_level": i[3]}
 
         data_dict.append(
             dat
