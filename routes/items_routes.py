@@ -356,11 +356,11 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
 
     if logged_in_user is not None:
         logged_in_user_id = logged_in_user.id
-    #
-    # if requested_user is not None:
-    #     requested_user_id = requested_user.id
-    # else:
-    #     requested_user = current_user
+
+    if requested_user is not None:
+        requested_user_id = requested_user.id
+    else:
+        requested_user = current_user
 
     if user_is_authenticated:
         all_user_inventories = final_all_user_inventories(user=current_user)
