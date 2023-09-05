@@ -356,10 +356,10 @@ def find_item(logged_in_user_id, request_user_id, item_id, item_slug):
 
 
 def _find_query_parameters(query_, query_params):
-    item_type = query_params['item_type']
-    item_location = query_params['item_location']
-    item_specific_location = query_params['item_specific_location']
-    item_tags = query_params['item_tags']
+    item_type = query_params.get('item_type', None)
+    item_location = query_params.get('item_location', None)
+    item_specific_location = query_params.get('item_specific_location', None)
+    item_tags = query_params.get('item_tags', None)
 
     if item_type is not None and item_type != '':
         query_ = query_.filter(Item.item_type == item_type)
@@ -412,6 +412,12 @@ def _find_query_parameters(query_, query_params):
 
 
 
+def find_all_my_items(logged_in_user: User):
+    with app.app_context():
+        query = db.session.query(Item)
+        query = query.filter(Item.user_id == logged_in_user.id)
+        results_ = query.all()
+        return results_
 
 
 
@@ -502,6 +508,9 @@ def _find_someone_elses_items_notloggedin(request_user_id, inventory_id, query_p
 
 
 def find_items_new(logged_in_user=None, requested_username=None, inventory_id=None, query_params=None):
+    if query_params is None:
+        query_params = {}
+
     logged_in_user_id = None
     request_user_id = None
     requested_user = None
