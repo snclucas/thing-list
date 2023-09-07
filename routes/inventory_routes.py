@@ -1,7 +1,8 @@
+import json
 import uuid
 
 import bleach
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, flash
 from flask_login import login_required, current_user
 
 from database_functions import get_user_inventories, delete_item_from_inventory, \
@@ -9,7 +10,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
     find_user_by_username, edit_inventory_data, get_all_user_locations, \
     delete_inventory_by_id, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory, \
-    send_inventory_invite
+    send_inventory_invite, regenerate_inventory_token, find_inventory_by_access_token, add_user_to_inventory_from_token
 from email_utils import send_email
 
 inv = Blueprint('inv', __name__)
@@ -20,6 +21,7 @@ __COLLABORATOR = 1
 __VIEWER = 2
 __PRIVATE = 0
 __PUBLIC = 1
+__READ_ONLY = 2
 
 
 @inv.context_processor
@@ -156,24 +158,42 @@ def delete_user_to_inv():
                                     inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
 
 
-@inv.route('/inventory/send-invite', methods=['POST'])
+@inv.route("/regenerate-token>", methods=["POST"])
 @login_required
-def send_inv_invite():
+def regenerate_token():
     if request.method == 'POST':
-        inventory_id = bleach.clean(request.form.get("inventory_id"))
-        access_level = bleach.clean(request.form.get("access_level"))
-        user_to_add = bleach.clean(request.form.get("user_to_add"))
+        json_data = request.json
+        inventory_id = json_data['inventory_id']
+        new_token = uuid.uuid4().hex
+        token_ = regenerate_inventory_token(user_id=current_user.id,
+                                            inventory_id=inventory_id,
+                                            new_token=new_token)
 
-        confirmation_token = uuid.uuid4().hex
-        text_body = render_template('email/user_registration.txt', user=current_user.username, token=confirmation_token)
-        html_body = render_template('email/user_registration.html', user=current_user.username, token=confirmation_token)
-        send_inventory_invite(recipient_username=user_to_add)
+        if token_ is not None:
+            return json.dumps({'success': True, "new-token": token_}), 200, \
+                   {'ContentType': 'application/json'}
+        else:
+            return json.dumps({'success': False, "new-token": ""}), 400, \
+                   {'ContentType': 'application/json'}
 
 
+@inv.route('/inventory/access', methods=['POST'])
+@login_required
+def register_for_inventory_access():
+    if request.method == 'POST':
+        access_token = bleach.clean(request.form.get("access_token"))
 
-@inv.route("/confirm-inventory-invite/<token>", methods=["GET"])
-def confirm_inventory_invite_endpoint(token):
-    pass
+        inventory_ = find_inventory_by_access_token(access_token=access_token)
+        if inventory_ is not None:
+            result = add_user_to_inventory_from_token(inventory_id=inventory_.id, user_to_add=current_user,
+                                                      added_user_access_level=__READ_ONLY)
+            flash(f"Inventory {inventory_.name} added...")
+        else:
+            flash("Invalid inventory access token")
+
+    return redirect(url_for('inv.inventories'))
+
+
 
 
 @inv.route('/inventory/adduser', methods=['POST'])

@@ -31,7 +31,7 @@ class Notification(db.Model):
     __tablename__ = "notifications"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     date = db.Column(db.DateTime(), default=datetime.datetime.now())
-    text = db.Column(db.String(50), nullable=True, unique=False)
+    text = db.Column(db.String(255), nullable=True, unique=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
     from_user = db.relationship(User, viewonly=True, load_on_pending=True, lazy='subquery')
 
@@ -85,6 +85,7 @@ class Inventory(db.Model):
     default_fields = db.Column(db.String(1000), default="-1")
     field_template = db.Column(db.Integer, db.ForeignKey('field_templates.id'), nullable=True)
     access_level = db.Column(db.Integer, nullable=False, unique=False, default=False)
+    token = db.Column(db.String(255), nullable=False, unique=False)
 
 
 class Relateditems(db.Model):

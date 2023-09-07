@@ -64,7 +64,8 @@ def add_user_inventory(name, description, access_level, user_id: int):
         try:
             # add it initially private
             to_user = User.query.filter_by(id=user_id).first()
-            new_inventory = Inventory(name=name, description=description,
+            inventory_token = uuid.uuid4().hex
+            new_inventory = Inventory(name=name, description=description, token=inventory_token,
                                       slug=slug, owner=to_user, access_level=access_level)
 
             if to_user is not None:
@@ -403,6 +404,21 @@ def _find_query_parameters(query_, query_params):
 
 
 
+def regenerate_inventory_token(user_id, inventory_id, new_token):
+    with app.app_context():
+        query = db.session.query(UserInventory, Inventory).join(Inventory)\
+                .filter(UserInventory.user_id == user_id)\
+                .filter(UserInventory.inventory_id == inventory_id)
+
+        results = query.one_or_none()
+        if results is not None:
+            user_inventory_, inventory_ = results
+            inventory_.token = new_token
+            db.session.commit()
+
+            return new_token
+
+        return None
 
 
 
@@ -754,6 +770,7 @@ def find_user(username_or_email: str) -> User:
     return user
 
 
+
 def find_type_by_text(type_text: str, user_id: int = None) -> Union[dict, None]:
     with app.app_context():
 
@@ -883,6 +900,15 @@ def find_inventory_by_id(inventory_id: int, user_id: int) -> (Inventory, UserInv
     user_inventory_ = UserInventory.query \
         .filter_by(inventory_id=inventory_.id).filter_by(user_id=user_id).first()
     return inventory_, user_inventory_
+
+
+def find_inventory_by_access_token(access_token:str) -> (Inventory, UserInventory):
+    inventory_ = Inventory.query.filter_by(token=access_token).first()
+    if inventory_ is not None:
+        return inventory_
+    else:
+        return None
+
 
 __PRIVATE = 0
 __PUBLIC = 1
@@ -1558,6 +1584,32 @@ def add_user_notification(to_user_id: int, from_user_id, message: str):
                 notification_ = Notification(text=message, from_user=from_user_)
                 user_.notifications.append(notification_)
                 db.session.commit()
+
+
+def add_user_to_inventory_from_token(inventory_id: int, user_to_add: User, added_user_access_level: int):
+    with app.app_context():
+
+        user_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id) \
+            .filter(UserInventory.user_id == user_to_add.id).one_or_none()
+
+        if user_inventory_ is None:
+
+            ui = UserInventory(user_id=user_to_add.id, inventory_id=inventory_id,
+                               access_level=added_user_access_level)
+            db.session.add(ui)
+            db.session.commit()
+
+            inv_ = Inventory.query.filter(Inventory.id == inventory_id).one_or_none()
+            if inv_ is not None:
+                msg = f"User @{user_to_add.username} has been added to your inventory " \
+                      f"{inv_.name} as viewer using access token"
+                add_user_notification(to_user_id=inv_.owner_id, from_user_id=user_to_add.id, message=msg)
+
+            return True
+
+        return False
+
+
 
 
 def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_username: str,

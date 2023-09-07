@@ -172,6 +172,9 @@
                                         <div class="collapse" id="collapseImportItems" aria-expanded="false">
                                             {% include 'item/_import_items_form.html' %}
                                         </div>
+                                        <div class="collapse" id="shareItems" aria-expanded="false">
+                                            {% include 'item/_share_items.html' %}
+                                        </div>
                                         <div class="collapse" id="collapseDeleteItems" aria-expanded="false">
                                             <div class="text-center">
                                                 <p>Do you really want to delete these items? This process cannot be
@@ -297,6 +300,32 @@
                     // Toggle the visibility
                     column.visible(!column.visible());
                 });
+            });
+
+        });
+
+        $("#btn-regenerate-token").on("click", function (e) {
+            e.preventDefault();
+
+            $.ajax({
+                type: "POST",
+                url: "{{ url_for('inv.regenerate_token')}}",
+                contentType: 'application/json;charset=UTF-8',
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token() }}",
+                },
+                data: JSON.stringify(
+                    {
+                        'inventory_id': {{ inventory.id }},
+                    }
+                ),
+                success: function (data) {
+                    let data_json = JSON.parse(data)
+                    $("#inventory-token").text(data_json["new-token"])
+                },
+                error: function () {
+                    location.reload();
+                }
             });
 
         });

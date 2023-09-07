@@ -43,13 +43,15 @@
                 <tbody>
                 {% for user, access_level in users_in_this_inventory.items() %}
 
+                    {% if current_username != user.username %}
+
                     <tr>
                         <td>@{{ user.username }}</td>
                         <td>
 
-                            {% if access_level == 0 %}
-                                Owner
-                            {% elif access_level == 1 %}
+                            {% if access_level == 1 %}
+                                Collaborator
+                            {% elif access_level == 2 %}
                                 Viewer
                             {% else %}
                             {% endif %}
@@ -72,6 +74,7 @@
 
                         </td>
                     </tr>
+                    {% endif %}
 
                 {% endfor %}
                 </tbody>

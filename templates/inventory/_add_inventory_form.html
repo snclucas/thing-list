@@ -30,13 +30,12 @@
         </label>
         <div class="col-sm-10">
             <div class="form-check form-switch">
-              <input class="form-check-input" type="checkbox" id="inventory_public" name="inventory_public">
-              <label class="form-check-label" for="inventory_public">Public inventory</label>
+                <input class="form-check-input" type="checkbox" id="inventory_public" name="inventory_public">
+                <label class="form-check-label" for="inventory_public">Public inventory</label>
             </div>
         </div>
     </div>
     <hr>
-
 
 
     <div class="row">
@@ -52,3 +51,50 @@
     </div>
 
 </form>
+
+
+<hr>
+
+<div class="row">
+    <div class="col-md-12 text-center">
+        <h5>Or use access code to access an inventory...</h5>
+    </div>
+</div>
+
+<br>
+
+<div class="row">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-body">
+
+                <form method="post"
+                      action="{{ url_for('inv.register_for_inventory_access') }}">
+
+
+                    <div class="row">
+
+                        <div class="col-12">
+                            <label for="inventoryName" class="form-label">Access token:</label>
+                            <input type="text" class="form-control" name="access_token" id="access_token"
+                                   required>
+                        </div>
+
+                    </div>
+
+                    <br>
+
+                    <div class="row">
+                        <div class="col-12">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <button type="submit" class="btn btn-primary">Submit</button>
+                        </div>
+
+                    </div>
+
+                </form>
+
+            </div>
+        </div>
+    </div>
+</div>

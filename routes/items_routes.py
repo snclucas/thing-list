@@ -407,6 +407,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
                                                request_params=request_params)
 
     return render_template('item/items.html',
+                           current_username=current_user.username,
                            username=username,
                            inventory=inventory_,
                            data_dict=data_dict,
