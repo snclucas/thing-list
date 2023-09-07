@@ -406,7 +406,12 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     data_dict, item_id_list = find_items_query(requested_username=requested_username, logged_in_user=logged_in_user, inventory_id=inventory_id,
                                                request_params=request_params)
 
+    inventory_id = -1
+    if inventory_ is not None:
+        inventory_id = inventory_.id
+
     return render_template('item/items.html',
+                           inventory_id=inventory_id,
                            current_username=current_user.username,
                            username=username,
                            inventory=inventory_,

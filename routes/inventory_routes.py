@@ -105,14 +105,10 @@ def add_inventory():
 def del_inventory():
     if request.method == 'POST':
         json_data = request.json
-        username = json_data['username']
-        inventory_id = json_data['inventory_id']
-        inventory_slug = json_data['inventory_slug']
-        delete_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
+        inventory_ids = json_data['inventory_ids']
+        delete_inventory_by_id(inventory_ids=inventory_ids, user_id=current_user.id)
 
-        # raise abort(500, message="Unable to determine domain permissions")
-
-        return redirect(url_for('inv.inventory_by_slug', username=username, inventory_slug=inventory_slug))
+        return redirect(url_for('inv.inventories'))
 
 
 @inv.route('/inventory/edit', methods=['POST'])

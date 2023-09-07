@@ -96,40 +96,57 @@ def get_user_default_inventory(user_id: int):
         return user_default_inventory_
 
 
-def delete_inventory_by_id(inventory_id: int, user_id: int):
+def delete_inventory_by_id(inventory_ids, user_id: int):
     """
     If the User has Items within the Inventory - re-link Items to Users default Inventory via the ItemInventory table
     Delete the UserInventory for the user
     If there are no more UserInventory links to the Inventory - delete the Inventory
     """
 
+    if not isinstance(inventory_ids, list):
+        inventory_ids = [inventory_ids]
+
     with app.app_context():
-        # Get the user_inventory bu user_id and inventory_id
-        user_inventory_ = UserInventory.query.filter_by(user_id=user_id).filter_by(inventory_id=inventory_id).first()
 
-        if user_inventory_ is not None:
-            # Find out if any other users point to this inventory, if not delete it
-            inventory_id_to_delete = user_inventory_.inventory_id
+        stmt = select(UserInventory).join(User)\
+            .where(UserInventory.user_id == user_id) \
+            .where(UserInventory.inventory_id.in_(inventory_ids))
+        user_inventories_ = db.session.execute(stmt).all()
 
-            # Get the current user's default inventory
-            user_default_inventory_ = get_user_default_inventory(user_id=user_id)
+        for user_inventory_ in user_inventories_:
 
-            inv_items_ = InventoryItem.query.filter_by(inventory_id=inventory_id_to_delete).all()
-            for row in inv_items_:
-                # Add the items that are in this inventory to the user's default
-                row.inventory_id = user_default_inventory_.id
+            if user_inventory_ is not None:
+                user_inventory_ = user_inventory_[0]
 
-            # Delete the UserInventory for the user
-            db.session.delete(user_inventory_)
-            db.session.commit()
-
-            users_invs_ = UserInventory.query.filter_by(inventory_id=inventory_id_to_delete).all()
-            if len(users_invs_) == 0:
-                # remove the actual inventory
-                inv_ = Inventory.query.filter_by(id=inventory_id_to_delete).first()
-                if inv_ is not None:
-                    db.session.delete(inv_)
+                if user_inventory_.access_level !=0:
+                    db.session.delete(user_inventory_)
                     db.session.commit()
+                    return
+
+
+
+                # Find out if any other users point to this inventory, if not delete it
+                inventory_id_to_delete = user_inventory_.inventory_id
+
+                # Get the current user's default inventory
+                user_default_inventory_ = get_user_default_inventory(user_id=user_id)
+
+                inv_items_ = InventoryItem.query.filter_by(inventory_id=inventory_id_to_delete).all()
+                for row in inv_items_:
+                    # Add the items that are in this inventory to the user's default
+                    row.inventory_id = user_default_inventory_.id
+
+                # Delete the UserInventory for the user
+                db.session.delete(user_inventory_)
+                db.session.commit()
+
+                users_invs_ = UserInventory.query.filter_by(inventory_id=inventory_id_to_delete).all()
+                if len(users_invs_) == 0:
+                    # remove the actual inventory
+                    inv_ = Inventory.query.filter_by(id=inventory_id_to_delete).first()
+                    if inv_ is not None:
+                        db.session.delete(inv_)
+                        db.session.commit()
 
 
 def delete_notification_by_id(notification_id: int, user: User):
