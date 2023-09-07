@@ -201,7 +201,6 @@
 
         });
 
-
          $("#confirm-delete-inventories-btn").on("click", function (e) {
             e.preventDefault();
 
@@ -227,37 +226,6 @@
                     location.reload();
                 }
             });
-        });
-
-
-        $('[id^=confirmInventoryDeleteBtn-]').on("click", function (e) {
-            e.preventDefault();
-
-            let inventory_id = $(this).attr('data-inventory-id');
-            let inventory_slug = $(this).attr('data-inventory-slug');
-
-            $.ajax({
-                type: "POST",
-                url: "{{ url_for('inv.del_inventory')}}",
-                contentType: 'application/json;charset=UTF-8',
-                headers: {
-                    "X-CSRFToken": "{{ csrf_token() }}",
-                },
-                data: JSON.stringify(
-                    {
-                        'inventory_id': inventory_id,
-                        'inventory_slug': inventory_slug,
-                        'username': "{{ username }}",
-                    }
-                ),
-                success: function () {
-                    location.reload();
-                },
-                error: function () {
-                    location.reload();
-                }
-            });
-
         });
 
     </script>
