@@ -123,8 +123,6 @@ def delete_inventory_by_id(inventory_ids, user_id: int):
                     db.session.commit()
                     return
 
-
-
                 # Find out if any other users point to this inventory, if not delete it
                 inventory_id_to_delete = user_inventory_.inventory_id
 
