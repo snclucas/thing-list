@@ -22,7 +22,7 @@ class User(UserMixin, db.Model):
     inventories = db.relationship('Inventory', secondary='inventory_users',
                                   back_populates='users', cascade="all,delete", lazy='subquery')
 
-    notifications = db.relationship('Notification', backref='users')
+    notifications = db.relationship('Notification', backref='users', passive_deletes="all")
     activated = db.Column(db.Boolean(), nullable=True, unique=False, default=False)
     token = db.Column(db.String(255), nullable=True, unique=False)
 
@@ -33,8 +33,9 @@ class Notification(db.Model):
     date = db.Column(db.DateTime(), default=datetime.datetime.now())
     text = db.Column(db.String(255), nullable=True, unique=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
-    from_user = db.relationship(User, viewonly=True, load_on_pending=True, lazy='subquery')
-
+    from_user = db.relationship(User, overlaps="notifications, users", load_on_pending=True, lazy='subquery',
+                                passive_deletes="all")
+#viewonly=True,
 
 class FieldTemplate(db.Model):
     __tablename__ = "field_templates"

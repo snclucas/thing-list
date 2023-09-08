@@ -31,7 +31,7 @@ def del_notification():
         json_data = request.json
         username = json_data['username']
         notification_id = json_data['notification_id']
-        delete_notification_by_id(notification_id=notification_id, user_id=current_user.id)
+        delete_notification_by_id(notification_id=notification_id, user=current_user)
 
         return redirect(url_for('main.profile', username=username))
 

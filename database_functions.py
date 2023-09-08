@@ -152,7 +152,9 @@ def delete_notification_by_id(notification_id: int, user: User):
         notification_ = Notification.query.filter_by(id=notification_id).one_or_none()
 
         if notification_ is not None:
-            user.notifications.remove(notification_)
+            db.session.delete(notification_)
+           # user.notifications.remove(notification_)
+            db.session.commit()
             return {
                 "success": True,
                 "message": f"Removed notification with ID {notification_.id} from user @{user.username}"
