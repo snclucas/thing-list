@@ -37,6 +37,7 @@ class Notification(db.Model):
                                 passive_deletes="all")
 #viewonly=True,
 
+
 class FieldTemplate(db.Model):
     __tablename__ = "field_templates"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

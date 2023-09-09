@@ -5,6 +5,7 @@
             <thead>
             <tr>
                 <th data-priority="1">Name</th>
+                <th data-priority="1">Description</th>
                 <th>Type</th>
                 {% if user_is_authenticated %}
                     <th>Location</th>
@@ -16,7 +17,6 @@
                 {% if user_is_authenticated %}
                     {% if is_inventory_owner or inventory_access_level == 1 %}
                     <th><input class="form-check-input" type="checkbox" value="" id="all-selected-items"></th>
-                    <th></th>
                         {% endif %}
                 {% endif %}
             </tr>
@@ -53,6 +53,7 @@
                                 inventory_slug=inventory.slug, item_slug=item_slug) | replace('%40', '@') }}">{{ item.name }} {{ quantity_string }}</a>
                         {% endif %}
                     </td>
+                    <td>{{ item.description }}</td>
                     <td id="table_item_desc_{{ item['id'] }}">
                         <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory_slug) | replace('%40', '@') }}?type={{ item_type }}">{{ item_type }}</a>
                     </td>
@@ -93,14 +94,6 @@
                                 <input class="form-check-input" type="checkbox" value="" data-item-id="{{ item.id }}" id="selected-item-{{ item.id }}">
                             </div>
                         </td>
-                        <td>
-                            {% if item_visibility == 0 %}
-                                <span class="fas fa-1x fa-lock" data-toggle="tooltip" data-placement="top" title="This item is not public"></span>
-                            {% else %}
-                                <span class="fas fa-1x fa-unlock" style="color: red;" data-toggle="tooltip" data-placement="top" title="This item is public"></span>
-                            {% endif %}
-                        </td>
-
 
                         {% endif %}
                     {% endif %}

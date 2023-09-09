@@ -41,7 +41,7 @@
 
                             <div class="row">
                                 <div class="col-md-6 order-sm-first order-last">
-                                    <h4 class="mb-0"> <small>
+                                    <h4 class="mb-0"><small>
                                         {% if inventory is not none %}
                                             {% if "__default__" in inventory.name %}
                                                 {% set inv_name = "Default/None" %}
@@ -93,11 +93,11 @@
                                                           data-toggle="tooltip" data-placement="top"
                                                           title="Display additional button bar"
                                                           style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
-                                                <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
-                                                      href="#collapseItemsHelp"
-                                                      data-toggle="tooltip" data-placement="top"
-                                                      title="Display help panel"
-                                                      style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
+                                                    <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
+                                                          href="#collapseItemsHelp"
+                                                          data-toggle="tooltip" data-placement="top"
+                                                          title="Display help panel"
+                                                          style="display: inline-block; margin-right: 20px;cursor: pointer;"></span>
                                                 {% endif %}
                                                 <hr class="show-small">
                                             </div>
@@ -198,47 +198,38 @@
                             </div>
                             <div class="row">
                                 <div class="col-md-6 show-big">
-                                    Toggle column:
-                                    <a class="toggle-vis" data-column="1">Type</a> -
-                                    <a class="toggle-vis" data-column="2">Location</a> -
-                                    {% if inventory_slug == "all" %}
-                                        <a class="toggle-vis" data-column="3">Inventory</a> -
-                                        <a class="toggle-vis" data-column="4">Tags</a>
-                                    {% else %}
-                                        <a class="toggle-vis" data-column="5">Tags</a>
-                                    {% endif %}
+
                                 </div>
                                 <div class="col-md-6">
 
-                                {% if is_inventory_owner or inventory_access_level == 1 %}
+                                    {% if is_inventory_owner or inventory_access_level == 1 %}
 
-                                    {% if user_is_authenticated %}
-                                        <select class="form-select" id="inventory_filter" name="inventory_filter">
-                                            {% if inventory_slug == "all" %}
-                                                <option value="all" selected>All item(s)</option>
-                                            {% else %}
-                                                <option value="all">All item(s)</option>
-                                            {% endif %}
-                                            {% if inventory_slug == "default" %}
-                                                <option value="default" selected>Default/None</option>
-                                            {% else %}
-                                                <option value="default">Default/None</option>
-                                            {% endif %}
-                                            {% for option in all_user_inventories %}
-                                                {% if "__default__" not in  option[1].name %}
-                                                    {% if inventory_slug == option[1].slug %}
-                                                        <option value="{{ option[1].slug }}"
-                                                                selected>{{ option[1].name }}</option>
-                                                    {% else %}
-                                                        <option value="{{ option[1].slug }}">{{ option[1].name }}</option>
-                                                    {% endif %}
+                                        {% if user_is_authenticated %}
+                                            <select class="form-select" id="inventory_filter" name="inventory_filter">
+                                                {% if inventory_slug == "all" %}
+                                                    <option value="all" selected>All item(s)</option>
+                                                {% else %}
+                                                    <option value="all">All item(s)</option>
                                                 {% endif %}
-                                            {% endfor %}
-                                        </select>
+                                                {% if inventory_slug == "default" %}
+                                                    <option value="default" selected>Default/None</option>
+                                                {% else %}
+                                                    <option value="default">Default/None</option>
+                                                {% endif %}
+                                                {% for option in all_user_inventories %}
+                                                    {% if "__default__" not in  option[1].name %}
+                                                        {% if inventory_slug == option[1].slug %}
+                                                            <option value="{{ option[1].slug }}"
+                                                                    selected>{{ option[1].name }}</option>
+                                                        {% else %}
+                                                            <option value="{{ option[1].slug }}">{{ option[1].name }}</option>
+                                                        {% endif %}
+                                                    {% endif %}
+                                                {% endfor %}
+                                            </select>
+                                        {% endif %}
+
                                     {% endif %}
-
-                                 {% endif %}
-
 
 
                                 </div>
@@ -272,8 +263,14 @@
                 responsive: {
                     details: false
                 },
-                stateSave: true,
-                "pageLength": 50
+                stateSave: false,
+                "pageLength": 50,
+                columnDefs: [
+                    {target: 0, searchable: true},
+                    {target: 1, searchable: true, visible: false},
+                    {target: 2, searchable: true},
+                    {target: 3, searchable: true}
+                ]
             });
 
             $('#item-field-table').DataTable({
