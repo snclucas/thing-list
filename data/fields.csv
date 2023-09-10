@@ -181,3 +181,32 @@ Product key,Product key,input
 Texture,Texture,input
 Pull resistance,Pull resistance,input
 System requirements,System requirements,textarea
+Class,Class,input
+Hull material,Hull material,input
+Engine type,Engine type,input
+Engine make,Engine make,input
+Engine model,Engine model,input
+Engine usage,Engine usage,input
+Fuel tanks,Fuel tanks,input
+Fresh water tanks,Fresh water tanks,input
+Holding tanks,Holding tanks,input
+LOA,LOA,input
+Beam,Beam,input
+Keel type,Keel type,input
+Hull type,Hull type,input
+Dry weight,Dry weight,input
+Berths,Berths,input
+Vessel type,Vessel type,input
+Airframe hours,Airframe hours,input
+Prop hours,Prop hours,input
+Prop make,Prop make,input
+Reg number,Reg number,input
+Wingspan,Wingspan,input
+Range,Range,input
+Stall speed,Stall speed,input
+Cruise speed,Cruise speed,input
+Service ceiling,Service ceiling,input
+Rate of climb,Rate of climb,input
+Maximum speed,Maximum speed,input
+Wing area,Wing area,input
+Airfoil,Airfoil,input

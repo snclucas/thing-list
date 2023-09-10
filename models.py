@@ -1,12 +1,21 @@
 import datetime
+import string
+from random import choice
 
 from flask_login import UserMixin
-from sqlalchemy import UniqueConstraint
+from sqlalchemy import UniqueConstraint, event
 
 from app import db
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
+
+def generate_short_id(num_of_chars: int):
+    """Function to generate short_id of specified number of characters"""
+    return ''.join(choice(string.ascii_letters+string.digits) for _ in range(num_of_chars))
+
+
 
 
 class User(UserMixin, db.Model):
@@ -88,6 +97,7 @@ class Inventory(db.Model):
     field_template = db.Column(db.Integer, db.ForeignKey('field_templates.id'), nullable=True)
     access_level = db.Column(db.Integer, nullable=False, unique=False, default=False)
     token = db.Column(db.String(255), nullable=False, unique=False)
+    short_code = db.Column(db.String(255), nullable=True, unique=True)
 
 
 class Relateditems(db.Model):
@@ -113,12 +123,25 @@ class Item(db.Model):
     images = db.relationship('Image', secondary='item_images', back_populates='items', lazy='subquery')
     main_image = db.Column(db.String(255), nullable=True, unique=False)
     fields = db.relationship('Field', secondary='item_fields', back_populates='items', lazy='subquery')
+    short_code = db.Column(db.String(255), nullable=True, unique=True)
 
     # this relationship is used for persistence
     related_items = db.relationship("Item", secondary=Relateditems.__table__,
                                     primaryjoin=id == Relateditems.item_id,
                                     secondaryjoin=id == Relateditems.related_item_id,
                                     )
+
+
+@event.listens_for(Item, 'before_insert')
+def create_item_short_code(mapper, connect, target):
+    # target is an instance of Table
+    target.short_code = generate_short_id(num_of_chars=6)
+
+
+@event.listens_for(Inventory, 'before_insert')
+def create_inventory_short_code(mapper, connect, target):
+    # target is an instance of Table
+    target.short_code = generate_short_id(num_of_chars=6)
 
 
 class ItemField(db.Model):

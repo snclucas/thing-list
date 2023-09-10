@@ -19,7 +19,7 @@ from database_functions import get_all_user_locations, \
     get_item_fields, get_all_item_fields, \
     get_all_fields, set_field_status, update_item_fields, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
-    find_item_by_slug, relate_items_by_id, __PUBLIC
+    find_item_by_slug, relate_items_by_id, __PUBLIC, find_user_by_username
 from utils import correct_image_orientation
 
 item_routes = Blueprint('item', __name__)
@@ -49,15 +49,21 @@ def my_utility_processor():
 
 @item_routes.route('/@<username>/<inventory_slug>/<item_slug>')
 def item_with_username_and_inventory(username: str, inventory_slug: str, item_slug: str):
+    inventory_owner_username = username
+    inventory_owner = None
+    inventory_owner_id = None
 
     user_is_authenticated = current_user.is_authenticated
     all_user_locations_ = None
     if user_is_authenticated:
         all_user_locations_ = get_all_user_locations(user=current_user)
 
-    if user_is_authenticated:
         requested_user = current_user
         requested_user_id = requested_user.id
+
+        if current_user == inventory_owner_username:
+            inventory_owner = current_user
+            inventory_owner_id = inventory_owner.id
 
         # check for default inventory
         if inventory_slug == "d":
@@ -67,8 +73,15 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
         requested_user = None
         requested_user_id = None
 
+    if inventory_owner is None:
+        inventory_owner = find_user_by_username(username=inventory_owner_username)
+        if inventory_owner is not None:
+            inventory_owner_id = inventory_owner.id
+
     # get the inventory to check permissions
-    inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug, user_id=requested_user_id)
+    inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug,
+                                                         inventory_owner_id=inventory_owner_id,
+                                                         requesting_user_id=requested_user_id)
 
     if inventory_ is None:
         return render_template('404.html', message="No such item or you do not have access to this item"), 404
@@ -118,7 +131,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
     all_item_types_ = get_all_item_types()
 
     return render_template('item/item.html', name=username, item_fields=item_fields, all_item_fields=all_item_fields,
-                           all_fields=all_fields, inventory_slug=inventory_.slug,
+                           all_fields=all_fields, inventory_slug=inventory_.slug, inventory=inventory_,
                            item=item_, username=username, item_type=item_type_string,
                            all_item_types=all_item_types_,
                            all_user_locations=all_user_locations_, item_location=item_location,

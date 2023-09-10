@@ -11,14 +11,14 @@ from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 
 from app import app
-from database_functions import get_all_user_locations, find_items, \
+from database_functions import get_all_user_locations, \
     get_all_item_types, \
-    find_type_by_text, find_user, find_inventory_by_slug, find_location_by_name, \
+    find_type_by_text, find_inventory_by_slug, find_location_by_name, \
     add_item_to_inventory, final_all_user_inventories, delete_items, move_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
-    change_item_access_level, link_items, copy_items, commit, find_items_new, __PUBLIC, __PRIVATE
+    change_item_access_level, link_items, copy_items, commit, find_items_new, __PUBLIC, __PRIVATE, find_user_by_username
 from models import FieldTemplate
 
 items_routes = Blueprint('items', __name__)
@@ -326,6 +326,10 @@ def items_with_username(username=None):
 
 @items_routes.route('/@<username>/<inventory_slug>')
 def items_with_username_and_inventory(username=None, inventory_slug=None):
+    inventory_owner_username = username
+    inventory_owner = None
+    inventory_owner_id = None
+
     user_is_authenticated = current_user.is_authenticated
     logged_in_user = None
     requested_user = None
@@ -342,6 +346,10 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
         logged_in_user = current_user
         user_locations_ = get_all_user_locations(user=logged_in_user)
         inventory_templates = get_user_templates(user=current_user)
+
+        if current_user == inventory_owner_username:
+            inventory_owner = current_user
+            inventory_owner_id = inventory_owner.id
 
     requested_username = username
 
@@ -367,7 +375,13 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     else:
         all_user_inventories = None
 
+    if inventory_owner is None:
+        inventory_owner = find_user_by_username(username=inventory_owner_username)
+        if inventory_owner is not None:
+            inventory_owner_id = inventory_owner.id
+
     inventory_id, inventory_, inventory_field_template = _get_inventory(inventory_slug=inventory_slug,
+                                                                        inventory_owner_id=inventory_owner_id,
                                                                         logged_in_user_id=logged_in_user_id)
 
     if user_is_authenticated:
@@ -435,7 +449,7 @@ def items_with_inventory(inventory_slug=None):
     return items_with_username_and_inventory(username=None, inventory_slug=inventory_slug)
 
 
-def _get_inventory(inventory_slug: str, logged_in_user_id):
+def _get_inventory(inventory_slug: str, logged_in_user_id, inventory_owner_id):
     if inventory_slug == "default":
         inventory_slug_to_use = f"default-{current_user.username}"
     elif inventory_slug is None or inventory_slug == '':
@@ -447,7 +461,8 @@ def _get_inventory(inventory_slug: str, logged_in_user_id):
 
     if inventory_slug_to_use != "all":
         inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug_to_use,
-                                                             user_id=logged_in_user_id)
+                                                             inventory_owner_id=inventory_owner_id,
+                                                             requesting_user_id=logged_in_user_id)
         if inventory_ is None:
             return None, None, None
         else:

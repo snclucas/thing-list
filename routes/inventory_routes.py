@@ -60,6 +60,8 @@ def inventories_for_username(username):
             if user_ is not None:
                 requesting_user_id = user_.id
                 username = user_.username
+            else:
+                return render_template('404.html', message="No such inventory"), 404
         else:
             requesting_user_id = current_user.id
             username = current_user.username
@@ -67,6 +69,9 @@ def inventories_for_username(username):
     user_invs = get_user_inventories(current_user_id=current_user_id,
                                      requesting_user_id=requesting_user_id,
                                      access_level=-1)
+
+    if len(user_invs) == 0:
+        return render_template('404.html', message="No inventories"), 404
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
@@ -78,8 +83,12 @@ def inventories_for_username(username):
 @login_required
 def inventory(inventory_id: int):
     inventory_ = find_inventory(inventory_id=inventory_id)
+    if inventory_ is not None:
+        if inventory_.owner_id == current_user.id:
+            return redirect(url_for('items.items_with_username_and_inventory',
+                                    username=current_user.username, inventory_slug=inventory_.slug))
 
-    return redirect(url_for('inv.inventory_by_slug', inventory_slug=inventory_.slug))
+    return render_template('404.html', message="No such inventory"), 404
 
 
 @inv.route('/inventory/add', methods=['POST'])

@@ -174,6 +174,9 @@
                                     {% endif %}
 
                                 </div>
+
+
+                            {% if inventory.access_level != 2 %}
                             <hr class="show-small">
                             <br class="show-small">
                                 <div class="col-md-6">
@@ -183,6 +186,9 @@
                                                 href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">{{ inventory.name }}</a></strong>
                                     {% endfor %}
                                 </div>
+                            {% endif %}
+
+
                             </div>
 
                             <hr>
@@ -224,7 +230,7 @@
                             {% endif %}
 
                             <div class="text-center">
-                                <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@') ) }}">
+                                <img src="{{ qrcode(url_for(request.endpoint, **request.view_args) | replace('%40', '@'), box_size=6 ) }}">
                             </div>
                         </div>
                     </div>

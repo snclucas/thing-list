@@ -931,17 +931,19 @@ __PRIVATE = 0
 __PUBLIC = 1
 
 
-def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Inventory, UserInventory):
+def find_inventory_by_slug(inventory_slug: str, inventory_owner_id: int = None,
+                           requesting_user_id: int = None) -> (Inventory, UserInventory):
     # if user is None then they are not logged in
 
-    user_is_logged_in = (user_id is not None)
+    user_is_logged_in = (requesting_user_id is not None)
 
     if user_is_logged_in:
         stmt = select(UserInventory, Inventory) \
             .join(UserInventory) \
             .join(User) \
-            .where(UserInventory.user_id == user_id) \
-            .where(Inventory.slug == inventory_slug)
+            .where(UserInventory.user_id == requesting_user_id) \
+            .where(Inventory.slug == inventory_slug) \
+            .where(Inventory.owner_id == inventory_owner_id)
 
         res = db.session.execute(stmt).first()
         if res is not None:
@@ -952,7 +954,8 @@ def find_inventory_by_slug(inventory_slug: str, user_id: int = None) -> (Invento
     else:  # get the inventory if it is public
         stmt = db.session.query(Inventory) \
             .filter(Inventory.access_level == __PUBLIC) \
-            .filter(Inventory.slug == inventory_slug)
+            .filter(Inventory.slug == inventory_slug) \
+            .where(Inventory.owner_id == inventory_owner_id)
 
         res = db.session.execute(stmt).first()
         if res is not None:
