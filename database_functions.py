@@ -1460,11 +1460,11 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
             if item_type is None:
                 item_type = "none"
 
+            # create the new item
             new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
                             location_id=item_location_id, specific_location=item_specific_location)
-
             db.session.add(new_item)
-            # get new item ID
+            # get new item ID and set the item slug
             db.session.flush()
             item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
             new_item.slug = item_slug
@@ -1472,6 +1472,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
             if item_type is None:
                 item_type = "None"
 
+            # set or create the item type
             if isinstance(item_type, int):
                 new_item.item_type = item_type
             else:
@@ -1485,6 +1486,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
                     db.session.flush()
 
                 new_item.item_type = item_type_.id
+                db.session.commit()
 
             for tag in item_tags:
                 if tag != '':
@@ -1509,6 +1511,7 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
             inventory_.items.append(new_item)
 
             db.session.add(new_item)
+            db.session.commit()
 
             add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
 
