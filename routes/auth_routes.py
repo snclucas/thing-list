@@ -64,6 +64,47 @@ def activate_user(token):
     return render_template("auth/login.html")
 
 
+
+
+@auth_flask_login.route("/passwd", methods=["GET", "POST"])
+@login_required
+def change_password():
+    current_app.logger.info(request.form)
+
+    if request.method == 'POST':
+
+        username = request.form['username']
+
+
+
+        try:
+            user_ = find_user(username_or_email=username)
+            if user_ is not None:
+                confirmation_token = uuid.uuid4().hex
+
+                text_body = render_template('email/reset_password.txt', user=username, token=confirmation_token)
+                html_body = render_template('email/reset_password.html', user=username, token=confirmation_token)
+                send_email("Password change", sender=app.config['ADMINS'][0], recipients=[user_.email],
+                           text_body=text_body, html_body=html_body)
+
+        except Exception as err:
+            current_app.logger.error("Error on registration - possible duplicate emails")
+
+
+
+
+
+
+
+
+        flash("If this account exists, an email will be sent with instructions to reset the password")
+        return render_template("auth/reset_password.html")
+
+
+    else:
+        return render_template("auth/reset_password.html")
+
+
 @auth_flask_login.route("/register", methods=["GET", "POST"])
 def register():
     allow_registrations = (int(app.config['ALLOW_REGISTRATIONS']) == 1)

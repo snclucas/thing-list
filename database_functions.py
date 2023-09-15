@@ -1985,6 +1985,17 @@ def save_inventory_fieldtemplate(inventory_id, inventory_template, user_id: int)
         if user_inventory_.access_level == 0:
             inventory_.field_template = inventory_template
 
+            template_ = db.session.query(FieldTemplate).filter(FieldTemplate.id == inventory_template).one_or_none()
+            if template_ is not None:
+
+                temp_fields = template_.fields
+                field_ids = [x.id for x in temp_fields]
+
+                items_ = inventory_.items
+
+                for item in items_:
+                    set_field_status(item_id=item.id, field_ids=field_ids)
+
         db.session.commit()
 
     return
@@ -2166,10 +2177,14 @@ def set_field_status(item_id, field_ids, is_visible=True):
 
             instance_ = ItemField.query.filter_by(item_id=int(item_id), field_id=int(field.id)).first()
             if instance_:
-                instance_.show = show
+                if show:
+                    instance_.show = show
+                else:
+                    db.session.delete(instance_)
                 db.session.commit()
             else:
-                instance_ = ItemField(item_id=int(item_id), field_id=int(field.id), show=show)
-                db.session.add(instance_)
+                if show:
+                    instance_ = ItemField(item_id=int(item_id), field_id=int(field.id), show=show)
+                    db.session.add(instance_)
 
             db.session.commit()

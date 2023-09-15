@@ -59,12 +59,6 @@
 
                                     <div class="col-md-12">
 
-                                        <div class="collapse" id="collapseItemFields" aria-expanded="false">
-                                            <div class="card card-body">
-                                                {% include 'item/_item_field_selector.html' %}
-                                            </div>
-                                        </div>
-
                                         <div class="collapse" id="collapseExample" aria-expanded="false">
                                             <div class="card card-body">
                                                 {% include 'item/_edit_item_form.html' %}
@@ -96,9 +90,11 @@
                                         {% endif %}
                                     {% endif %}
 
+                                <h6><strong>Quantity:</strong> {{ item.quantity }}</h6>
+
                                 </div>
 
-                            <h6><strong>Quantity:</strong> {{ item.quantity }}</h6>
+
 
                                 <div class="col-md-4">
                                     {% if item.main_image is not none %}
@@ -120,9 +116,18 @@
                                 </thead>
                                 <tbody>
                                 {% for field, item_field in item_fields.items() %}
+
                                     <tr>
                                         <td><strong>{{ field.field|capitalize }}:</strong></td>
-                                        <td>{{ item_field.value }}</td>
+                                        <td>
+
+                                        {% if field.type|lower == 'url' %}
+                                            <a href="{{ item_field.value }}">{{ item_field.value }}</a>
+                                        {% else %}
+                                            {{ item_field.value }}
+                                        {% endif %}
+                                        </td>
+
                                     </tr>
                                 {% endfor %}
                                 </tbody>
