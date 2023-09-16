@@ -2105,6 +2105,14 @@ def save_template_fields(template_name, fields, user):
                 if field_ is not None:
                     field_template_.fields.append(field_)
 
+            db.session.commit()
+
+            inventories_ = Inventory.query.filter_by(field_template=field_template_.id).all()
+            if inventories_ is not None:
+                for inventory in inventories_:
+                    save_inventory_fieldtemplate(inventory_id=inventory.id,
+                                                 inventory_template=field_template_.id, user_id=user.id)
+
         db.session.commit()
 
         # now do the sorting
