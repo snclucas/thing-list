@@ -424,9 +424,14 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     if inventory_ is not None:
         inventory_id = inventory_.id
 
+    if user_is_authenticated:
+        current_username = current_user.username
+    else:
+        current_username = None
+
     return render_template('item/items.html',
                            inventory_id=inventory_id,
-                           current_username=current_user.username,
+                           current_username=current_username,
                            username=username,
                            inventory=inventory_,
                            data_dict=data_dict,
