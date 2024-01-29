@@ -113,7 +113,7 @@ def delete_inventory_by_id(inventory_ids, user_id: int):
             .where(UserInventory.inventory_id.in_(inventory_ids))
         user_inventories_ = db.session.execute(stmt).all()
 
-        for user_inventory_ in user_inventories_:
+        for user_inventory_ in user_inventories_:  # type: UserInventory
 
             if user_inventory_ is not None:
                 user_inventory_ = user_inventory_[0]
@@ -891,7 +891,20 @@ def find_tag(tag: str) -> User:
 
 
 def find_location_by_id(location_id: int) -> Union[dict, None]:
-    location_ = Location.query.filter_by(id=location_id).one_or_none()
+    """
+    Find location by id.
+
+    :param location_id: The id of the location to find.
+    :return: A dictionary representing the location if found, otherwise None.
+    """
+
+    if location_id is None:
+        return None
+
+    try:
+        location_ = Location.query.filter_by(id=location_id).one_or_none()
+    except (NoResultFound, InvalidRequestError, SQLAlchemyError) as e:
+        return None
     if location_ is not None:
         return location_.__dict__
     return None
@@ -1445,7 +1458,7 @@ def commit():
     db.session.commit()
 
 
-def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
+def add_item_to_inventory(item_id=None, item_name=None, item_desc=None, item_type=None, item_tags=None,
                           inventory_id=None, user_id=None, item_quantity=None,
                           item_location_id=None, item_specific_location="", custom_fields=None):
     app_context = app.app_context()
@@ -1460,14 +1473,18 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
             if item_type is None:
                 item_type = "none"
 
-            # create the new item
-            new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
-                            location_id=item_location_id, specific_location=item_specific_location)
-            db.session.add(new_item)
-            # get new item ID and set the item slug
-            db.session.flush()
-            item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
-            new_item.slug = item_slug
+            if item_id is None:
+                # create the new item
+                new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
+                                location_id=item_location_id, specific_location=item_specific_location)
+                db.session.add(new_item)
+                # get new item ID and set the item slug
+                db.session.flush()
+                item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
+                new_item.slug = item_slug
+
+            else:
+                new_item = find_item(user_id=user_id, item_id=item_id)
 
             if item_type is None:
                 item_type = "None"
@@ -1510,7 +1527,9 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
 
             inventory_.items.append(new_item)
 
-            db.session.add(new_item)
+            if item_id is None:
+                db.session.add(new_item)
+
             db.session.commit()
 
             add_new_item_field(new_item, custom_fields, user_id=user_id, app_context=app_context)
@@ -1539,7 +1558,19 @@ def add_item_to_inventory(item_name, item_desc, item_type=None, item_tags=None,
         return return_data
 
 
-def get_or_add_new_location(location_name: str, location_description: str, to_user_id: User) -> Union[dict, None]:
+def get_or_add_new_location(location_name: str, location_description: str, to_user_id: User) -> dict:
+    """
+    Get or add a new location to the database.
+
+    :param location_name: The name of the location.
+    :param location_description: The description of the location.
+    :param to_user_id: The user ID associated with the location.
+    :type location_name: str
+    :type location_description: str
+    :type to_user_id: User
+    :return: A dictionary containing the status, ID, name, and description of the location.
+    :rtype: dict
+    """
     with app.app_context():
         location_ = Location.query.filter_by(name=location_name).filter_by(user_id=to_user_id).one_or_none()
         if location_ is None:
@@ -1550,8 +1581,18 @@ def get_or_add_new_location(location_name: str, location_description: str, to_us
                 db.session.flush()
                 db.session.expire_all()
             except Exception as e:
-                return None
+                err_msg = f"Failed to add new location due to: {str(e)}"
+                app.logger.error(err_msg)
+                db.session.rollback()
+                return {
+                    "status": -1,
+                    "message": err_msg,
+                    "id": -1,
+                    "name": "",
+                    "description": ""
+                }
         return {
+            "status": 1,
             "id": location_.id,
             "name": location_.name,
             "description": location_.description
@@ -1938,10 +1979,22 @@ def get_user_templates(user: User):
 
 
 def get_user_template_by_id(template_id: int, user_id: int):
+    """
+    :param template_id: The ID of the template to retrieve.
+    :param user_id: The ID of the user who owns the template.
+    :return: The user template with the specified ID, or None if it doesn't exist.
+
+    This method retrieves a user template from the database based on the provided template ID and user ID. It uses SQLAlchemy to construct and execute a SQL statement to fetch the template
+    *. If the template is found, it is returned; otherwise, None is returned. If an error occurs during database access, an error message is logged.
+    """
     session = db.session
     stmt = select(FieldTemplate).join(User).where(FieldTemplate.id == template_id)\
         .where(FieldTemplate.user_id == user_id)
-    r = session.execute(stmt).one_or_none()
+    r = None
+    try:
+        r = session.execute(stmt).one_or_none()
+    except SQLAlchemyError as e:
+        app.logger.error(f"Failed to get template by ID: {str(e)}")
     return r
 
 

@@ -26,7 +26,7 @@ class User(UserMixin, db.Model):
     email = db.Column(db.String(255), nullable=False, unique=True)
     is_active = db.Column(db.Boolean(), default=True)
     is_admin = db.Column(db.Boolean(), default=False)
-    user_created = db.Column(db.DateTime(), default=datetime.datetime.now())
+    user_created = db.Column(db.DateTime(), default=datetime.datetime.now)
     email_confirmed_at = db.Column(db.DateTime(), default=None)
     inventories = db.relationship('Inventory', secondary='inventory_users',
                                   back_populates='users', cascade="all,delete", lazy='subquery')
@@ -39,7 +39,7 @@ class User(UserMixin, db.Model):
 class Notification(db.Model):
     __tablename__ = "notifications"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    date = db.Column(db.DateTime(), default=datetime.datetime.now())
+    date = db.Column(db.DateTime(), default=datetime.datetime.now)
     text = db.Column(db.String(255), nullable=True, unique=False)
     from_user_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
     from_user = db.relationship(User, overlaps="notifications, users", load_on_pending=True, lazy='subquery',
@@ -98,6 +98,7 @@ class Inventory(db.Model):
     access_level = db.Column(db.Integer, nullable=False, unique=False, default=False)
     token = db.Column(db.String(255), nullable=False, unique=False)
     short_code = db.Column(db.String(255), nullable=True, unique=True)
+    list_or_inv = db.Column(db.Integer, nullable=True, unique=False, default=1)
 
 
 class Relateditems(db.Model):

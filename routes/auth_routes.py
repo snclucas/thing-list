@@ -30,6 +30,7 @@ auth_flask_login = Blueprint('auth_flask_login', __name__, template_folder='temp
 
 @auth_flask_login.route("/login", methods=["GET", "POST"])
 def login():
+    current_app.logger.info(request.form)
     if request.method == "POST" and "username" in request.form:
         username = request.form["username"]
         user = find_user(username_or_email=username)
@@ -53,17 +54,22 @@ def login():
 
 @auth_flask_login.route("/activate-user/<token>", methods=["GET"])
 def activate_user(token):
+    """
+    Activate a user based on the given token.
+
+    :param token: The activation token provided in the URL.
+    :type token: str
+    :return: The rendered template after user activation.
+    :rtype: str
+    """
     user_ = find_user_by_token(token=token)
-    if user_ is not None:
-        if not user_.activated:
-            if user_.token == token:
-                activate_user_in_db(user_id=user_.id)
-                flash("You are now an activated Thing!")
-                return render_template("auth/login.html")
+    template = "auth/login.html"
 
-    return render_template("auth/login.html")
+    if user_ is not None and not user_.activated and user_.token == token:
+        activate_user_in_db(user_id=user_.id)
+        flash("You are now an activated Thing!")
 
-
+    return render_template(template)
 
 
 @auth_flask_login.route("/passwd", methods=["GET", "POST"])
@@ -74,8 +80,6 @@ def change_password():
     if request.method == 'POST':
 
         username = request.form['username']
-
-
 
         try:
             user_ = find_user(username_or_email=username)
@@ -130,9 +134,9 @@ def register():
             user_added, msg = save_new_user(new_user)
             if user_added:
 
-                text_body = render_template('email/user_registration.txt', user=username, token=confirmation_token)
-                html_body = render_template('email/user_registration.html', user=username, token=confirmation_token)
-                send_email("New user registration", sender=app.config['ADMINS'][0], recipients=[email],
+                text_body = render_template(template_name_or_list='email/user_registration.txt', user=username, token=confirmation_token)
+                html_body = render_template(template_name_or_list='email/user_registration.html', user=username, token=confirmation_token)
+                send_email(subject="New user registration", sender=app.config['ADMINS'][0], recipients=[email],
                            text_body=text_body, html_body=html_body)
                 flash("Check your email for an activation link!")
                 return render_template("auth/login.html")
@@ -143,7 +147,7 @@ def register():
             flash("unable to register with that email address")
             current_app.logger.error("Error on registration - possible duplicate emails")
 
-    return render_template("auth/register.html", allow_registrations=allow_registrations)
+    return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
 
 @auth_flask_login.route("/reauth", methods=["GET", "POST"])
@@ -155,7 +159,7 @@ def reauth():
         return redirect(request.args.get("next") or '/admin')
 
     template_data = {}
-    return render_template("auth/reauth.html", **template_data)
+    return render_template(template_name_or_list="auth/reauth.html", **template_data)
 
 
 @auth_flask_login.route("/logout")

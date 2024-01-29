@@ -89,6 +89,7 @@ def items_load():
                         column_headers = row
                         column_headers = [str(x).lower() for x in column_headers]
 
+                        id_col_index = _find_list_index(column_headers, "id")
                         name_col_index = _find_list_index(column_headers, "name")
                         description_col_index = _find_list_index(column_headers, "description")
 
@@ -107,6 +108,9 @@ def items_load():
                         if len(row) < number_columns:
                             break
 
+                        if id_col_index != -1:
+                            item_id = row[id_col_index]
+                            base_column_headers += 1
                         if name_col_index != -1:
                             item_name = row[name_col_index]
                             base_column_headers += 1
@@ -140,7 +144,7 @@ def items_load():
                                 location_data_ = get_or_add_new_location(location_name=item_location,
                                                                          location_description=item_location,
                                                                          to_user_id=current_user.id)
-                                location_id = location_data_["id"]
+                                location_id = location_data_.get("id")
 
                         tag_array = item_tags.split(",")
 
@@ -154,29 +158,29 @@ def items_load():
                             tag_array[t] = tag_array[t].strip()
                             tag_array[t] = tag_array[t].replace(" ", "@#$")
 
-                        new_item_ = add_item_to_inventory(item_name=item_name, item_desc=item_description,
+                        new_item_ = add_item_to_inventory(item_id=item_id, item_name=item_name,
+                                                          item_desc=item_description,
                                                           item_type=item_type, item_quantity=item_quantity,
                                                           item_tags=tag_array, inventory_id=inventory_id,
                                                           item_location_id=location_id,
                                                           item_specific_location=item_specific_location,
                                                           user_id=current_user.id, custom_fields=custom_fields)
+
                         commit()
 
                         if new_item_["status"] == "error":
                             flash("Sorry, there was an error importing these things.")
-                            return redirect(url_for('items.items_with_username_and_inventory',
+                            return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                                     username=username, inventory_slug=inventory_slug).replace('%40',
                                                                                                               '@'))
 
                     line_count += 1
 
-
-
-        return redirect(url_for('items.items_with_username_and_inventory',
+        return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                 username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
 
-@items_routes.route('/items/move', methods=['POST'])
+@items_routes.route(rule='/items/move', methods=['POST'])
 @login_required
 def items_move():
     if request.method == 'POST':
@@ -207,7 +211,7 @@ def items_move():
         return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
 
 
-@items_routes.route('/items/edit', methods=['POST'])
+@items_routes.route(rule='/items/edit', methods=['POST'])
 @login_required
 def items_edit():
     if request.method == 'POST':
@@ -263,8 +267,10 @@ def items_save():
 
     request_params = _process_url_query(req_=request, inventory_user=current_user)
     inventory_id, inventory_, inventory_default_fields = _get_inventory(inventory_slug=inventory_slug,
-                                                                        logged_in_user_id=current_user.id)
-    data_dict, item_id_list = find_items_query(current_user, current_user, inventory_id, request_params=request_params)
+                                                                        logged_in_user_id=current_user.id,
+                                                                        inventory_owner_id=current_user.id)
+    data_dict, item_id_list = find_items_query(current_user.username,
+                                               current_user, inventory_id, request_params=request_params)
 
     dd = get_item_custom_field_data(user_id=current_user.id, item_list=item_id_list)
 
@@ -274,7 +280,7 @@ def items_save():
         dv_lower = [x.lower() for x in list(dv.keys())]
         field_set.update(dv_lower)
 
-    csv_headers = ["name", "description", "tags", "type", "location", "specific location", "quantity"]
+    csv_headers = ["id", "name", "description", "tags", "type", "location", "specific location", "quantity"]
     csv_headers.extend(field_set)
 
     csv_list = [csv_headers]
@@ -286,6 +292,7 @@ def items_save():
         else:
             wewe = {}
         temp = [
+            item_.id,
             item_.name,
             item_.description,
             ",".join([x.tag.replace("@#$", " ") for x in item_.tags]),
@@ -485,7 +492,7 @@ def _get_inventory(inventory_slug: str, logged_in_user_id, inventory_owner_id):
     return inventory_id, inventory_, field_template_
 
 
-def find_items_query(requested_username, logged_in_user, inventory_id, request_params):
+def find_items_query(requested_username: str, logged_in_user, inventory_id: int, request_params):
 
     query_params = {
         'item_type': request_params["requested_item_type_id"],

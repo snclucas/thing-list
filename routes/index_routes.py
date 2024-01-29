@@ -9,8 +9,15 @@ main = Blueprint('main', __name__)
 
 @main.route('/')
 def index():
-    if current_user.is_authenticated:
-        return redirect(url_for('main.profile', username=current_user.username))
+    """
+    Redirects the user to their profile if they are logged in, otherwise renders the index.html template.
+
+    :return: A redirect response to the profile page if the user is logged in, otherwise the rendered index.html template.
+    :rtype: werkzeug.wrappers.response.Response or flask.templating.render_template.rendered_template
+    """
+    # Ensure that 'current_user' is instantiated correctly, usually done through LoginManager
+    if current_user and current_user.is_authenticated:
+        return redirect(url_for(endpoint='main.profile', username=current_user.username))
     else:
         return render_template('index.html')
 
@@ -24,21 +31,32 @@ def privacy():
     return render_template('privacy_policy.html')
 
 
-@main.route('/delete-notification>', methods=['POST'])
+@main.route(rule='/delete-notification>', methods=['POST'])
 @login_required
 def del_notification():
+    """
+    Deletes a notification by its ID.
+
+    :return: None
+    """
     if request.method == 'POST':
         json_data = request.json
         username = json_data['username']
-        notification_id = json_data['notification_id']
+        notification_id = json_data.get('notification_id')
+        if notification_id is None:
+            return "Missing 'notification_id'", 400
         delete_notification_by_id(notification_id=notification_id, user=current_user)
 
-        return redirect(url_for('main.profile', username=username))
+        return redirect(url_for(endpoint='main.profile', username=username))
 
 
 @main.route('/@<username>')
 @login_required
 def profile(username):
+    """
+    :param username: The username of the profile being accessed.
+    :return: The rendered profile page template with the user's information.
+    """
     user_is_authenticated = current_user.is_authenticated
     current_user_id = None
     requesting_user_id = None

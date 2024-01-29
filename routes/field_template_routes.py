@@ -55,19 +55,23 @@ def sort_template(template_id):
         return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
 
 
-@field_template.route('/field-templates/<template_id>')
+@field_template.route('/field-templates/<int:template_id>')
 @login_required
 def template(template_id):
+    """
+    :param template_id: The ID of the field template to retrieve.
+    :return: The rendered template or a 404 error message if the template does not exist or the user does not have access.
+    """
     all_fields = dict(get_all_fields())
 
     user_template_ = get_user_template_by_id(template_id=template_id, user_id=current_user.id)
 
-    selected_field_ids = []
-    if user_template_ is not None:
-        for field_ in user_template_[0].fields:
-            selected_field_ids.append(field_.id)
+    if user_template_ is None:
+        return render_template(template_name_or_list='404.html', message="No such template or you do not have access to this item"), 404
 
-    return render_template('field_template/field_template.html', field_template_name=user_template_[0].name,
+    selected_field_ids = [field_.id for field_ in user_template_[0].fields]
+
+    return render_template(template_name_or_list='field_template/field_template.html', field_template_name=user_template_[0].name,
                            username=current_user.username, all_fields=all_fields, user_template=user_template_,
                            selected_field_ids=selected_field_ids, template_id=template_id)
 
