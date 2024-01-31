@@ -11,21 +11,21 @@ def correct_image_orientation(image: Image):
     else:
         orientation = 1
 
-    if orientation is 1:
+    if orientation == 1:
         pass
-    elif orientation is 2:
+    elif orientation == 2:
         image = image.transpose(Image.FLIP_LEFT_RIGHT)
-    elif orientation is 3:
+    elif orientation == 3:
         image = image.rotate(180)
-    elif orientation is 4:
+    elif orientation == 4:
         image = image.rotate(180)
-    elif orientation is 5:
+    elif orientation == 5:
         image = image.rotate(-90)
-    elif orientation is 6:
+    elif orientation == 6:
         image = image.rotate(-90)
-    elif orientation is 7:
+    elif orientation == 7:
         image = image.rotate(90)
-    elif orientation is 8:
+    elif orientation == 8:
         image = image.rotate(90)
 
     return image

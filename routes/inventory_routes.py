@@ -37,13 +37,23 @@ def my_utility_processor():
 @inv.route('/inventories', methods=['GET'])
 @login_required
 def inventories():
+    """
+    Flask route to retrieve the inventories.
+
+    Returns:
+        The rendered HTML template with the following variables:
+            - username (str): The current user's username.
+            - inventories (list): The inventories for the current user.
+            - user_is_authenticated (bool): Indicates if the user is authenticated.
+            - number_inventories (int): The number of inventories minus one (excluding the 'hidden' default inventory).
+    """
     user_is_authenticated = current_user.is_authenticated
     user_invs = get_user_inventories(current_user_id=current_user.id,
                                      requesting_user_id=current_user.id, access_level=-1)
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
-    return render_template('inventory/inventories.html', username=current_user.username, inventories=user_invs,
+    return render_template(template_name_or_list='inventory/inventories.html', username=current_user.username, inventories=user_invs,
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 

@@ -323,15 +323,19 @@ def items_save():
 @login_required
 def items():
     username = current_user.username
-    return redirect(url_for('items.items_with_username', username=username).replace('%40', '@'))
+    return redirect(url_for(endpoint='items.items_with_username', username=username).replace('%40', '@'))
 
 
-@items_routes.route('/@<username>/items')
+@items_routes.route('/@<string:username>/items')
 def items_with_username(username=None):
+    """
+    :param username: The username of the user whose items are to be retrieved.
+    :return: A response containing the items belonging to the user with the specified username.
+    """
     return items_with_username_and_inventory(username=username, inventory_slug="all")
 
 
-@items_routes.route('/@<username>/<inventory_slug>')
+@items_routes.route('/@<string:username>/<inventory_slug>')
 def items_with_username_and_inventory(username=None, inventory_slug=None):
     inventory_owner_username = username
     inventory_owner = None
@@ -566,12 +570,19 @@ def _process_url_query(req_, inventory_user):
     }
 
 
-@items_routes.route('/item/delete', methods=['POST'])
+@items_routes.route(rule='/item/delete', methods=['POST'])
 @login_required
 def del_items():
-    if request.method == 'POST':
+    """
+    Deletes items from the database.
+
+    :return: None
+    """
+
+    if request.json and all(key in request.json for key in ('item_ids', 'username')):
         json_data = request.json
         item_ids = json_data['item_ids']
         username = json_data['username']
         delete_items(item_ids=item_ids, user=current_user)
-        return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+        return redirect(url_for(endpoint='item.items_with_username',
+                                username=username).replace('%40', '@'))

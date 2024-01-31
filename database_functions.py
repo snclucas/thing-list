@@ -1930,6 +1930,38 @@ def delete_location(user_id: int, location_ids) -> dict:
 
 
 def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1):
+    """
+    Gets the inventories associated with a user.
+
+    Parameters:
+    - current_user_id (int): The ID of the current user. If None, all inventories associated with
+      the requesting user will be returned.
+    - requesting_user_id (int): The ID of the user requesting the inventories.
+    - access_level (int, optional): The access level of the inventories to filter by. If -1, no
+      filtering will be applied based on access level. Default is -1.
+
+    Returns:
+    - List[dict]: A list of dictionaries representing the inventories. Each dictionary contains
+      the following keys:
+        - inventory_id (int): The ID of the inventory.
+        - inventory_name (str): The name of the inventory.
+        - inventory_description (str): The description of the inventory.
+        - inventory_slug (str): The slug of the inventory.
+        - inventory_access_level (int): The access level of the inventory.
+        - inventory_owner (str): The username of the inventory's owner.
+        - inventory_item_count (int): The number of items in the inventory.
+        - userinventory_access_level (int): The access level of the user for the inventory.
+    """
+
+    if not isinstance(access_level, int):
+        raise TypeError("access_level must be an integer")
+
+    if not instanceof(current_user_id, int):
+        raise TypeError("current_user_id must be an integer")
+
+    if not instanceof(requesting_user_id, int):
+        raise TypeError("requesting_user_id must be an integer")
+
     with app.app_context():
 
         # stmt = db.session.query(Inventory, UserInventory).join(UserInventory).filter(UserInventory.user_id==1).all()
@@ -1972,6 +2004,15 @@ def get_user_inventories(current_user_id: int, requesting_user_id: int, access_l
 
 
 def get_user_templates(user: User):
+    """
+    Retrieve the templates associated with a given user.
+
+    :param user: The user object for which templates are to be retrieved.
+    :type user: User
+
+    :return: A list of templates associated with the user.
+    :rtype: list
+    """
     session = db.session
     stmt = select(FieldTemplate).join(User).where(User.id == user.id)
     r = session.execute(stmt).all()
