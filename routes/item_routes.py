@@ -7,7 +7,7 @@ from io import BytesIO
 
 import bleach
 from PIL import Image
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, jsonify
 from flask_login import login_required, current_user
 # from flask_weasyprint import render_pdf, HTML
 
@@ -81,7 +81,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
     # get the inventory to check permissions
     inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug,
                                                          inventory_owner_id=inventory_owner_id,
-                                                         requesting_user_id=requested_user_id)
+                                                         viewing_user_id=requested_user_id)
 
     if inventory_ is None:
         return render_template('404.html', message="No such item or you do not have access to this item"), 404
@@ -302,22 +302,47 @@ def delete_images():
 
 @item_routes.route("/item/images/setmainimage", methods=["POST"])
 def set_main_image():
-    if request.method == 'POST':
-        json_data = request.json
-        main_image = json_data['main_image']
-        item_slug = json_data['item_slug']
-        inventory_slug = json_data['inventory_slug']
-        item_id = json_data['item_id']
-        username = json_data['username']
+    """
+    Sets the main image for an item.
 
-        main_image = main_image.replace('/uploads/', '')
+    This method is used to set the main image for an item in the inventory. It takes in a JSON payload containing the following fields:
+    - 'main_image': The URL of the main image for the item.
+    - 'item_slug': The slug of the item.
+    - 'inventory_slug': The slug of the inventory.
+    - 'item_id': The ID of the item.
+    - 'username': The username of the user.
 
-        set_item_main_image(main_image_url=main_image, item_id=item_id, user=current_user)
+    If any of the required fields are missing in the JSON payload, a response with status code 400 and a JSON message indicating that all fields are required is returned.
 
-        return redirect(url_for('item.item_with_username_and_inventory',
-                                username=username,
-                                inventory_slug=inventory_slug,
-                                item_slug=item_slug))
+    The 'main_image' field is processed by removing the '/uploads/' part of the URL.
+
+    After processing the JSON payload and validating the fields, the method calls the 'set_item_main_image' function passing in the processed main image URL, the item ID, and the current
+    * user.
+
+    Finally, a redirect response is returned to the route 'item.item_with_username_and_inventory' with the necessary route parameters: 'username', 'inventory_slug', and 'item_slug'.
+
+    Returns:
+        A redirect response to the route 'item.item_with_username_and_inventory' with the necessary route parameters.
+
+    """
+    json_data = request.json
+    main_image = json_data.get('main_image')
+    item_slug = json_data.get('item_slug')
+    inventory_slug = json_data.get('inventory_slug')
+    item_id = json_data.get('item_id')
+    username = json_data.get('username')
+
+    if not all([main_image, item_slug, inventory_slug, item_id, username]):
+        return jsonify({"message": "All fields are required"}), 400
+
+    main_image = main_image.replace('/uploads/', '')
+
+    set_item_main_image(main_image_url=main_image, item_id=item_id, user=current_user)
+
+    return redirect(url_for(endpoint='item.item_with_username_and_inventory',
+                            username=username,
+                            inventory_slug=inventory_slug,
+                            item_slug=item_slug))
 
 
 @item_routes.route("/item/images/upload", methods=["POST"])

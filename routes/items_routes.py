@@ -7,14 +7,14 @@ import bleach
 import pdfkit
 from flask import make_response, flash
 
-from flask import Blueprint, render_template, redirect, url_for, request
+from flask import Blueprint, render_template, redirect, url_for, request, current_app
 from flask_login import login_required, current_user
 
 from app import app
 from database_functions import get_all_user_locations, \
     get_all_item_types, \
     find_type_by_text, find_inventory_by_slug, find_location_by_name, \
-    add_item_to_inventory, final_all_user_inventories, delete_items, move_items, \
+    add_item_to_inventory, find_all_user_inventories, delete_items, move_items, \
     get_all_fields, add_new_user_itemtype, \
     get_user_templates, get_item_custom_field_data, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
@@ -382,7 +382,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
         requested_user = current_user
 
     if user_is_authenticated:
-        all_user_inventories = final_all_user_inventories(user=current_user)
+        all_user_inventories = find_all_user_inventories(user=current_user)
     else:
         all_user_inventories = None
 
@@ -478,7 +478,7 @@ def _get_inventory(inventory_slug: str, logged_in_user_id, inventory_owner_id):
     if inventory_slug_to_use != "all":
         inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug_to_use,
                                                              inventory_owner_id=inventory_owner_id,
-                                                             requesting_user_id=logged_in_user_id)
+                                                             viewing_user_id=logged_in_user_id)
         if inventory_ is None:
             return None, None, None
         else:
@@ -574,15 +574,29 @@ def _process_url_query(req_, inventory_user):
 @login_required
 def del_items():
     """
-    Deletes items from the database.
+    Deletes items associated with a username.
 
-    :return: None
+    Parameters:
+    - item_ids: A list of item IDs to delete. (Type: list)
+    - username: The username associated with the items. (Type: str)
+
+    Returns:
+    - None
     """
 
     if request.json and all(key in request.json for key in ('item_ids', 'username')):
         json_data = request.json
-        item_ids = json_data['item_ids']
-        username = json_data['username']
-        delete_items(item_ids=item_ids, user=current_user)
-        return redirect(url_for(endpoint='item.items_with_username',
-                                username=username).replace('%40', '@'))
+        item_ids = json_data.get('item_ids')
+        username = json_data.get('username')
+
+        if item_ids is not None and username is not None:
+            delete_items(item_ids=item_ids, user=current_user)
+        else:
+            flash("There was a problem deleting your things!")
+            current_app.logger.error("Error deleting items - missing item_ids or username")
+
+        # create redirect_url and ensure it has an '@' symbol before the user
+        redirect_url = url_for(endpoint='items.items_with_username',
+                               username=username).replace(__old='%40', __new='@')
+
+        return redirect(redirect_url)

@@ -98,7 +98,7 @@ class Inventory(db.Model):
     access_level = db.Column(db.Integer, nullable=False, unique=False, default=False)
     token = db.Column(db.String(255), nullable=False, unique=False)
     short_code = db.Column(db.String(255), nullable=True, unique=True)
-    list_or_inv = db.Column(db.Integer, nullable=True, unique=False, default=1)
+    type = db.Column(db.Integer, nullable=True, unique=False, default=1)
 
 
 class Relateditems(db.Model):

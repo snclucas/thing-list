@@ -1,6 +1,6 @@
 import argparse
 
-from database_functions import add_user
+from database_functions import add_user_by_details
 
 
 parser = argparse.ArgumentParser(description='ThingList: manage users.')
@@ -12,4 +12,4 @@ parser.add_argument('--password', type=str, required=True)
 args = parser.parse_args()
 print('Adding user:', args.username)
 
-add_user(username=args.username, email=args.email, password=args.password)
+add_user_by_details(username=args.username, email=args.email, password=args.password)

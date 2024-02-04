@@ -89,7 +89,7 @@ def inventories_for_username(username):
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
-@inv.route('/inventory/<inventory_id>')
+@inv.route('/inventory/<string:inventory_id>')
 @login_required
 def inventory(inventory_id: int):
     inventory_ = find_inventory(inventory_id=inventory_id)
@@ -107,6 +107,7 @@ def add_inventory():
     if request.method == 'POST':
         inventory_name_ = bleach.clean(request.form.get("inventory_name"))
         inventory_description_ = bleach.clean(request.form.get("inventory_description"))
+        print(request.form)
 
         access_level_ = __PRIVATE
         if "inventory_public" in request.form:
@@ -241,7 +242,8 @@ def add_user_to_inv():
 @inv.route('/inventory/@<username>/<inventory_slug>/delete/<item_id>', methods=['POST'])
 @login_required
 def delete_from_inventory(username: str, inventory_slug, item_id):
-    inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug, user_id=current_user)
+    inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug,
+                                                         inventory_owner_id=current_user.id)
     delete_item_from_inventory(user=current_user, inventory_id=int(inventory_.id), item_id=int(item_id))
     return redirect(url_for('inv.inventory_by_slug', username=username, inventory_slug=inventory_.slug))
 
@@ -258,6 +260,8 @@ def add_to_inventory():
         username = request.form.get("username").lower()
         inventory_slug = request.form.get("inventory_slug").lower()
         item_type = request.form.get("type").lower()
+        if item_type == '':
+            item_type = 'none'
         item_location = request.form.get("location_id").lower()
         item_specific_location = request.form.get("specific_location").lower()
         item_tags = request.form.get("tags").lower()

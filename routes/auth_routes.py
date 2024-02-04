@@ -28,13 +28,53 @@ auth_flask_login = Blueprint('auth_flask_login', __name__, template_folder='temp
 #     return render_template('reset_password.html', form=form)
 
 
+def sanitize(input_string):
+    """
+    Sanitizes the given input string by encoding and decoding it using unicode_escape.
+
+    Args:
+        input_string (str): The input string to be sanitized.
+
+    Returns:
+        str: The sanitized input string.
+
+    Example:
+        >>> sanitize('Hello, world!')
+        'Hello, world!'
+    """
+    # Perform input sanitization
+    return input_string.encode('unicode_escape').decode()
+
+
 @auth_flask_login.route("/login", methods=["GET", "POST"])
 def login():
-    current_app.logger.info(request.form)
+    """
+
+    Method: login
+
+    This method is used to authenticate a user and log them into the system.
+
+    URL: /login
+    Methods: GET, POST
+
+    Parameters:
+        - None
+
+    Returns:
+        - None
+
+    Example Usage:
+        login()
+
+    """
+
     if request.method == "POST" and "username" in request.form:
-        username = request.form["username"]
+
+        username = sanitize(request.form.get("username"))
+        password = sanitize(request.form.get("password"))
+
         user = find_user(username_or_email=username)
-        if user and flask_bcrypt.check_password_hash(user.password, request.form["password"]) and user.is_active:
+        if user and flask_bcrypt.check_password_hash(user.password, password) and user.is_active:
             remember = request.form.get("remember", "no") == "yes"
 
             if user.activated == 0:
@@ -131,7 +171,7 @@ def register():
         new_user = User(username=username, email=email, password=password_hash, token=confirmation_token)
 
         try:
-            user_added, msg = save_new_user(new_user)
+            user_added, msg, user = save_new_user(new_user)
             if user_added:
 
                 text_body = render_template(template_name_or_list='email/user_registration.txt', user=username, token=confirmation_token)
