@@ -89,19 +89,19 @@ def inventories_for_username(username):
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
-@inv.route('/inventory/<string:inventory_id>')
+@inv.route('/inventory/<int:inventory_id>')
 @login_required
 def inventory(inventory_id: int):
     inventory_ = find_inventory(inventory_id=inventory_id)
     if inventory_ is not None:
         if inventory_.owner_id == current_user.id:
-            return redirect(url_for('items.items_with_username_and_inventory',
+            return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                     username=current_user.username, inventory_slug=inventory_.slug))
 
-    return render_template('404.html', message="No such inventory"), 404
+    return render_template(template_name_or_list='404.html', message="No such inventory"), 404
 
 
-@inv.route('/inventory/add', methods=['POST'])
+@inv.route(rule='/inventory/add', methods=['POST'])
 @login_required
 def add_inventory():
     if request.method == 'POST':
@@ -120,7 +120,7 @@ def add_inventory():
     return redirect(url_for('inv.inventories'))
 
 
-@inv.route('/inventory/delete', methods=['POST'])
+@inv.route(rule='/inventory/delete', methods=['POST'])
 @login_required
 def del_inventory():
     if request.method == 'POST':
@@ -131,7 +131,7 @@ def del_inventory():
         return redirect(url_for('inv.inventories'))
 
 
-@inv.route('/inventory/edit', methods=['POST'])
+@inv.route(rule='/inventory/edit', methods=['POST'])
 @login_required
 def edit_inventory():
     if request.method == 'POST':
@@ -149,29 +149,31 @@ def edit_inventory():
         return redirect(url_for('inv.inventories'))
 
 
-@inv.route('/inventory/deleteuser', methods=['POST'])
+@inv.route(rule='/inventory/deleteuser', methods=['POST'])
 @login_required
 def delete_user_to_inv():
-    if request.method == 'POST':
-        inventory_id = bleach.clean(request.json["inventory_id"])
-        user_id = bleach.clean(request.json["user_id"])
+    inventory_id = request.json.get("inventory_id")
+    user_id = request.json.get("user_id")
 
-        try:
-            inventory_id = int(inventory_id)
-            user_id = int(user_id)
-        except Exception:
-            return redirect(url_for('inv.inventories'))
+    inventory_id = bleach.clean(inventory_id)
+    user_id = bleach.clean(user_id)
 
-        result = delete_user_to_inventory(inventory_id=inventory_id, user_to_delete_id=user_id)
+    try:
+        inventory_id = int(inventory_id)
+        user_id = int(user_id)
+    except Exception:
+        return redirect(url_for('inv.inventories'))
 
-        inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
+    result = delete_user_to_inventory(inventory_id=inventory_id, user_to_delete_id=user_id)
 
-        if result:
-            return redirect(url_for('items.items_with_username_and_inventory',
-                                    inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
-        else:
-            return redirect(url_for('items.items_with_username_and_inventory',
-                                    inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
+    inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
+
+    if result:
+        return redirect(url_for('items.items_with_username_and_inventory',
+                                inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
+    else:
+        return redirect(url_for('items.items_with_username_and_inventory',
+                                inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
 
 
 @inv.route("/regenerate-token>", methods=["POST"])

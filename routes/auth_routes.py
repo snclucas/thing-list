@@ -1,3 +1,4 @@
+import re
 import uuid
 
 from flask import current_app, Blueprint, render_template, request, flash, redirect, url_for
@@ -5,7 +6,8 @@ from flask import current_app, Blueprint, render_template, request, flash, redir
 from app import login_manager, flask_bcrypt, app
 from flask_login import (login_required, login_user, logout_user, confirm_login)
 
-from database_functions import find_user, save_new_user, find_user_by_token, activate_user_in_db
+from database_functions import find_user, save_new_user, find_user_by_token, activate_user_in_db, find_user_by_username, \
+    find_user_by_email
 from email_utils import send_email
 from models import User
 
@@ -37,10 +39,6 @@ def sanitize(input_string):
 
     Returns:
         str: The sanitized input string.
-
-    Example:
-        >>> sanitize('Hello, world!')
-        'Hello, world!'
     """
     # Perform input sanitization
     return input_string.encode('unicode_escape').decode()
@@ -49,7 +47,6 @@ def sanitize(input_string):
 @auth_flask_login.route("/login", methods=["GET", "POST"])
 def login():
     """
-
     Method: login
 
     This method is used to authenticate a user and log them into the system.
@@ -62,10 +59,6 @@ def login():
 
     Returns:
         - None
-
-    Example Usage:
-        login()
-
     """
 
     if request.method == "POST" and "username" in request.form:
@@ -149,21 +142,110 @@ def change_password():
         return render_template("auth/reset_password.html")
 
 
+def password_check(password):
+    """
+    Check if a password meets the specified criteria.
+
+    Parameters:
+    password (str): The password to be checked.
+
+    Returns:
+    dict: A dictionary containing the result of the password check.
+        - 'password_ok' (bool): True if the password meets the criteria, False otherwise.
+        - 'length_error' (bool): True if the password length is less than 8 characters, False otherwise.
+        - 'digit_error' (bool): True if the password does not contain any digits, False otherwise.
+        - 'uppercase_error' (bool): True if the password does not contain any uppercase letters, False otherwise.
+        - 'lowercase_error' (bool): True if the password does not contain any lowercase letters, False otherwise.
+        - 'symbol_error' (bool): True if the password does not contain any symbols, False otherwise.
+    """
+    # calculating the length
+    length_error = len(password) < 8
+    # searching for digits
+    digit_error = re.search(r"\d", password) is None
+    # searching for uppercase
+    uppercase_error = re.search(r"[A-Z]", password) is None
+    # searching for lowercase
+    lowercase_error = re.search(r"[a-z]", password) is None
+    # searching for symbols
+    symbol_error = re.search(r"\W", password) is None
+    # overall result
+    password_ok = not (length_error or digit_error or uppercase_error or lowercase_error or symbol_error)
+
+    return {
+        'password_ok': password_ok,
+        'length_error': length_error,
+        'digit_error': digit_error,
+        'uppercase_error': uppercase_error,
+        'lowercase_error': lowercase_error,
+        'symbol_error': symbol_error,
+    }
+
+
 @auth_flask_login.route("/register", methods=["GET", "POST"])
 def register():
+    """
+    Registers a new user in the application.
+
+    Route: `/register`
+    Methods: `GET`, `POST`
+
+    __Args__:
+        - None
+
+    __Returns__:
+        - If registrations are not allowed, renders the `auth/register.html` template with `allow_registrations` set to `False`.
+        - If a `POST` request is made:
+            - If the `username` field is empty, flashes an error message and renders the `auth/register.html` template.
+            - If the `email` field is empty, flashes an error message and renders the `auth/register.html` template.
+            - If the `email` field is not a valid email address (using a simple regex validation), flashes an error message and renders the `auth/register.html` template.
+            - If the supplied password does not meet the criteria, flashes an error message and renders the `auth/register.html` template.
+            - If a user with the same email or username already exists, flashes an error message and renders the `auth/register.html` template.
+            - Otherwise, generates a password hash, generates a confirmation token, creates a new `User` with the provided details, and attempts to save the new user.
+                - If the user is successfully added, constructs the text and HTML bodies for the registration email, sends the email to the user's email address, flashes a success message
+    *, and renders the `auth/login.html` template.
+                - If there is an error adding the user, flashes an error message.
+        - If a `GET` request is made or an exception occurs, renders the `auth/register.html` template with `allow_registrations` set to the value of `ALLOW_REGISTRATIONS` from the application
+    *'s config.
+
+    __Raises__:
+        - Any exception that occurs during the registration process.
+
+    """
     allow_registrations = (int(app.config['ALLOW_REGISTRATIONS']) == 1)
 
     if not allow_registrations:
-        return render_template("auth/register.html", allow_registrations=allow_registrations)
-
-    current_app.logger.info(request.form)
+        return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
     if request.method == 'POST':
-        username = request.form['username']
-        email = request.form['email']
+        username = request.form.get('username', '').strip()
+        email = request.form.get('email', '').strip()
+        supplied_password = request.form.get('password', '').strip()
+
+        if not username:
+            flash("Username cannot be empty.")
+            return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
+
+        if not email:
+            flash("Email cannot be empty.")
+            return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
+
+        # Simple email validation, you might want to use a more robust method in production
+        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+            flash("Invalid email address.")
+            return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
+
+        password_check_results = password_check(supplied_password)
+        if not password_check_results['password_ok']:
+            flash("Password does not meet the criteria")
+            return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
+
+        existing_user = find_user_by_username(username) or find_user_by_email(email)
+        if existing_user:
+            flash("User with that email or username already exists")
+            return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
         # generate password hash
-        password_hash = flask_bcrypt.generate_password_hash(request.form['password'])
+        password_hash = flask_bcrypt.generate_password_hash(supplied_password)
 
         confirmation_token = uuid.uuid4().hex
 
@@ -173,7 +255,6 @@ def register():
         try:
             user_added, msg, user = save_new_user(new_user)
             if user_added:
-
                 text_body = render_template(template_name_or_list='email/user_registration.txt', user=username, token=confirmation_token)
                 html_body = render_template(template_name_or_list='email/user_registration.html', user=username, token=confirmation_token)
                 send_email(subject="New user registration", sender=app.config['ADMINS'][0], recipients=[email],
@@ -181,10 +262,10 @@ def register():
                 flash("Check your email for an activation link!")
                 return render_template("auth/login.html")
             else:
-                flash("unable to log you in")
+                flash("Unable to register you at this time")
         except Exception as err:
-            print(err)
-            flash("unable to register with that email address")
+            current_app.logger.error(f"Exception occurred: {str(err)}", exc_info=True)
+            flash("Unable to register with that email address")
             current_app.logger.error("Error on registration - possible duplicate emails")
 
     return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
@@ -217,6 +298,21 @@ def unauthorized_callback():
 
 @login_manager.user_loader
 def load_user(id):
+    """
+    Load User
+
+    Loads the user associated with the given ID.
+
+    Parameters:
+    - id (int): The ID of the user to load.
+
+    Returns:
+    - User: The user with the specified ID, if found and active. If the ID is None or the user is not found or inactive, returns None.
+
+    Note:
+    - This method is decorated with the `@login_manager.user_loader` decorator to register it as the user loader function for the current login manager. It is automatically called when loading
+    * a user based on the ID.
+    """
     if id is None:
         redirect('/login')
 

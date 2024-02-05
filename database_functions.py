@@ -8,9 +8,7 @@ import flask_bcrypt
 from slugify import slugify
 from sqlalchemy import select, and_, ClauseElement, or_
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound, InvalidRequestError
-from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.functions import func
-from sqlalchemy.testing.config import options
 
 from app import db, app, __PUBLIC__, __OWNER__
 from email_utils import send_email
@@ -2195,86 +2193,96 @@ def get_item_by_slug(item_slug: str):
     return result
 
 
-def get_item_by_slug2(username: str, item_slug: str, user: User):
-    item_user_ = find_user_by_username(username=username)
-
-    stmt = select(Item, ItemType.name, InventoryItem) \
-        .join(InventoryItem, InventoryItem.item_id == Item.id) \
-        .join(ItemType, ItemType.id == Item.item_type) \
-        .join(Location, Location.id == Item.location_id) \
-        .where(Item.slug == item_slug)
-
-    result = db.session.execute(stmt).first()
-    if result is not None:
-        item_, item_type_string, inventory_item_ = db.session.execute(stmt).first()
-
-        if item_ is not None:
-            if user is not None:
-                if user.id == item_user_.id:
-                    return {
-                        "status": "success", "message": "", "access": "owner",
-                        "item": item_, "item_type": item_type_string,
-                        "inventory_item": inventory_item_
-                    }
-            elif inventory_item_.access_level == __PUBLIC__:
-                return {
-                    "status": "success", "message": "", "access": "public",
-                    "item": item_, "item_type": item_type_string,
-                    "inventory_item": inventory_item_
-                }
-            else:
-                return {
-                    "status": "error", "message": "no access", "access": "denied",
-                    "item": None, "item_type": None,
-                    "inventory_item": None
-                }
-    else:
-        return {
-            "status": "error", "message": "no item", "access": "n/a",
-            "item": None, "item_type": None,
-            "inventory_item": None
-        }
-
-
-def get_item_by_slug2(username: str, item_slug: str, user: User):
-    session = db.session
-    user_ = find_user_by_username(username=username)
-
-    full_slug = f"{user.id}-{item_slug}"
-    item_ = find_item_by_slug(item_slug=full_slug, user_id=user_.id)
-
-    stmt = select(Item, Inventory, ItemType, Location) \
-        .join(Inventory.items) \
-        .join(InventoryItem) \
-        .join(Location, Item.location_id == Location.id) \
-        .join(UserInventory) \
-        .join(ItemType) \
-        .where(UserInventory.user_id == user_.id) \
-        .where(Item.id == item_.id)
-    r = session.execute(stmt).first()
-
-    return r
+# def get_item_by_slug2(username: str, item_slug: str, user: User):
+#     item_user_ = find_user_by_username(username=username)
+#
+#     stmt = select(Item, ItemType.name, InventoryItem) \
+#         .join(InventoryItem, InventoryItem.item_id == Item.id) \
+#         .join(ItemType, ItemType.id == Item.item_type) \
+#         .join(Location, Location.id == Item.location_id) \
+#         .where(Item.slug == item_slug)
+#
+#     result = db.session.execute(stmt).first()
+#     if result is not None:
+#         item_, item_type_string, inventory_item_ = db.session.execute(stmt).first()
+#
+#         if item_ is not None:
+#             if user is not None:
+#                 if user.id == item_user_.id:
+#                     return {
+#                         "status": "success", "message": "", "access": "owner",
+#                         "item": item_, "item_type": item_type_string,
+#                         "inventory_item": inventory_item_
+#                     }
+#             elif inventory_item_.access_level == __PUBLIC__:
+#                 return {
+#                     "status": "success", "message": "", "access": "public",
+#                     "item": item_, "item_type": item_type_string,
+#                     "inventory_item": inventory_item_
+#                 }
+#             else:
+#                 return {
+#                     "status": "error", "message": "no access", "access": "denied",
+#                     "item": None, "item_type": None,
+#                     "inventory_item": None
+#                 }
+#     else:
+#         return {
+#             "status": "error", "message": "no item", "access": "n/a",
+#             "item": None, "item_type": None,
+#             "inventory_item": None
+#         }
 
 
-def get_item(username: str, inventory_slug: str, item_slug: str):
-    session = db.session
-    user_ = find_user_by_username(username=username)
+# def get_item_by_slug2(username: str, item_slug: str, user: User):
+#     session = db.session
+#     user_ = find_user_by_username(username=username)
+#
+#     full_slug = f"{user.id}-{item_slug}"
+#     item_ = find_item_by_slug(item_slug=full_slug, user_id=user_.id)
+#
+#     stmt = select(Item, Inventory, ItemType, Location) \
+#         .join(Inventory.items) \
+#         .join(InventoryItem) \
+#         .join(Location, Item.location_id == Location.id) \
+#         .join(UserInventory) \
+#         .join(ItemType) \
+#         .where(UserInventory.user_id == user_.id) \
+#         .where(Item.id == item_.id)
+#     r = session.execute(stmt).first()
+#
+#     return r
 
-    inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug, user_id=user_.id)
 
-    item_ = find_item_by_slug(item_slug=item_slug, user_id=user_.id)
-
-    stmt = select(Item, ItemType) \
-        .join(Inventory.items) \
-        .join(InventoryItem) \
-        .join(UserInventory) \
-        .join(ItemType) \
-        .where(InventoryItem.inventory_id == inventory_.id) \
-        .where(UserInventory.user_id == user_.id) \
-        .where(Item.id == item_.id)
-    r = session.execute(stmt).first()
-
-    return r
+# def get_item(username: str, inventory_slug: str, item_slug: str):
+#     session = db.session
+#     user_ = find_user_by_username(username=username)
+#     if user_ is None:
+#         app.logger.error(f"No user found with username: {username}")
+#         raise ValueError(f"No user found with username: {username}")
+#
+#     inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug, user_id=user_.id)
+#
+#     if inventory_ is None:
+#         app.logger.error(f"No inventory found with slug: {inventory_slug}")
+#         raise ValueError(f"No inventory found with slug: {inventory_slug}")
+#
+#     item_ = find_item_by_slug(item_slug=item_slug, user_id=user_.id)
+#     if item_ is None:
+#         app.logger.error(f"No item found with slug: {item_slug}")
+#         raise ValueError(f"No item found with slug: {item_slug}")
+#
+#     stmt = select(Item, ItemType) \
+#         .join(Inventory.items) \
+#         .join(InventoryItem) \
+#         .join(UserInventory) \
+#         .join(ItemType) \
+#         .where(InventoryItem.inventory_id == inventory_.id) \
+#         .where(UserInventory.user_id == user_.id) \
+#         .where(Item.id == item_.id)
+#     r = session.execute(stmt).first()
+#
+#     return r
 
 
 def get_items_for_inventory(user: User, inventory_id: int):
