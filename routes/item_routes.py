@@ -7,7 +7,7 @@ from io import BytesIO
 
 import bleach
 from PIL import Image
-from flask import Blueprint, render_template, redirect, url_for, request, jsonify
+from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import login_required, current_user
 # from flask_weasyprint import render_pdf, HTML
 
@@ -236,39 +236,58 @@ def edit_inv_default_fields():
 @item_routes.route('/inventory/save-inventory-template', methods=['POST'])
 @login_required
 def save_inventory_template():
-    if request.method == 'POST':
-        form_data = dict(request.form)
-        inventory_id = form_data['inventory_id']
+    form_data = dict(request.form)
+    inventory_id = form_data.get('inventory_id')
+    if inventory_id is None:
+        app.logger.error("No inventory ID provided")
+        return redirect(url_for('inventory.inventories'))
 
-        inventory_slug = form_data['inventory_slug']
-        inventory_template = form_data['inventory_template']
-        if inventory_template == '-1':
-            inventory_template = None
-        save_inventory_fieldtemplate(inventory_id=inventory_id,
-                                     inventory_template=inventory_template, user_id=current_user.id)
+    inventory_id = int(inventory_id)
 
-        return redirect(url_for('items.items_with_username_and_inventory',
-                                username=current_user.username, inventory_slug=inventory_slug))
+    inventory_slug = form_data.get('inventory_slug')
+    inventory_template = form_data.get('inventory_template')
+    if inventory_template == '-1':
+        inventory_template = None
+    else:
+        inventory_template = int(inventory_template)
+
+    result = save_inventory_fieldtemplate(inventory_id=inventory_id,
+                                          inventory_template=inventory_template, user_id=current_user.id)
+
+    if not result:
+        flash("Error saving inventory template")
+
+    return redirect(url_for(endpoint='items.items_with_username_and_inventory',
+                            username=current_user.username, inventory_slug=inventory_slug))
 
 
 @item_routes.route("/item/relate-items", methods=["POST"])
 def relate_items():
-    if request.method == 'POST':
-        item_id = bleach.clean(request.form.get("item_id"))
-        item_id = int(item_id)
-        relateditem_slug = bleach.clean(request.form.get("relateditem"))
-        inventory_slug = bleach.clean(request.form.get("inventory_slug"))
-        item_slug = bleach.clean(request.form.get("item_slug"))
+    item_id = request.form.get("item_id")
+    relateditem_slug = request.form.get("relateditem")
+    inventory_slug = request.form.get("inventory_slug")
+    item_slug = request.form.get("item_slug")
 
-        relateditem_ = find_item_by_slug(item_slug=relateditem_slug, user_id=current_user.id)
+    if item_id is None or relateditem_slug is None or inventory_slug is None or item_slug is None:
+        return jsonify({"message": "All fields are required"}), 400
 
-        if relateditem_.id != item_id:
-            relate_items_by_id(item1_id=item_id, item2_id=relateditem_.id)
+    item_id = bleach.clean(item_id)
+    item_id = int(item_id)
+    relateditem_slug = bleach.clean(relateditem_slug)
+    inventory_slug = bleach.clean(inventory_slug)
+    item_slug = bleach.clean(item_slug)
 
-        return redirect(url_for('item.item_with_username_and_inventory',
-                                username=current_user.username,
-                                inventory_slug=inventory_slug,
-                                item_slug=item_slug))
+    relateditem_ = find_item_by_slug(item_slug=relateditem_slug, user_id=current_user.id)
+    if relateditem_ is None:
+        return jsonify({"message": "No such item"}), 404
+
+    if relateditem_.id != item_id:
+        relate_items_by_id(item1_id=item_id, item2_id=relateditem_.id)
+
+    return redirect(url_for(endpoint='item.item_with_username_and_inventory',
+                            username=current_user.username,
+                            inventory_slug=inventory_slug,
+                            item_slug=item_slug))
 
 
 @item_routes.route('/unrelate-items', methods=['POST'])

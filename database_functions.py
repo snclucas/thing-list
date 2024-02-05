@@ -1262,25 +1262,81 @@ __PUBLIC = 1
 
 
 
-def unrelate_items_by_id(item1_id, item2_id):
+def unrelate_items_by_id(item1_id: int, item2_id: int)-> (bool, str):
+    """
+
+    Unrelate Items By ID
+
+    Unrelates two items by their IDs.
+
+    Parameters:
+    - item1_id (int): The ID of the first item.
+    - item2_id (int): The ID of the second item.
+
+    Returns:
+    - Tuple with two elements representing the result of the operation:
+      - success (bool): True if the items were successfully unrelated, False otherwise.
+      - message (str): A message describing the result of the operation.
+
+    """
+    if item1_id is None or item2_id is None:
+        return False, "Item IDs cannot be None"
     with app.app_context():
         item1_ = Item.query.filter(Item.id == item1_id).one_or_none()
+        if item1_ is None:
+            return False, f"No item with id {item1_id} found"
         item2_ = Item.query.filter(Item.id == item2_id).one_or_none()
-        if item1_ is not None and item2_ is not None:
-            item1_.related_items.remove(item2_)
-            db.session.commit()
-            item2_.related_items.remove(item1_)
-            db.session.commit()
+        if item2_ is None:
+            return False, f"No item with id {item2_id} found"
 
+        if item2_ in item1_.related_items and item1_ in item2_.related_items:
+            try:
+                item1_.related_items.remove(item2_)
+                db.session.commit()
+                item2_.related_items.remove(item1_)
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                return False, f"Could not unrelate items with ids {item1_id} and {item2_id}"
+        else:
+            return False, f"Items with ids {item1_id} and {item2_id} are not related"
 
-def relate_items_by_id(item1_id, item2_id):
+def relate_items_by_id(item1_id: int, item2_id: int) -> (bool, str):
+    """
+    Relates two items by their IDs.
+
+    Parameters:
+        item1_id (int): The ID of the first item.
+        item2_id (int): The ID of the second item.
+
+    Returns:
+        tuple (bool, str): A tuple containing a boolean value and a string.
+        The boolean value indicates whether the items were successfully related or not.
+        The string provides additional information about the result.
+
+    Raises:
+        None
+    """
+    if item1_id is None or item2_id is None:
+        return False, "Item IDs cannot be None"
     with app.app_context():
         item1_ = Item.query.filter(Item.id == item1_id).one_or_none()
+        if item1_ is None:
+            return False, f"No item with id {item1_id} found"
         item2_ = Item.query.filter(Item.id == item2_id).one_or_none()
-        if item1_ is not None and item2_ is not None:
+        if item2_ is None:
+            return False, f"No item with id {item2_id} found"
+
+        if item2_ not in item1_.related_items and item1_ not in item2_.related_items:
             item1_.related_items.append(item2_)
             item2_.related_items.append(item1_)
-            db.session.commit()
+            try:
+                db.session.commit()
+            except SQLAlchemyError:
+                db.session.rollback()
+                return False, f"Could not relate items with ids {item1_id} and {item2_id}"
+        else:
+            return False, f"Items with ids {item1_id} and {item2_id} are already related"
 
 
 def add_item_inventory(item, inventory):
@@ -2531,16 +2587,33 @@ def set_template_fields_orders(field_data, template_id: int, user_id: int):
         return
 
 
-def save_inventory_fieldtemplate(inventory_id, inventory_template, user_id: int):
+def save_inventory_fieldtemplate(inventory_id: int , inventory_template: int, user_id: int):
+    """
+
+    Save Inventory Field Template
+
+    This method is used to save the field template for a specific inventory.
+
+    Parameters:
+    - inventory_id (int): The ID of the inventory to save the field template for.
+    - inventory_template (int): The ID of the field template to assign to the inventory.
+    - user_id (int): The ID of the user who owns the inventory.
+
+    Returns:
+    - bool: True if the field template is saved successfully, False otherwise.
+
+    """
     with app.app_context():
         inventory_, user_inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=user_id)
+        if inventory_ is None or user_inventory_ is None:
+            app.logger.error(f"Failed to find inventory with ID: {inventory_id}")
+            return False
 
         if user_inventory_.access_level == 0:
             inventory_.field_template = inventory_template
 
             template_ = db.session.query(FieldTemplate).filter(FieldTemplate.id == inventory_template).one_or_none()
             if template_ is not None:
-
                 temp_fields = template_.fields
                 field_ids = [x.id for x in temp_fields]
 
@@ -2548,10 +2621,18 @@ def save_inventory_fieldtemplate(inventory_id, inventory_template, user_id: int)
 
                 for item in items_:
                     set_field_status(item_id=item.id, field_ids=field_ids)
+            else:
+                app.logger.error(f"Failed to find template with ID: {inventory_template}")
+                return False
 
-        db.session.commit()
+        try:
+            db.session.commit()
+        except Exception as e:
+            app.logger.error(f"Failed to save inventory field template: {str(e)}")
+            db.session.rollback()
+            return False
 
-    return
+    return True
 
 
 def get_user_locations(user_id: int) -> List[dict]:
