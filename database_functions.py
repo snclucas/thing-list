@@ -476,7 +476,7 @@ def get_user_default_inventory(user_id: int):
 
 
 
-def delete_inventory_by_id(inventory_ids, user_id: int):
+def delete_inventory_by_id(inventory_ids: list, user_id: int) -> (bool, str):
     """
     If the User has Items within the Inventory - re-link Items to Users default Inventory via the ItemInventory table
     Delete the UserInventory for the user
@@ -484,7 +484,7 @@ def delete_inventory_by_id(inventory_ids, user_id: int):
     """
 
     if not isinstance(inventory_ids, list):
-        inventory_ids = [inventory_ids]
+        return False, "Inventory IDs must be a list"
 
     with app.app_context():
 
@@ -492,6 +492,9 @@ def delete_inventory_by_id(inventory_ids, user_id: int):
             .where(UserInventory.user_id == user_id) \
             .where(UserInventory.inventory_id.in_(inventory_ids))
         user_inventories_ = db.session.execute(stmt).all()
+        
+        if user_inventories_ is None:
+            return False, "No inventories found for user"
 
         for user_inventory_ in user_inventories_:  # type: UserInventory
 
@@ -500,14 +503,20 @@ def delete_inventory_by_id(inventory_ids, user_id: int):
 
                 if user_inventory_.access_level !=0:
                     db.session.delete(user_inventory_)
-                    db.session.commit()
-                    return
+                    try:
+                        db.session.commit()
+                    except Exception as e:
+                        msg = f"Error deleting inventory: {str(e)}"
+                        app.logger.error(msg)
+                        return False, msg
 
                 # Find out if any other users point to this inventory, if not delete it
                 inventory_id_to_delete = user_inventory_.inventory_id
 
                 # Get the current user's default inventory
                 user_default_inventory_ = get_user_default_inventory(user_id=user_id)
+                if user_default_inventory_ is None:
+                    return False, "User default inventory not found"
 
                 inv_items_ = InventoryItem.query.filter_by(inventory_id=inventory_id_to_delete).all()
                 for row in inv_items_:
@@ -1387,32 +1396,89 @@ def set_item_main_image(main_image_url: str, item_id: int, user: User):
             return False
 
 
-def add_images_to_item(item_id, filenames, user: User):
+def add_images_to_item(item_id: int, filenames: list[str], user: User)-> (bool, str):
+    """
+    Add images to an item.
+
+    :param item_id: The ID of the item to add images to. (int)
+    :param filenames: A list of filenames for the images to add. (list[str])
+    :param user: The user who is adding the images. (User)
+
+    :return: A tuple indicating the success of adding the images and a message. (bool, str)
+    """
+    if item_id is None:
+        return False, "Item ID cannot be None"
+    if filenames is None or len(filenames) == 0:
+        return False, "No filenames provided"
+    if user is None:
+        return False, "User cannot be None"
+
     with app.app_context():
         item_ = find_item(item_id=item_id)
+        if item_ is None:
+            return False, f"No item with id {item_id} found for user {user.username}"
+
         for file in filenames:
             new_image = Image(image_filename=file, user_id=user.id)
             item_.images.append(new_image)
 
         item_.main_image = item_.images[0].image_filename
 
-        db.session.commit()
+        try:
+            db.session.commit()
+            return True
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False
 
 
-def find_image(image_id: int, user: User) -> Image:
-    image_ = Image.query.filter_by(id=image_id).filter_by(user_id=user.id).first()
+def find_image(image_id: int, user: User) -> Optional[Image]:
+    """
+    Find Image
+
+    Find an image with the given image ID and user.
+
+    :param image_id: The ID of the image to find.
+    :type image_id: int
+    :param user: The user associated with the image.
+    :type user: User
+    :return: The found image or None if it does not exist or an error occurs.
+    :rtype: Optional[Image]
+
+    """
+    if image_id is None:
+        return None
+    if user is None:
+        return None
+
+    try:
+        image_ = Image.query.filter_by(id=image_id).filter_by(user_id=user.id).first()
+    except SQLAlchemyError:
+        db.session.rollback()
+        return None
     return image_
 
 
 
 
 
-def delete_images_from_item(item_id, image_ids, user: User):
+def delete_images_from_item(item_id: int, image_ids, user: User) -> (bool, str):
+
+    if item_id is None:
+        return False, "Item ID cannot be None"
+
+    if image_ids is None or len(image_ids) == 0:
+        return False, "No image IDs provided"
+
     with app.app_context():
         item_ = find_item(item_id=item_id)
+        if item_ is None:
+            return False, f"No item with id {item_id} found for user {user.username}"
 
         for image_id in image_ids:
             image_ = find_image(image_id=image_id, user=user)
+            if image_ is None:
+                return False, f"No image with id {image_id} found for user {user.username}"
 
             if image_ in item_.images:
                 if image_.image_filename == item_.main_image:
@@ -1422,7 +1488,7 @@ def delete_images_from_item(item_id, image_ids, user: User):
                 try:
                     os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], image_.image_filename))
                 except OSError as er:
-                    pass
+                    return False, f"Could not delete image with id {image_id} for user {user.username}"
 
         if item_.main_image is None:
             if len(item_.images) == 0:
@@ -1430,31 +1496,124 @@ def delete_images_from_item(item_id, image_ids, user: User):
             else:
                 item_.main_image = item_.images[0].image_filename
 
-        db.session.commit()
+        try:
+            db.session.commit()
+            return True, "Images deleted successfully"
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, "Could not delete images"
 
 
-def update_template_by_id(template_data, user):
+def update_template_by_id(template_data: dict, user: User) -> (bool, str):
+    """
+    Update a template by its ID.
+
+    Parameters:
+    - template_data (dict): A dictionary containing the updated template data. It should have the following keys:
+        - 'id' (int): The ID of the template to be updated.
+        - 'name' (str): The new name for the template.
+        - 'fields' (list): A list of fields for the template.
+
+    - user (User): The user object of the user making the request.
+
+    Returns:
+    - Tuple (bool, str): A tuple containing a boolean value indicating whether the update operation was successful, and a string message providing information about the outcome. If the update
+    * is successful, the boolean value will be True and the message will be "Template updated successfully". Otherwise, the boolean value will be False and the message will indicate the
+    * reason for failure, such as "Invalid user", "Template data must be a dictionary", "Template ID must be provided", "Template name must be provided", "Template fields must be provided
+    *", "Template fields must be a list", "No template with id {template_id} found for user {user.username}", or "Could not update template".
+    """
+    if user is None or not isinstance(user, User):
+        return False, "Invalid user"
+
+    if not isinstance(template_data, dict):
+        return False, "Template data must be a dictionary"
+
+    if 'id' not in template_data:
+        return False, "Template ID must be provided"
+
+    if 'name' not in template_data:
+        return False, "Template name must be provided"
+
+    if 'fields' not in template_data:
+        return False, "Template fields must be provided"
+
+    if not isinstance(template_data['fields'], list):
+        return False, "Template fields must be a list"
+
     with app.app_context():
         template_id = template_data['id']
 
-        template_ = FieldTemplate.query.filter_by(id=template_id).filter_by(user_id=user.id).one()
+        template_ = FieldTemplate.query.filter_by(id=template_id).filter_by(user_id=user.id).one_or_none()
+        if template_ is None:
+            return False, f"No template with id {template_id} found for user {user.username}"
 
         template_.name = template_data['name']
         template_.fields = template_data['fields']
 
-        db.session.commit()
+        try:
+            db.session.commit()
+            return True, "Template updated successfully"
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, "Could not update template"
 
 
-def update_location_by_id(location_data, user):
+def update_location_by_id(location_data: dict, user: User) -> (bool, str):
+    """
+    Update the location information by ID for a given user.
+
+    :param location_data: A dictionary containing the updated location information.
+    :param user: An instance of User representing the user whose location is being updated.
+
+    :return: A tuple containing a boolean value indicating the success of the update operation, and a string message indicating the result or any error.
+
+    The location_data parameter must be a dictionary containing the following keys:
+        - 'id': The ID of the location to be updated.
+        - 'name': The updated name for the location.
+        - 'description': The updated description for the location.
+
+    If the user parameter is None or not an instance of User, the method returns (False, "Invalid user").
+
+    If the location_data parameter is not a dictionary, the method returns (False, "Location data must be a dictionary").
+
+    If there is no location with the specified ID found for the given user, the method returns (False, "No location with ID <location_id> found for user <user.username>").
+
+    If the update operation is successful, the method returns (True, "Location updated successfully").
+
+    If there is an error during the update operation, the method returns (False, "Could not update location with ID <location_id> for user <user.username>").
+
+    Note: This method requires the application context to be active.
+    """
+    if user is None or not isinstance(user, User):
+        msg = "Invalid user"
+        app.logger.error(msg)
+        return False, msg
+
+    if not isinstance(location_data, dict):
+        msg = f"Location data must be a dictionary"
+        app.logger.error(msg)
+        return False, msg
+
     with app.app_context():
         location_id = location_data['id']
 
         location_ = Location.query.filter_by(id=location_id).filter_by(user_id=user.id)
+        if location_ is None:
+            msg = f"No location with id {location_id} found for user {user.username}"
+            app.logger.error(msg)
+            return False, msg
 
         location_.name = location_data['name']
         location_.description = location_data['description']
 
-        db.session.commit()
+        try:
+            db.session.commit()
+            return True, "Location updated successfully"
+        except SQLAlchemyError:
+            db.session.rollback()
+            msg = f"Could not update location with id {location_id} for user {user.username}"
+            app.logger.error(msg)
+            return False, msg
 
 
 
@@ -1545,7 +1704,13 @@ def _get_itemtype_id(item_data: dict, user: User):
     return itemtype_result[0].id
 
 
-def update_item_by_id(item_data: dict, item_id: int, user: User):
+def update_item_by_id(item_data: dict, item_id: int, user: User) -> (bool, str):
+    if item_id is None:
+        return False, "Item ID cannot be None"
+
+    if user is None:
+        return False, "User cannot be None"
+
     with app.app_context():
         db.session.expire_on_commit = False
 
@@ -1585,36 +1750,33 @@ def delete_item_images_by_item_id(item_id: int, user: User):
             db.session.commit()
 
 
-def delete_item_images(item_: Item):
-    """
-    Delete Item Images.
+def delete_item_images(item_: Item) -> (bool, str):
 
-    Deletes all images associated with a given item.
+    if item_ is None:
+        return False, "Item ID cannot be None"
 
-    Parameters:
-    - item_ (Item): The item for which the images need to be deleted.
-
-    Returns:
-    None
-
-    Example usage:
-    item = Item.query.get(1)
-    delete_item_images(item)
-    """
     with app.app_context():
-        if item_ is not None:
-            for image_ in item_.images:
-                try:
-                    os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], image_.image_filename))
-                except OSError as er:
-                    app.logger.error(f"Error deleting image file: {image_.image_filename}")
+        for image_ in item_.images:
+            try:
+                os.remove(os.path.join(app.root_path, app.config['UPLOAD_FOLDER'], image_.image_filename))
+            except OSError as er:
+                app.logger.error(f"Error deleting image file: {image_.image_filename}")
+                return False, f"Error deleting image file: {image_.image_filename}"
 
-            item_.images = []
-            item_.main_image = None
+        item_.images = []
+        item_.main_image = None
+        try:
             db.session.commit()
+            return True, "Item images deleted successfully"
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, "Error deleting item images"
 
 
 def get_related_items(item_):
+    if item_ is None:
+        app.logger.error("Item cannot be None")
+        return []
     return Relateditems.query.filter(
         or_(Relateditems.item_id == item_.id, Relateditems.related_item_id == item_.id)).all()
 
@@ -1696,12 +1858,38 @@ def delete_items(item_ids: list, user: User):
     return number_items_deleted
 
 
-def edit_items_locations(item_ids: list, user: User, location_id: int, specific_location: str):
+def edit_items_locations(item_ids: list, user: User, location_id: int, specific_location: str) -> (bool, str):
+    """
+    Edit items locations.
+
+    Edit the locations of items based on the provided item IDs, user, location ID, and specific location.
+
+    Parameters:
+    - item_ids (list): A list of item IDs to edit their locations.
+    - user (User): The user object to perform the edit.
+    - location_id (int): The ID of the location to assign to the items. Set to 0 to not assign any location.
+    - specific_location (str): The specific location description to assign to the items. Set to None to not assign any specific location.
+
+    Returns:
+    (bool, str): A tuple containing a boolean indicating the success of the operation and a message describing the result.
+    """
+    if not item_ids or user is None:
+        return False, "Item IDs cannot be None"
+
+    if len(item_ids) == 0:
+        return False, "No item IDs provided"
+
+    if location_id is None:
+        return False, "Location ID cannot be None"
+
+    if specific_location is None:
+        return False, "Specific location cannot be None"
+
     with app.app_context():
-        stmt = select(Item) \
-            .where(Item.user_id == user.id) \
-            .where(Item.id.in_(item_ids))
+        stmt = select(Item).where(Item.user_id == user.id).where(Item.id.in_(item_ids))
         results_ = db.session.execute(stmt).all()
+        if results_ is None:
+            return False, "No items found"
 
         for item_ in results_:
             if location_id != 0:
@@ -1709,8 +1897,13 @@ def edit_items_locations(item_ids: list, user: User, location_id: int, specific_
 
             if specific_location is not None:
                 item_[0].specific_location = specific_location
-        db.session.commit()
-        return
+
+        try:
+            db.session.commit()
+            return True, "Items updated successfully"
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, "Could not update items"
 
 
 def copy_items(item_ids: list, user: User, inventory_id: int):
@@ -1719,11 +1912,23 @@ def copy_items(item_ids: list, user: User, inventory_id: int):
         move - change inventory id in ItemInventory
         copy - duplicate item, add new line in ItemInventory
     """
+    if not item_ids or user is None:
+        msg = "Item IDs cannot be None"
+        app.logger.error(msg)
+        return {"status": "error", "message": msg, "count": 0}
+
+    if len(item_ids) == 0:
+        return {"status": "error", "message": "List of item IDs is empty", "count": 0}
 
     with app.app_context():
         try:
             if inventory_id == -1:
                 user_default_inventory = get_user_default_inventory(user_id=user.id)
+                if user_default_inventory is None:
+                    msg = f"No default inventory found for user {user.username}"
+                    app.logger.error(msg)
+                    return {"status": "error", "message": msg, "count": 0}
+
                 inventory_id = user_default_inventory.id
 
             stmt = db.session.query(Item, InventoryItem) \
@@ -1817,6 +2022,9 @@ def link_items(item_ids: list, user: User, inventory_id: int):
 
 
 def delete_items_from_inventory(item_ids: list, inventory_id: int, user: User):
+    if item_ids is None or len(item_ids) == 0:
+        return 0
+
     with app.app_context():
         stmt = select(UserInventory, Inventory).join(Inventory).join(User).where(User.id == user.id).where(
             Inventory.id == inventory_id)
@@ -2444,7 +2652,7 @@ def delete_location(user_id: int, location_ids) -> dict:
     return {"success": True}
 
 
-def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1):
+def get_user_inventories(current_user_id: int, requesting_user_id: int, access_level: int = -1) -> list:
     """
     Gets the inventories associated with a user.
 
@@ -2785,7 +2993,17 @@ def update_item_fields(data, item_id: int):
             raise e
 
 
-def add_new_item_field(item, custom_fields, user_id, app_context=None):
+def add_new_item_field(item: Item, custom_fields: dict, user_id: int, app_context=None):
+    if custom_fields is None:
+        custom_fields = {}
+
+    if item is None:
+        app.logger.error("No item provided")
+        return False, "No item provided"
+
+    if user_id is None:
+        return False, "No user ID provided"
+
     if app_context is None:
         app_context = app.app_context()
 

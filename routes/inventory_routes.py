@@ -57,11 +57,14 @@ def inventories():
                            user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
 
 
-@inv.route('/@<username>/inventories')
+@inv.route('/@<string:username>/inventories')
 def inventories_for_username(username):
     current_user_id = None
     requesting_user_id = None
-    user_is_authenticated = current_user.is_authenticated
+    if current_user is not None:
+        user_is_authenticated = current_user.is_authenticated
+    else:
+        user_is_authenticated = False
 
     if user_is_authenticated:
         current_user_id = current_user.id
@@ -71,7 +74,7 @@ def inventories_for_username(username):
                 requesting_user_id = user_.id
                 username = user_.username
             else:
-                return render_template('404.html', message="No such inventory"), 404
+                return render_template(template_name_or_list='404.html', message="No such inventory"), 404
         else:
             requesting_user_id = current_user.id
             username = current_user.username
@@ -81,12 +84,14 @@ def inventories_for_username(username):
                                      access_level=-1)
 
     if len(user_invs) == 0:
-        return render_template('404.html', message="No inventories"), 404
+        return render_template(template_name_or_list='404.html', message="No inventories"), 404
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
-    return render_template('inventory/inventories.html', inventories=user_invs, username=username,
-                           user_is_authenticated=user_is_authenticated, number_inventories=number_inventories)
+    return render_template(template_name_or_list='inventory/inventories.html',
+                           inventories=user_invs, username=username,
+                           user_is_authenticated=user_is_authenticated,
+                           number_inventories=number_inventories)
 
 
 @inv.route('/inventory/<int:inventory_id>')
@@ -104,31 +109,39 @@ def inventory(inventory_id: int):
 @inv.route(rule='/inventory/add', methods=['POST'])
 @login_required
 def add_inventory():
-    if request.method == 'POST':
-        inventory_name_ = bleach.clean(request.form.get("inventory_name"))
-        inventory_description_ = bleach.clean(request.form.get("inventory_description"))
-        print(request.form)
+    inventory_name_ = request.form.get("inventory_name")
+    inventory_description_ = request.form.get("inventory_description")
+    if inventory_name_ is None or inventory_name_ == "":
+        return redirect(url_for('inv.inventories'))
+    if inventory_description_ is None:
+        inventory_description_ = ""
 
-        access_level_ = __PRIVATE
-        if "inventory_public" in request.form:
-            access_level_ = __PUBLIC
+    inventory_name_ = bleach.clean(inventory_name_)
+    inventory_description_ = bleach.clean(inventory_description_)
 
-        new_inventory_data, msg = add_user_inventory(name=inventory_name_, description=inventory_description_,
-                                                     access_level=access_level_, user_id=current_user.id)
-        return redirect(url_for('items.items_with_username_and_inventory', username=current_user.username,
-                                inventory_slug=new_inventory_data["slug"]))
-    return redirect(url_for('inv.inventories'))
+    access_level_ = __PRIVATE
+    if "inventory_public" in request.form:
+        access_level_ = __PUBLIC
+
+    new_inventory_data, msg = add_user_inventory(name=inventory_name_, description=inventory_description_,
+                                                 access_level=access_level_, user_id=current_user.id)
+
+    if new_inventory_data is None:
+        return redirect(url_for('inv.inventories'))
+
+    return redirect(url_for(endpoint='items.items_with_username_and_inventory', username=current_user.username,
+                            inventory_slug=new_inventory_data["slug"]))
 
 
 @inv.route(rule='/inventory/delete', methods=['POST'])
 @login_required
 def del_inventory():
-    if request.method == 'POST':
-        json_data = request.json
-        inventory_ids = json_data['inventory_ids']
+    json_data = request.json
+    inventory_ids = json_data.get('inventory_ids')
+    if inventory_ids is not None:
         delete_inventory_by_id(inventory_ids=inventory_ids, user_id=current_user.id)
 
-        return redirect(url_for('inv.inventories'))
+    return redirect(url_for('inv.inventories'))
 
 
 @inv.route(rule='/inventory/edit', methods=['POST'])

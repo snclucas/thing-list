@@ -9,7 +9,7 @@ from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
 
-from pycharm_flask_debug_patch import restart_with_reloader_patch
+#from pycharm_flask_debug_patch import restart_with_reloader_patch
 
 
 from dotenv import load_dotenv
