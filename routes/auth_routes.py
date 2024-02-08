@@ -1,8 +1,9 @@
 import re
 import uuid
 
+from sqlalchemy.exc import SQLAlchemyError, NoResultFound, InvalidRequestError
 from flask import current_app, Blueprint, render_template, request, flash, redirect, url_for
-
+from app import db
 from app import login_manager, flask_bcrypt, app
 from flask_login import (login_required, login_user, logout_user, confirm_login)
 
@@ -14,20 +15,65 @@ from models import User
 auth_flask_login = Blueprint('auth_flask_login', __name__, template_folder='templates')
 
 
-# @auth_flask_login.route('/reset_password/<token>', methods=['GET', 'POST'])
-# def reset_password(token):
-#     if current_user.is_authenticated:
-#         return redirect(url_for('index'))
-#     user = User.verify_reset_password_token(token)
-#     if not user:
-#         return redirect(url_for('index'))
-#     form = ResetPasswordForm()
-#     if form.validate_on_submit():
-#         user.set_password(form.password.data)
-#         db.session.commit()
-#         flash('Your password has been reset.')
-#         return redirect(url_for('login'))
-#     return render_template('reset_password.html', form=form)
+
+@auth_flask_login.route(rule='/forgot-password', methods=['GET', 'POST'])
+def reset_password_form():
+    if request.method == "GET":
+        return render_template('auth/reset_password.html')
+    else:
+        username = request.form.get('username', '').strip()
+        if not username:
+            flash("Username cannot be empty.")
+            return render_template(template_name_or_list="auth/reset_password.html")
+
+        potential_user = find_user_by_username(username) or find_user_by_email(username)
+        if potential_user:
+            user_email = potential_user.email
+            confirmation_token = uuid.uuid4().hex
+            potential_user.token = confirmation_token
+            try:
+                db.session.commit()
+            except SQLAlchemyError as err:
+                current_app.logger.error(f"Error updating user token: {str(err)}", exc_info=True)
+                flash("Unable to reset password")
+
+            text_body = render_template(template_name_or_list='email/user_registration.txt', user=username,
+                                        token=confirmation_token)
+            html_body = render_template(template_name_or_list='email/user_registration.html', user=username,
+                                        token=confirmation_token)
+            send_email(subject="Password reset", sender=app.config['ADMINS'][0], recipients=[user_email],
+                       text_body=text_body, html_body=html_body)
+
+        flash("If this account exists, an email will be sent with instructions to reset the password")
+        return render_template(template_name_or_list="auth/reset_password.html")
+
+
+@auth_flask_login.route(rule='/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+
+    if request.method == "GET":
+        return render_template('auth/new_password.html')
+    else:
+
+        supplied_password = sanitize(request.form.get("password"))
+        # generate password hash
+        password_hash = flask_bcrypt.generate_password_hash(supplied_password)
+
+        user_ = find_user_by_token(token=token)
+
+        if user_ is not None and not user_.activated and user_.token == token:
+            user_.password = password_hash
+            try:
+                db.session.commit()
+            except SQLAlchemyError as err:
+                current_app.logger.error(f"Error updating user password: {str(err)}", exc_info=True)
+                flash("Unable to reset password")
+
+            flash("Password reset")
+        else:
+            flash("Unable to reset password")
+
+        return render_template('auth/login.html')
 
 
 def sanitize(input_string):
@@ -85,7 +131,7 @@ def login():
     return render_template("auth/login.html", allow_registrations=allow_registrations)
 
 
-@auth_flask_login.route("/activate-user/<token>", methods=["GET"])
+@auth_flask_login.route(rule="/activate-user/<token>", methods=["GET"])
 def activate_user(token):
     """
     Activate a user based on the given token.
@@ -99,8 +145,11 @@ def activate_user(token):
     template = "auth/login.html"
 
     if user_ is not None and not user_.activated and user_.token == token:
-        activate_user_in_db(user_id=user_.id)
-        flash("You are now an activated Thing!")
+        status, msg = activate_user_in_db(user_id=user_.id)
+        if status:
+            flash("You are now an activated Thing!")
+        else:
+            flash("Unable to activate user")
 
     return render_template(template)
 

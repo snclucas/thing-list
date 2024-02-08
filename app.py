@@ -9,7 +9,7 @@ from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
 
-#from pycharm_flask_debug_patch import restart_with_reloader_patch
+from pycharm_flask_debug_patch import restart_with_reloader_patch
 
 
 from dotenv import load_dotenv
@@ -60,6 +60,7 @@ app.config['MAIL_USERNAME'] = os.environ.get('MAIL_USERNAME')
 app.config['MAIL_PASSWORD'] = os.environ.get('MAIL_PASSWORD')
 app.config['MAIL_DEBUG'] = os.environ.get('MAIL_DEBUG')
 app.config['ADMINS'] = os.environ.get('ADMINS')
+app.config['ENVIRONMENT'] = os.environ.get('ENVIRONMENT')
 
 app.config['MAIL_DEFAULT_SENDER'] = os.environ.get('MAIL_DEFAULT_SENDER')
 
