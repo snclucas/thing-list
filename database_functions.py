@@ -1204,11 +1204,35 @@ def get_all_itemtypes_for_user(user_id: int, string_list=True) -> list:
 
 
 
-def activate_user_in_db(user_id: int):
+def activate_user_in_db(user_id: int) -> (bool, str):
+    """
+    Activates a user in the database.
+
+    Args:
+        user_id: An integer representing the ID of the user to be activated.
+
+    Returns:
+        A tuple containing a boolean value indicating if the user was successfully activated and a string message.
+        - If the user ID is None, the method will return (False, "User ID cannot be None").
+        - If the user with the given ID is found in the database, the method will update the 'activated' field of the user to True and commit the changes.
+          - If the commit is successful, the method will return (True, "User with id {user_id} activated").
+          - If an error occurs during the commit, the method will rollback the changes and return (False, "Could not activate user with id {user_id}").
+        - If no user with the given ID is found in the database, the method will return (False, "No user with id {user_id} found").
+    """
+    if user_id is None:
+        return False, "User ID cannot be None"
     with app.app_context():
         user_ = db.session.query(User).filter(User.id == user_id).one()
-        user_.activated = True
-        db.session.commit()
+        if user_ is not None:
+            user_.activated = True
+            try:
+                db.session.commit()
+                return True, f"User with id {user_id} activated"
+            except SQLAlchemyError:
+                db.session.rollback()
+                return False, f"Could not activate user with id {user_id}"
+        else:
+            return False, f"No user with id {user_id} found"
 
 
 def find_item(item_id: int, user_id: int = None) -> Item:
@@ -1227,9 +1251,21 @@ def find_item_by_slug(item_slug: int, user_id: int = None) -> Item:
     return item_
 
 
-def find_tag(tag: str) -> User:
+def find_tag(tag: str) -> Optional[Tag]:
+    """
+    Args:
+        tag (str): The tag to search for.
+
+    Returns:
+        Optional[Tag]: The corresponding Tag object if found, otherwise None.
+    """
+    if tag is None:
+        return None
     tag_ = Tag.query.filter_by(tag=tag).first()
-    return tag_
+    if tag_ is not None:
+        return tag_
+    else:
+        return None
 
 
 def find_location_by_id(location_id: int) -> Union[dict, None]:
@@ -1252,7 +1288,16 @@ def find_location_by_id(location_id: int) -> Union[dict, None]:
     return None
 
 
-def find_template(template_id: int) -> Location:
+def find_template(template_id: int) -> Optional[Location]:
+    """
+    Args:
+        template_id: An integer value representing the ID of the template.
+
+    Returns:
+        An optional Location object. If the template ID is None or does not exist in the database, None is returned. Otherwise, the corresponding template object is returned.
+    """
+    if template_id is None:
+        return None
     template_ = FieldTemplate.query.filter_by(id=template_id).first()
     return template_
 

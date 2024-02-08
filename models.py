@@ -36,6 +36,7 @@ class User(UserMixin, db.Model):
     token = db.Column(db.String(255), nullable=True, unique=False)
 
 
+
 class Notification(db.Model):
     __tablename__ = "notifications"
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

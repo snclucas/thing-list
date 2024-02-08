@@ -215,13 +215,21 @@ def items_move():
 @login_required
 def items_edit():
     if request.method == 'POST':
+        if not request.json:
+            if not all(key in request.json for key in
+                                ('item_ids', 'username', 'inventory_slug', 'location_id', 'item_visibility')):
+                flash("There was a problem editing your things!")
+                return redirect(url_for('items.items_with_username_and_inventory',
+                                        username=current_user.username,
+                                        inventory_slug="all").replace('%40', '@'))
+
         json_data = request.json
-        username = json_data['username']
-        item_ids = json_data['item_ids']
-        inventory_slug = json_data['inventory_slug']
-        location_id = json_data['location_id']
-        item_visibility = json_data['item_visibility']
-        specific_location = json_data['specific_location']
+        username = json_data.get('username')
+        item_ids = json_data.get('item_ids')
+        inventory_slug = json_data.get('inventory_slug')
+        location_id = json_data.get('location_id')
+        item_visibility = json_data.get('item_visibility')
+        specific_location = json_data.get('specific_location')
 
         access_level = int(item_visibility)
 
@@ -229,8 +237,11 @@ def items_edit():
         if specific_location == "" or specific_location == "None":
             specific_location = None
 
-        edit_items_locations(item_ids=item_ids, user=current_user, location_id=int(location_id),
-                             specific_location=specific_location)
+        status, msg = edit_items_locations(item_ids=item_ids, user=current_user, location_id=int(location_id),
+                                           specific_location=specific_location)
+        if not status:
+            flash("There was a problem editing your things!")
+
         if access_level != -1:
             change_item_access_level(item_ids=item_ids, access_level=access_level, user_id=current_user.id)
 
@@ -521,6 +532,9 @@ def find_items_query(requested_username: str, logged_in_user, inventory_id: int,
     item_id_list = []
     data_dict = []
     for i in items_:
+        if len(i) < 4:
+            print(f"Warning: Expected 4 elements in item, got {len(i)}")
+            continue
         item_id_list.append(i[0].id)
         dat = {"item": i[0], "types": i[1], "location": i[2], "item_access_level": i[3]}
 

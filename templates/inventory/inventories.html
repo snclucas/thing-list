@@ -171,7 +171,6 @@
                 delete_span_selector.css('color', 'red');
                 delete_btn_selector.prop('disabled', false);
                 delete_collapse_btn_selector.prop('disabled', false);
-                delete_btn_selector.attr('disabled', 'disabled');
             } else {
                 $("#collapseDeleteInventories").collapse("hide");
                 delete_collapse_btn_selector.removeAttr('href');
@@ -193,7 +192,6 @@
             $('#edit_form_inventory_id').val(inventory_id)
             $('#edit_form_inventory_name').val(inventory_name)
             $('#edit_form_inventory_description').val(inventory_desc)
-
 
             let inventory_public_is_checked = (inventory_public === "1")
 

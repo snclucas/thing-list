@@ -1,7 +1,14 @@
+/**
+ * Counts the number of checked checkboxes that match the given selector.
+ *
+ * @param {string} checkbox_selector - The selector to match checkboxes.
+ * @returns {number} - The number of checked checkboxes that match the selector.
+ */
 function checkbox_count(checkbox_selector) {
 
-    let all_checkboxes = $('input:checkbox[id^=' + checkbox_selector + ']')
-    let number_selected = 0;
+    let all_checkboxes = $('input:checkbox[id^="' + checkbox_selector + '"]')
+
+    let number_selected  = 0;
 
     $.each(all_checkboxes, function () {
         let $this = $(this);
