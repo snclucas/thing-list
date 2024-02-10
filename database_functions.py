@@ -13,7 +13,7 @@ from sqlalchemy.sql.functions import func
 from app import db, app, __PUBLIC__, __OWNER__
 from email_utils import send_email
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
-    Location, Image, ItemImage, Field, ItemField, FieldTemplate, Notification, TemplateField, Relateditems
+    Location, Image, Field, ItemField, FieldTemplate, Notification, TemplateField, Relateditems
 
 _NONE_ = "None"
 
@@ -67,10 +67,12 @@ def add_user_by_details(username: str, email: str, password: str) -> User:
     - User: The User object representing the new user.
 
     Note:
-    This method adds a new user to the system by using the provided username, email, and password. It generates a password hash for the provided password and creates a new User object with
+    This method adds a new user to the system by using the provided username, email, and password.
+    It generates a password hash for the provided password and creates a new User object with
     * the given details. The 'activated' flag is set to True by default for the new user.
 
-    The method then calls the 'save_new_user' function to save the new user to the database. If the user is successfully saved, the method returns the User object. Otherwise, it logs an
+    The method then calls the 'save_new_user' function to save the new user to the database.
+    If the user is successfully saved, the method returns the User object. Otherwise, it logs an
     * error message and returns the user object.
 
     Example usage:
@@ -146,7 +148,7 @@ def find_user_by_email(email: str) -> User:
     return user
 
 
-def find_user_by_token(token: str) -> User:
+def find_user_by_token(token: str) -> Optional[User]:
     """
 
     Find user by token.
@@ -204,9 +206,6 @@ def save_new_user(user_: User) -> Tuple[bool, str, Optional[User]]:
 
         post_user_add_hook(new_user=user_)
         return True, "success", user_
-
-
-
 
 
 # --- Inventories ---
@@ -371,13 +370,11 @@ def find_all_user_inventories(user: User) -> list:
         return []
 
 
-
-
-
 def send_inventory_invite(recipient_username, text_body, html_body):
     recipient_user_ = find_user_by_username(username=recipient_username)
     if recipient_user_ is not None:
-        send_email("New user registration", recipients=[recipient_user_.email], text_body=text_body, html_body=html_body)
+        send_email("New user registration", recipients=[recipient_user_.email], text_body=text_body,
+                   html_body=html_body)
 
 
 def confirm_inventory_invite_():
@@ -387,7 +384,6 @@ def confirm_inventory_invite_():
 def backup_to_json():
     with app.app_context():
         backup_json = {}
-
 
 
 def create_inventory(name, description, slug, to_user, access_level):
@@ -475,7 +471,6 @@ def get_user_default_inventory(user_id: int):
         return user_default_inventory_
 
 
-
 def delete_inventory_by_id(inventory_ids: list, user_id: int) -> (bool, str):
     """
     If the User has Items within the Inventory - re-link Items to Users default Inventory via the ItemInventory table
@@ -488,11 +483,11 @@ def delete_inventory_by_id(inventory_ids: list, user_id: int) -> (bool, str):
 
     with app.app_context():
 
-        stmt = select(UserInventory).join(User)\
+        stmt = select(UserInventory).join(User) \
             .where(UserInventory.user_id == user_id) \
             .where(UserInventory.inventory_id.in_(inventory_ids))
         user_inventories_ = db.session.execute(stmt).all()
-        
+
         if user_inventories_ is None:
             return False, "No inventories found for user"
 
@@ -501,7 +496,7 @@ def delete_inventory_by_id(inventory_ids: list, user_id: int) -> (bool, str):
             if user_inventory_ is not None:
                 user_inventory_ = user_inventory_[0]
 
-                if user_inventory_.access_level !=0:
+                if user_inventory_.access_level != 0:
                     db.session.delete(user_inventory_)
                     try:
                         db.session.commit()
@@ -542,7 +537,7 @@ def delete_notification_by_id(notification_id: int, user: User):
 
         if notification_ is not None:
             db.session.delete(notification_)
-           # user.notifications.remove(notification_)
+            # user.notifications.remove(notification_)
             db.session.commit()
             return {
                 "success": True,
@@ -628,138 +623,181 @@ def _search_by_field_value(field_id: int, user_id: int, query: str):
         return items_
 
 
-def search_items(query: str, user_id: int):
-    items_arr = []
+def search_items(query: str, user_id: int) -> List[Item]:
     with app.app_context():
-
         # see if there is a search modifier
         if ':' in query:
-            search_modifier = query.split(':')[0]
-            query = query.split(':')[1]
-
-            if search_modifier.lower() == 'location':
-                locations_ = Location.query\
-                    .filter(Location.user_id == user_id)\
-                    .filter(Location.name.like(query)).all()
-
-                for location in locations_:
-                    loc_id_ = location.id
-                    items_ = Item.query.filter(or_(
-                        Item.location_id == loc_id_,
-                        Item.specific_location == query
-                    )
-                    ).all()
-
-                    if len(items_) > 0:
-                        for item in items_:
-                            items_arr.append(item.__dict__)
-
-                looking_for = '%{0}%'.format(query)
-                items_ = Item.query.filter(
-                    Item.specific_location.ilike(looking_for)
-                ).all()
-
-                if len(items_) > 0:
-                    for item in items_:
-                        items_arr.append(item.__dict__)
-
-            elif search_modifier.lower() == 'tags':
-                query = query.split(",")
-                q_ = Item.query
-
-                any_tags_found = False
-                for tag_ in query:
-                    tag_ = tag_.strip()
-                    tag_ = tag_.replace(" ", "@#$")
-                    t_ = find_tag(tag=tag_)
-
-                    if t_ is not None:
-                        any_tags_found = True
-                        q_ = q_.filter(Item.tags.contains(t_))
-
-                if any_tags_found:
-                    items_ = q_.all()
-
-                    if len(items_) > 0:
-                        for item in items_:
-                            items_arr.append(item.__dict__)
-
-            elif search_modifier.lower() == 'type':
-                query = query.split(",")
-
-                types_ = ItemType.query \
-                    .filter(ItemType.user_id == user_id) \
-                    .filter(ItemType.name.like(query)).all()
-
-                type_ids = []
-                for type_ in types_:
-                    type_ids.append(type_.id)
-
-                items_ = Item.query.filter(Item.user_id == user_id).filter(Item.item_type.in_([type_ids])).all()
-
-                if len(items_) > 0:
-                    for item in items_:
-                        items_arr.append(item.__dict__)
-
-            else:  # we have a custom field
-                field_ = _find_field_by_name(field_name=search_modifier)
-                if field_ is not None:
-                    field_id = field_.id
-                    items_ = _search_by_field_value(field_id=field_id, user_id=user_id, query=query)
-
-                    if len(items_) > 0:
-                        for item in items_:
-                            items_arr.append(item.__dict__)
-
+            search_modifier, query = query.split(':', 1)
+            search_modifier = search_modifier.lower()
+            if search_modifier == 'location':
+                return search_by_location(query, user_id)
+            elif search_modifier == 'tags':
+                return search_by_tag(query, user_id)
+            elif search_modifier == 'type':
+                return search_by_item_type(query, user_id)
+            else:  # Assume the search modifier is a field
+                return search_by_custom_field(search_modifier, user_id, query, search_modifier)
         else:
-            # search simple string
-            looking_for = '%{0}%'.format(query)
-
-            items_ = Item.query.filter(or_(
-                Item.name.ilike(looking_for),
-                Item.description.ilike(looking_for)
-            )
-            ).all()
-
-            if len(items_) > 0:
-                for item in items_:
-                    items_arr.append(item.__dict__)
-
-        return items_arr
+            return search_by_name_or_description(query, user_id)
 
 
-def find_item(logged_in_user_id, request_user_id, item_id, item_slug):
-    d = db.session.query(Item, ItemType.name, Location.name,
-                         UserInventory, InventoryItem.access_level) \
-        .join(InventoryItem, InventoryItem.item_id == Item.id) \
-        .join(Inventory, Inventory.id == InventoryItem.inventory_id) \
-        .join(ItemType, ItemType.id == Item.item_type) \
-        .join(Location, Location.id == Item.location_id)
+def search_by_location(query: str, user_id: int) -> List[Item]:
+    """
+    Searches for items based on a location query and user ID.
 
-    if logged_in_user_id is None:
-        if request_user_id is None:
-            d = d.filter(InventoryItem.access_level == __PUBLIC__)
-        else:
-            d = d.filter(Item.user_id == request_user_id)
-            d = d.filter(InventoryItem.access_level == __PUBLIC__)
+    Args:
+        query: A string representing the location query.
+        user_id: An integer representing the user ID.
 
+    Returns:
+        A list of dictionaries representing the items found using the location query and user ID.
+    """
+    items_arr = []
+
+    locations_ = Location.query \
+        .filter(Location.user_id == user_id) \
+        .filter(Location.name.like(query)).all()
+
+    for location in locations_:
+        loc_id_ = location.id
+        items_ = Item.query.filter(or_(
+            Item.location_id == loc_id_,
+            Item.specific_location == query
+        )
+        ).all()
+
+        if len(items_) > 0:
+            for item in items_:
+                items_arr.append(item.__dict__)
+
+    looking_for = '%{0}%'.format(query)
+    items_ = Item.query.filter(
+        Item.specific_location.ilike(looking_for)
+    ).all()
+
+    if len(items_) > 0:
+        for item in items_:
+            items_arr.append(item.__dict__)
+
+    return items_arr
+
+
+def search_by_tag(query: str, user_id: int) -> List[Item]:
+    """
+    Searches for items based on a given query and user ID.
+
+    Args:
+        query (str): The search query.
+        user_id (int): The ID of the user.
+
+    Returns:
+        List[Item]: A list of items that match the search query and user ID.
+    """
+    items_arr = []
+    query = query.split(",")
+    q_ = Item.query
+
+    any_tags_found = False
+    for tag_ in query:
+        tag_ = tag_.strip()
+        tag_ = tag_.replace(" ", "@#$")
+        t_ = find_tag(tag=tag_)
+
+        if t_ is not None:
+            any_tags_found = True
+            q_ = q_.filter(Item.tags.contains(t_))
+
+    if any_tags_found:
+        items_ = q_.all()
+
+        if len(items_) > 0:
+            for item in items_:
+                items_arr.append(item.__dict__)
+
+    return items_arr
+
+
+def search_by_item_type(query: str, user_id: int) -> List[Item]:
+    """
+    Searches for items by item type.
+
+    Args:
+        query: A string containing the query to search for item types. Multiple queries can be passed by separating them with commas.
+        user_id: An integer representing the user ID.
+
+    Returns:
+        A list of Item objects that match the given item type queries and user ID. If no items are found, an empty list is returned.
+    """
+    items_arr = []
+    query = query.split(",")
+
+    types_ = ItemType.query \
+        .filter(ItemType.user_id == user_id) \
+        .filter(ItemType.name.like(query)).all()
+
+    type_ids = []
+    for type_ in types_:
+        type_ids.append(type_.id)
+
+    items_ = Item.query.filter(Item.user_id == user_id).filter(Item.item_type.in_([type_ids])).all()
+
+    if len(items_) > 0:
+        for item in items_:
+            items_arr.append(item.__dict__)
+
+    return items_arr
+
+
+def search_by_custom_field(field_name: str, user_id: int, query: str, search_modifier: str) -> List[Item]:
+    items_arr = []
+    field_ = _find_field_by_name(field_name=search_modifier)
+    if field_ is not None:
+        field_id = field_.id
+        items_ = _search_by_field_value(field_id=field_id, user_id=user_id, query=query)
+
+        if len(items_) > 0:
+            for item in items_:
+                items_arr.append(item.__dict__)
+
+    return items_arr
+
+
+def search_by_name_or_description(query: str, user_id: int) -> List[Item]:
+    items_arr = []
+    # search simple string
+    looking_for = '%{0}%'.format(query)
+
+    items_ = Item.query.filter(or_(
+        Item.name.ilike(looking_for),
+        Item.description.ilike(looking_for)
+    )
+    ).all()
+
+    if len(items_) > 0:
+        for item in items_:
+            items_arr.append(item.__dict__)
+
+    return items_arr
+
+
+def find_item_by_id(item_id: int, user_id: int = None) -> Optional[Item]:
+    """
+    Args:
+        item_id: An integer representing the ID of the item to be found.
+        user_id: (Optional) An integer representing the ID of the user. If provided, the method will only search for items belonging to this user.
+
+    Returns:
+        An optional Item object representing the found item. Returns None if no item is found with the given ID.
+
+    """
+    if item_id is None:
+        return None
+
+    if user_id is None:
+        item_ = Item.query.filter_by(id=item_id).one_or_none()
     else:
-        if request_user_id is None:
-            d = d.filter(Item.user_id == logged_in_user_id)
-        else:
-            if request_user_id != logged_in_user_id:
-                d = d.filter(Item.user_id == request_user_id)
-                d = d.filter(InventoryItem.access_level == __PUBLIC__)
-            else:
-                d = d.filter(Item.user_id == request_user_id)
-
-    if item_id is not None:
-        d = d.filter(Item.id == item_id)
-
-    if item_slug is not None:
-        d = d.filter(Item.slug == item_slug)
-
-    return d.first()
+        item_ = Item.query.filter_by(id=item_id).filter_by(user_id=user_id).one_or_none()
+    return item_
 
 
 def _find_query_parameters(query_, query_params):
@@ -791,30 +829,11 @@ def _find_query_parameters(query_, query_params):
     return query_
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 def regenerate_inventory_token(user_id, inventory_id, new_token):
     with app.app_context():
-        query = db.session.query(UserInventory, Inventory).join(Inventory)\
-                .filter(UserInventory.user_id == user_id)\
-                .filter(UserInventory.inventory_id == inventory_id)
+        query = db.session.query(UserInventory, Inventory).join(Inventory) \
+            .filter(UserInventory.user_id == user_id) \
+            .filter(UserInventory.inventory_id == inventory_id)
 
         results = query.one_or_none()
         if results is not None:
@@ -827,20 +846,12 @@ def regenerate_inventory_token(user_id, inventory_id, new_token):
         return None
 
 
-
-
-
-
-
-
-
 def find_all_my_items(logged_in_user: User):
     with app.app_context():
         query = db.session.query(Item)
         query = query.filter(Item.user_id == logged_in_user.id)
         results_ = query.all()
         return results_
-
 
 
 def _find_my_items(logged_in_user: User, inventory_id, query_params):
@@ -881,7 +892,6 @@ inventory access
 
 def _find_someone_elses_items_loggedin(logged_in_user: User, request_user_id, inventory_id, query_params):
     with app.app_context():
-
         query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
             .join(ItemType, ItemType.id == Item.item_type) \
             .join(Location, Location.id == Item.location_id)
@@ -895,7 +905,7 @@ def _find_someone_elses_items_loggedin(logged_in_user: User, request_user_id, in
             UserInventory.inventory_id == inventory_id))
 
         query = query.filter(Item.user_id == request_user_id)
-        #query = query.filter(InventoryItem.access_level == 2)
+        # query = query.filter(InventoryItem.access_level == 2)
 
         query = _find_query_parameters(query_=query, query_params=query_params)
 
@@ -906,7 +916,6 @@ def _find_someone_elses_items_loggedin(logged_in_user: User, request_user_id, in
 
 def _find_someone_elses_items_notloggedin(request_user_id, inventory_id, query_params):
     with app.app_context():
-
         query = db.session.query(Item, ItemType.name, Location.name, InventoryItem.access_level) \
             .join(ItemType, ItemType.id == Item.item_type) \
             .join(Location, Location.id == Item.location_id)
@@ -916,11 +925,11 @@ def _find_someone_elses_items_notloggedin(request_user_id, inventory_id, query_p
         query = query.filter(InventoryItem.inventory_id == inventory_id)
 
         query = query.filter(and_(
-            #UserInventory.user_id == logged_in_user.id,
+            # UserInventory.user_id == logged_in_user.id,
             UserInventory.inventory_id == inventory_id))
 
         query = query.filter(Item.user_id == request_user_id)
-        #query = query.filter(InventoryItem.access_level == 2)
+        # query = query.filter(InventoryItem.access_level == 2)
 
         query = _find_query_parameters(query_=query, query_params=query_params)
 
@@ -970,10 +979,6 @@ def find_items_new(logged_in_user=None, requested_username=None, inventory_id=No
     else:
         return _find_someone_elses_items_notloggedin(request_user_id=request_user_id, inventory_id=inventory_id,
                                                      query_params=query_params)
-
-
-
-
 
 
 def find_items(inventory_id=None, item_type=None,
@@ -1032,9 +1037,9 @@ def find_items(inventory_id=None, item_type=None,
 
 
 def find_items_orig(inventory_id=None, item_type=None,
-               item_tags=None, item_specific_location=None,
-               item_location=None, logged_in_user=None,
-               request_user=None):
+                    item_tags=None, item_specific_location=None,
+                    item_location=None, logged_in_user=None,
+                    request_user=None):
     if logged_in_user is None:
         logged_in_user_id = None
     else:
@@ -1123,21 +1128,48 @@ def change_item_access_level(item_ids: int, access_level: int, user_id: int):
         db.session.commit()
 
 
-
-
-
 def get_all_user_locations(user: User) -> list[Location]:
+    """Get all locations associated with a user.
+
+    Args:
+        user: The user object.
+
+    Returns:
+        A list of Location objects associated with the user.
+    """
+    if user is None:
+        raise ValueError("User cannot be None")
     user_locations_ = Location.query.filter_by(user_id=user.id).all()
     return user_locations_
 
 
 def get_all_user_tags(user_id: int) -> list[Tag]:
+    """Retrieve all tags associated with a user.
+
+    Args:
+        user_id (int): The ID of the user.
+
+    Returns:
+        list[Tag]: A list of Tag objects associated with the user.
+
+    Raises:
+        ValueError: If the user_id is None.
+    """
+    if user_id is None:
+        raise ValueError("User ID cannot be None")
     with app.app_context():
         res_ = db.session.query(Tag).filter(Tag.user_id == user_id).all()
     return res_
 
 
 def get_all_item_types() -> list:
+    """
+    Retrieves all item types from the database.
+
+    Returns:
+        list: A list of all item types.
+
+    """
     item_types_ = ItemType.query.all()
     return item_types_
 
@@ -1162,10 +1194,16 @@ def add_new_user_itemtype(name: str, user_id: int):
             db.session.commit()
 
 
-
-
-
 def find_type_by_text(type_text: str, user_id: int = None) -> Union[dict, None]:
+    """
+    Args:
+        type_text: A string representing the name of the item type to search for.
+        user_id: An optional integer representing the user ID to filter the search by.
+
+    Returns:
+        Returns a dictionary containing the ID, name, and user ID of the found item type if it exists.
+        If no item type is found, returns None.
+    """
     with app.app_context():
 
         if user_id is None:
@@ -1181,6 +1219,21 @@ def find_type_by_text(type_text: str, user_id: int = None) -> Union[dict, None]:
 
 
 def get_all_itemtypes_for_user(user_id: int, string_list=True) -> list:
+    """
+    Args:
+        user_id: An integer representing the user ID.
+        string_list: A boolean indicating whether to return the item types as a list of strings or as a list of ItemType objects. Default is True.
+
+    Returns:
+        A list containing the item types for the given user. Each item type can be either a string or an ItemType object depending on the value of `string_list`.
+
+    Raises:
+        ValueError: If user_id is None.
+
+    """
+    if user_id is None:
+        raise ValueError("User ID cannot be None")
+
     if string_list:
         stmt = select(ItemType.name) \
             .where(ItemType.user_id == user_id)
@@ -1196,12 +1249,6 @@ def get_all_itemtypes_for_user(user_id: int, string_list=True) -> list:
             ret_data.append(row[0])
 
     return ret_data
-
-
-
-
-
-
 
 
 def activate_user_in_db(user_id: int) -> (bool, str):
@@ -1233,14 +1280,6 @@ def activate_user_in_db(user_id: int) -> (bool, str):
                 return False, f"Could not activate user with id {user_id}"
         else:
             return False, f"No user with id {user_id} found"
-
-
-def find_item(item_id: int, user_id: int = None) -> Item:
-    if user_id is None:
-        item_ = Item.query.filter_by(id=item_id).first()
-    else:
-        item_ = Item.query.filter_by(id=item_id).filter_by(user_id=user_id).first()
-    return item_
 
 
 def find_item_by_slug(item_slug: int, user_id: int = None) -> Item:
@@ -1307,16 +1346,11 @@ def find_location_by_name(location_name: str) -> Location:
     return location_
 
 
-
-
-
 __PRIVATE = 0
 __PUBLIC = 1
 
 
-
-
-def unrelate_items_by_id(item1_id: int, item2_id: int)-> (bool, str):
+def unrelate_items_by_id(item1_id: int, item2_id: int) -> (bool, str):
     """
 
     Unrelate Items By ID
@@ -1354,6 +1388,7 @@ def unrelate_items_by_id(item1_id: int, item2_id: int)-> (bool, str):
                 return False, f"Could not unrelate items with ids {item1_id} and {item2_id}"
         else:
             return False, f"Items with ids {item1_id} and {item2_id} are not related"
+
 
 def relate_items_by_id(item1_id: int, item2_id: int) -> (bool, str):
     """
@@ -1425,7 +1460,7 @@ def set_item_main_image(main_image_url: str, item_id: int, user: User):
         return False
 
     with app.app_context():
-        item_ = find_item(item_id=item_id, user_id=user.id)
+        item_ = find_item_by_id(item_id=item_id, user_id=user.id)
 
         if item_ is None:
             app.logger.error(f'No item with id {item_id} found for user id {user.id}')
@@ -1441,7 +1476,7 @@ def set_item_main_image(main_image_url: str, item_id: int, user: User):
             return False
 
 
-def add_images_to_item(item_id: int, filenames: list[str], user: User)-> (bool, str):
+def add_images_to_item(item_id: int, filenames: list[str], user: User) -> (bool, str):
     """
     Add images to an item.
 
@@ -1459,7 +1494,7 @@ def add_images_to_item(item_id: int, filenames: list[str], user: User)-> (bool, 
         return False, "User cannot be None"
 
     with app.app_context():
-        item_ = find_item(item_id=item_id)
+        item_ = find_item_by_id(item_id=item_id)
         if item_ is None:
             return False, f"No item with id {item_id} found for user {user.username}"
 
@@ -1504,11 +1539,7 @@ def find_image(image_id: int, user: User) -> Optional[Image]:
     return image_
 
 
-
-
-
 def delete_images_from_item(item_id: int, image_ids, user: User) -> (bool, str):
-
     if item_id is None:
         return False, "Item ID cannot be None"
 
@@ -1516,7 +1547,7 @@ def delete_images_from_item(item_id: int, image_ids, user: User) -> (bool, str):
         return False, "No image IDs provided"
 
     with app.app_context():
-        item_ = find_item(item_id=item_id)
+        item_ = find_item_by_id(item_id=item_id)
         if item_ is None:
             return False, f"No item with id {item_id} found for user {user.username}"
 
@@ -1661,15 +1692,35 @@ def update_location_by_id(location_data: dict, user: User) -> (bool, str):
             return False, msg
 
 
-
 def _populate_item_fields(item_result: dict, item_data: dict, user: User):
-    item_result[0].name = item_data['name']
-    item_result[0].slug = f"{str(item_result[0].id)}-{slugify(item_data['name'])}"
-    item_result[0].description = item_data['description']
-    item_result[0].quantity = item_data['item_quantity']
-    item_result[0].location_id = item_data['item_location']
-    item_result[0].specific_location = item_data['item_specific_location']
-    item_result[0].tags = _parse_tags(item_data['item_tags'], user)
+    """
+    Args:
+        item_result: A dictionary containing the result of a query for item data.
+        item_data: A dictionary containing the updated item data.
+        user: An instance of the User class representing the user making the changes.
+
+    Raises:
+        ValueError: If item_result list is empty.
+
+    Description:
+        This method is used to populate the fields of an item object with the updated data provided in the item_data dictionary. It takes the item_result, item_data, and user as parameters
+    * and updates the item object accordingly.
+
+    """
+    if not item_result:
+        raise ValueError("item_result list is empty")
+
+    item = item_result[0]
+
+    item.name = item_data.get('name', item.name)
+    if 'name' in item_data:
+        item.slug = f"{str(item.id)}-{slugify(item_data['name'])}"
+    item.description = item_data.get('description', item.description)
+    item.quantity = item_data.get('item_quantity', item.quantity)
+    item.location_id = item_data.get('item_location', item.location_id)
+    item.specific_location = item_data.get('item_specific_location', item.specific_location)
+    if 'item_tags' in item_data:
+        item.tags = _parse_tags(item_data['item_tags'], user)
 
 
 def _parse_tags(item_tags: List[str], user: User) -> List[Tag]:
@@ -1700,15 +1751,33 @@ def _parse_tags(item_tags: List[str], user: User) -> List[Tag]:
     return tags_objects
 
 
-def _get_selected_item(user: User, item_id: int):
+def _get_selected_item(user: User, item_id: int) -> Optional[Item]:
+    """
+    Args:
+        user: A User object representing the user.
+        item_id: An integer representing the ID of the item.
+
+    Returns:
+        An optional Item object representing the selected item. Returns None if the user is None or if an error occurs during the database query.
+
+    """
+    if user is None:
+        return None
+
     select_statement = select(Item) \
-            .join(User) \
-            .where(User.id == user.id) \
-            .where(Item.id == item_id)
-    return db.session.execute(select_statement).first()
+        .join(User) \
+        .where(User.id == user.id) \
+        .where(Item.id == item_id)
+
+    try:
+        result = db.session.execute(select_statement).first()
+        return result
+    except SQLAlchemyError:
+        db.session.rollback()
+        return None
 
 
-def _get_itemtype_id(item_data: dict, user: User):
+def _get_itemtype_id(item_data: dict, user: User) -> Optional[int]:
     """
 
     Method: _get_itemtype_id
@@ -1750,6 +1819,23 @@ def _get_itemtype_id(item_data: dict, user: User):
 
 
 def update_item_by_id(item_data: dict, item_id: int, user: User) -> (bool, str):
+    """
+    Updates an item in the database with the given item data, item ID, and user.
+
+    Args:
+        item_data (dict): The data of the item to update.
+        item_id (int): The ID of the item to update.
+        user (User): The user performing the update.
+
+    Returns:
+        tuple: A tuple containing a boolean value indicating the success of the update
+        and a string message.
+
+        The boolean value is True if the update was successful, and False otherwise.
+        The string message provides additional information about the update result.
+        If the update was successful, the message contains the updated item's slug.
+        If the update failed, the message contains an error message.
+    """
     if item_id is None:
         return False, "Item ID cannot be None"
 
@@ -1759,14 +1845,24 @@ def update_item_by_id(item_data: dict, item_id: int, user: User) -> (bool, str):
     with app.app_context():
         db.session.expire_on_commit = False
 
-        item_result = _get_selected_item(user, item_id)
-        _populate_item_fields(item_result, item_data, user)
+        item_result = _get_selected_item(user=user, item_id=item_id)
+        if item_result is None:
+            return False, f"No item with id {item_id} found for user {user.username}"
 
-        item_result[0].item_type = _get_itemtype_id(item_data, user)
+        _populate_item_fields(item_result=item_result, item_data=item_data, user=user)
 
-        db.session.commit()
+        item_id = _get_itemtype_id(item_data=item_data, user=user)
+        if item_id is None:
+            return False, "Item type came back as None"
 
-        return item_result[0].slug
+        item_result[0].item_type = item_id
+
+        try:
+            db.session.commit()
+            return True, item_result[0].slug
+        except SQLAlchemyError:
+            db.session.rollback()
+            return False, "Error updating item"
 
 
 def delete_item_images_by_item_id(item_id: int, user: User):
@@ -1782,7 +1878,7 @@ def delete_item_images_by_item_id(item_id: int, user: User):
 
     """
     with app.app_context():
-        item_ = find_item(item_id=item_id, user_id=user.id)
+        item_ = find_item_by_id(item_id=item_id, user_id=user.id)
         if item_ is not None:
             for image_ in item_.images:
                 try:
@@ -1796,7 +1892,6 @@ def delete_item_images_by_item_id(item_id: int, user: User):
 
 
 def delete_item_images(item_: Item) -> (bool, str):
-
     if item_ is None:
         return False, "Item ID cannot be None"
 
@@ -2012,6 +2107,13 @@ def move_items(item_ids: list, user: User, inventory_id: int) -> dict:
         move - change inventory id in ItemInventory
         copy - duplicate item, add new line in ItemInventory
     """
+    if not item_ids or user is None:
+        msg = "Item IDs cannot be None"
+        app.logger.error(msg)
+        return {"status": "error", "message": msg, "count": 0}
+
+    if len(item_ids) == 0:
+        return {"status": "error", "message": "List of item IDs is empty", "count": 0}
 
     with app.app_context():
 
@@ -2038,6 +2140,14 @@ def move_items(item_ids: list, user: User, inventory_id: int) -> dict:
 
 
 def link_items(item_ids: list, user: User, inventory_id: int):
+    if not item_ids or user is None:
+        msg = "Item IDs cannot be None"
+        app.logger.error(msg)
+        return {"status": "error", "message": msg, "count": 0}
+
+    if len(item_ids) == 0:
+        return {"status": "error", "message": "List of item IDs is empty", "count": 0}
+
     with app.app_context():
         try:
             if inventory_id == -1:
@@ -2064,29 +2174,6 @@ def link_items(item_ids: list, user: User, inventory_id: int):
 
         except Exception as e:
             return {"status": "error", "count": 0}
-
-
-def delete_items_from_inventory(item_ids: list, inventory_id: int, user: User):
-    if item_ids is None or len(item_ids) == 0:
-        return 0
-
-    with app.app_context():
-        stmt = select(UserInventory, Inventory).join(Inventory).join(User).where(User.id == user.id).where(
-            Inventory.id == inventory_id)
-        user_inventory_, inventory_ = db.session.execute(stmt).first()
-
-        number_items_deleted = 0
-
-        for item_id in item_ids:
-            item_ = find_item(item_id=item_id, user_id=user.id)
-            if item_ is not None:
-                inventory_.items.remove(item_)
-                db.session.delete(item_)
-                number_items_deleted += 1
-
-        db.session.commit()
-
-    return number_items_deleted
 
 
 def update_item_inventory_by_invid(item_data: dict, inventory_id: int, user: User):
@@ -2120,31 +2207,6 @@ def update_item_inventory_by_invid(item_data: dict, inventory_id: int, user: Use
             r[2].tags.append(instance)
 
         db.session.commit()
-
-
-def get_or_create_item(name_, description_, tags_):
-    with app.app_context():
-        instance = db.session.query(Item).filter_by(name=name_, description=description_).one_or_none()
-        if not instance:
-            instance = Item(name=name_, description=description_)
-            db.session.add(instance)
-            db.session.commit()
-
-            for tag in tags_:
-                t = get_or_create(Tag, tag=tag)[0]
-                # db.session.add(t)
-                instance.tags.append(t)
-            try:
-                db.session.add(instance)
-                db.session.commit()
-
-            except Exception as e:
-                print(e)
-                db.session.rollback()
-                instance = db.session.query(Item).filter_by(name=name_, description=description_).one()
-                return instance, False
-            else:
-                return instance, True
 
 
 def get_or_create(model, defaults=None, **kwargs):
@@ -2212,6 +2274,7 @@ def get_user_default_item_type(user_id: int):
         user_default_item_type = ItemType.query.filter_by(user_id=user_id, name="none").one_or_none()
         return user_default_item_type
 
+
 def commit():
     db.session.commit()
 
@@ -2219,17 +2282,45 @@ def commit():
 def add_item_to_inventory(item_id=None, item_name=None, item_desc=None, item_type=None, item_tags=None,
                           inventory_id=None, user_id=None, item_quantity=None,
                           item_location_id=None, item_specific_location="", custom_fields=None):
+    """
+    Args:
+        item_id (int): The ID of the item to add to the inventory. Defaults to None.
+        item_name (str): The name of the item. Cannot be None.
+        item_desc (str): The description of the item. Defaults to None.
+        item_type (int or str): The type of the item. Defaults to None.
+        item_tags (list): List of tags associated with the item. Defaults to None.
+        inventory_id (int): The ID of the inventory to add the item to. Defaults to None.
+        user_id (int): The ID of the user. Defaults to None.
+        item_quantity (int): The quantity of the item. Defaults to None.
+        item_location_id (int): The ID of the location of the item. Defaults to None.
+        item_specific_location (str): The specific location of the item. Defaults to an empty string.
+        custom_fields (dict): Custom fields for the item. Defaults to None.
+
+    Returns:
+        dict: A dictionary containing the status of the operation and the details of the item added to the inventory.
+            - status (str): The status of the operation ("success" or "error").
+            - item (dict): The details of the item added to the inventory.
+                - id (int): The ID of the item.
+                - name (str): The name of the item.
+                - description (str): The description of the item.
+                - user_id (int): The ID of the user who added the item.
+                - tags (list): List of tags associated with the item.
+                    - tag (str): The tag associated with the item.
+    """
+    if item_name is None:
+        return {"status": "success", "message": "Item name canot be None"}
+
+    if custom_fields is None:
+        custom_fields = {}
+
+    if item_type is None:
+        item_type = "none"
+
     app_context = app.app_context()
 
     with app_context:
 
         try:
-
-            if custom_fields is None:
-                custom_fields = {}
-
-            if item_type is None:
-                item_type = "none"
 
             if item_id is None:
                 # create the new item
@@ -2242,7 +2333,7 @@ def add_item_to_inventory(item_id=None, item_name=None, item_desc=None, item_typ
                 new_item.slug = item_slug
 
             else:
-                new_item = find_item(user_id=user_id, item_id=item_id)
+                new_item = find_item_by_id(user_id=user_id, item_id=item_id)
 
             if item_type is None:
                 item_type = "None"
@@ -2430,8 +2521,6 @@ def add_user_to_inventory_from_token(inventory_id: int, user_to_add: User, added
             return True
 
         return False
-
-
 
 
 def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_username: str,
@@ -2633,7 +2722,7 @@ def edit_inventory_data(user_id: int, inventory_id: int, name: str,
         results_[1].name = name
         results_[1].description = description
         results_[1].access_level = access_level
-        #results_[0].access_level = access_level
+        # results_[0].access_level = access_level
         db.session.commit()
 
 
@@ -2683,7 +2772,7 @@ def delete_location(user_id: int, location_ids) -> dict:
                 try:
                     # find any items with this location and chnge to None
                     if user_default_location_ is not None:
-                        items_ = Item.query.filter_by(location_id=location_id)\
+                        items_ = Item.query.filter_by(location_id=location_id) \
                             .filter_by(user_id=user_id).all()
                         for row in items_:
                             row.location_id = user_default_location_.id
@@ -2797,7 +2886,7 @@ def get_user_template_by_id(template_id: int, user_id: int):
     *. If the template is found, it is returned; otherwise, None is returned. If an error occurs during database access, an error message is logged.
     """
     session = db.session
-    stmt = select(FieldTemplate).join(User).where(FieldTemplate.id == template_id)\
+    stmt = select(FieldTemplate).join(User).where(FieldTemplate.id == template_id) \
         .where(FieldTemplate.user_id == user_id)
     r = None
     try:
@@ -2811,7 +2900,7 @@ def get_template_fields_by_id(template_id: int):
     session = db.session
     stmt = select(TemplateField, Field) \
         .join(FieldTemplate) \
-        .join(Field)\
+        .join(Field) \
         .where(FieldTemplate.id == template_id)
     r = session.execute(stmt).all()
     return r
@@ -2826,8 +2915,8 @@ def set_template_fields_orders(field_data, template_id: int, user_id: int):
         for field_order, field_dict in field_data.items():
             field_id = field_dict[1]
 
-            stmt = select(TemplateField).where(FieldTemplate.id == template_id)\
-                .join(FieldTemplate)\
+            stmt = select(TemplateField).where(FieldTemplate.id == template_id) \
+                .join(FieldTemplate) \
                 .where(TemplateField.field_id == field_id)
             r = session.execute(stmt).one_or_none()
 
@@ -2840,7 +2929,7 @@ def set_template_fields_orders(field_data, template_id: int, user_id: int):
         return
 
 
-def save_inventory_fieldtemplate(inventory_id: int , inventory_template: int, user_id: int):
+def save_inventory_fieldtemplate(inventory_id: int, inventory_template: int, user_id: int):
     """
 
     Save Inventory Field Template
@@ -3019,6 +3108,16 @@ def save_template_fields(template_name, fields, user):
 
 
 def update_item_fields(data, item_id: int):
+    """
+    Update the fields of an item in the database.
+
+    Args:
+        data (dict): A dictionary containing the field names and their updated values.
+        item_id (int): The ID of the item to update.
+
+    Raises:
+        Exception: If there is an error updating the item fields in the database.
+    """
     with app.app_context():
         stmt2 = select(Field.id, ItemField) \
             .join(Item) \
@@ -3038,7 +3137,7 @@ def update_item_fields(data, item_id: int):
             raise e
 
 
-def add_new_item_field(item: Item, custom_fields: dict, user_id: int, app_context=None):
+def add_new_item_field(item: Item, custom_fields: dict, user_id: int, app_context=None) -> tuple:
     if custom_fields is None:
         custom_fields = {}
 
@@ -3066,14 +3165,26 @@ def add_new_item_field(item: Item, custom_fields: dict, user_id: int, app_contex
             field_id = field_.id
             field_.items.append(item)
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                app.logger.error(f"Failed to add custom field to item: {str(e)}")
+                return False, f"Failed to add custom field to item: {str(e)}"
 
             item_field_ = ItemField.query.filter_by(field_id=field_id).filter_by(item_id=item.id).one_or_none()
             item_field_.value = field_value
             item_field_.show = True
-            item_field_.user_id=user_id
+            item_field_.user_id = user_id
 
-            db.session.commit()
+            try:
+                db.session.commit()
+            except SQLAlchemyError as e:
+                db.session.rollback()
+                app.logger.error(f"Failed to add custom field to item: {str(e)}")
+                return False, f"Failed to add custom field to item: {str(e)}"
+
+    return True, "Item fields added successfully"
 
 
 def set_field_status(item_id, field_ids, is_visible=True):

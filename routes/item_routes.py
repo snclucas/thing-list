@@ -138,72 +138,87 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
                            image_dir=app.config['UPLOAD_FOLDER'], item_access_level=item_access_level)
 
 
-@item_routes.route('/item/edit/<item_id>', methods=['POST'])
+@item_routes.route('/item/edit/<string:item_id>', methods=['POST'])
 @login_required
 def edit_item(item_id):
-    if request.method == 'POST':
-        form_data = dict(request.form)
-        del form_data["csrf_token"]
-        item_id = form_data["item_id"]
+
+    form_data = dict(request.form)
+    del form_data["csrf_token"]
+
+    item_id = request.form.get("item_id")
+    if item_id is not None:
         del form_data["item_id"]
 
-        item_slug = form_data["item_slug"]
-        del form_data["item_slug"]
+    item_slug = form_data["item_slug"]
+    del form_data["item_slug"]
 
-        inventory_slug = form_data["inventory_slug"]
-        del form_data["inventory_slug"]
+    inventory_slug = form_data["inventory_slug"]
+    del form_data["inventory_slug"]
 
-        username = form_data["username"]
-        del form_data["username"]
+    username = form_data["username"]
+    del form_data["username"]
 
-        item_name = request.form.get("item_name")
-        item_description = request.form.get("item_description")
-        item_quantity = request.form.get("item_quantity")
+    item_name = request.form.get("item_name")
+    item_description = request.form.get("item_description")
+    item_quantity = request.form.get("item_quantity")
 
-        item_name = bleach.clean(item_name)
-        item_description = bleach.clean(item_description)
-        item_quantity = bleach.clean(item_quantity)
+    item_name = bleach.clean(item_name)
+    item_description = bleach.clean(item_description)
+    item_quantity = bleach.clean(item_quantity)
 
-        del form_data["item_name"]
-        del form_data["item_description"]
-        del form_data["item_quantity"]
+    del form_data["item_name"]
+    del form_data["item_description"]
+    del form_data["item_quantity"]
 
-        item_tags = request.form.get("item_tags")
-        item_tags = bleach.clean(item_tags)
-        if item_tags != '':
-            item_tags = item_tags.strip().split(",")
-        else:
-            item_tags = []
-        del form_data["item_tags"]
+    item_tags = request.form.get("item_tags")
+    item_tags = bleach.clean(item_tags)
+    if item_tags != '':
+        item_tags = item_tags.strip().split(",")
+    else:
+        item_tags = []
+    del form_data["item_tags"]
 
-        item_type = request.form.get("item_type")
-        item_location = request.form.get("item_location")
-        item_specific_location = request.form.get("item_specific_location")
 
+
+
+
+    item_type = request.form.get("item_type")
+    if item_type is not None:
         del form_data["item_type"]
+
+    item_location = request.form.get("item_location")
+    if item_location is not None:
         del form_data["item_location"]
+
+    item_specific_location = request.form.get("item_specific_location")
+    if item_specific_location is not None:
         del form_data["item_specific_location"]
 
-        form_data = {int(k): v for k, v in form_data.items()}
+    form_data = {int(k): v for k, v in form_data.items()}
 
-        update_item_fields(data=form_data, item_id=int(item_id))
+    update_item_fields(data=form_data, item_id=int(item_id))
 
-        new_item_data = {
-            "id": item_id,
-            "name": item_name,
-            "description": item_description,
-            "item_type": item_type,
-            "item_quantity": item_quantity,
-            "item_location": item_location,
-            "item_specific_location": item_specific_location,
-            "item_tags": item_tags
-        }
+    new_item_data = {
+        "id": item_id,
+        "name": item_name,
+        "description": item_description,
+        "item_type": item_type,
+        "item_quantity": item_quantity,
+        "item_location": item_location,
+        "item_specific_location": item_specific_location,
+        "item_tags": item_tags
+    }
 
-        new_item_slug = update_item_by_id(item_data=new_item_data, item_id=int(item_id), user=current_user)
-        return redirect(url_for('item.item_with_username_and_inventory',
-                                username=username,
-                                inventory_slug=inventory_slug,
-                                item_slug=new_item_slug))
+    status, new_item_slug = update_item_by_id(item_data=new_item_data,
+                                              item_id=int(item_id), user=current_user)
+
+    if not status:
+        flash("Error updating item")
+
+    return redirect(url_for('item.item_with_username_and_inventory',
+                            username=username,
+                            inventory_slug=inventory_slug,
+                            item_slug=new_item_slug))
 
 
 @item_routes.route('/item/fields', methods=['POST'])
