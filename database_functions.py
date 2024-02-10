@@ -2978,6 +2978,14 @@ def save_inventory_fieldtemplate(inventory_id: int, inventory_template: int, use
 
 
 def get_user_locations(user_id: int) -> List[dict]:
+    """
+    Args:
+        user_id (int): The ID of the user for whom to retrieve locations.
+
+    Returns:
+        List[dict]: A list of dictionaries containing location information for the specified user.
+
+    """
     session = db.session
     stmt = select(Location).where(Location.user_id == user_id)
     r = session.execute(stmt).all()
@@ -3001,7 +3009,16 @@ def get_number_user_locations(user_id: int):
     return r[0][0]
 
 
-def get_user_location_by_id(location_id: str, user_id: int):
+def get_user_location_by_id(location_id: str, user_id: int) -> Optional[dict]:
+    """
+    Args:
+        location_id (str): The ID of the location.
+        user_id (int): The ID of the user.
+
+    Returns:
+        dict or None: A dictionary representing the user's location if found, None otherwise.
+
+    """
     session = db.session
     stmt = select(Location).join(User).where(User.id == user_id).where(Location.id == location_id)
     r = session.execute(stmt).one_or_none()
@@ -3012,10 +3029,6 @@ def get_user_location_by_id(location_id: str, user_id: int):
 
 def get_item_fields(item_id: int):
     with app.app_context():
-        # stmt = select(Field.field, ItemField).join(Item).join(Field, ItemField.field_id == Field.id) \
-        #     .filter(ItemField.item_id == item_id) \
-        #     .filter(ItemField.show == True)
-        # ddd = db.session.execute(stmt).all()
 
         stmt = select(Field, ItemField, TemplateField) \
             .join(Field, ItemField.field_id == Field.id) \
@@ -3036,10 +3049,19 @@ def get_all_item_fields(item_id: int):
 
 
 def get_all_fields():
+    """
+    Retrieves all fields from the database.
+
+    Returns:
+        A list of tuples, where each tuple contains the field name and the corresponding Field object.
+
+    Example Usage:
+        fields = get_all_fields()
+    """
     with app.app_context():
         stmt = select(Field.field, Field)
-        ddd = db.session.execute(stmt).all()
-        return ddd
+        result = db.session.execute(stmt).all()
+        return result
 
 
 def set_inventory_default_fields(inventory_id, user, default_fields):
@@ -3058,6 +3080,13 @@ def set_inventory_default_fields(inventory_id, user, default_fields):
 
 
 def save_template_fields(template_name, fields, user):
+    """
+    Args:
+        template_name (str): The name of the template to be saved.
+        fields (list): A list of field IDs to be associated with the template.
+        user (User): The user who is saving the template.
+
+    """
     with app.app_context():
 
         field_template_ = FieldTemplate.query.filter_by(name=template_name).filter_by(user_id=user.id).one_or_none()
