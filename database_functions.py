@@ -1109,7 +1109,16 @@ def find_items_orig(inventory_id=None, item_type=None,
     return sd
 
 
-def change_item_access_level(item_ids: int, access_level: int, user_id: int):
+def change_item_access_level(item_ids: int, access_level: int, user_id: int) -> (bool, str):
+    """
+    Change the access level for a given item or items.
+
+    Args:
+        item_ids (int or list[int]): The ID or list of IDs of the item(s) to change the access level for.
+        access_level (int): The new access level to assign to the item(s).
+        user_id (int): The ID of the user performing the change.
+
+    """
     if not isinstance(item_ids, list):
         item_ids = [item_ids]
 
@@ -1125,7 +1134,13 @@ def change_item_access_level(item_ids: int, access_level: int, user_id: int):
         for item_, inventory_item_ in results_:
             inventory_item_.access_level = access_level
 
-        db.session.commit()
+        try:
+            db.session.commit()
+            return True, "Item access level changed"
+        except Exception as e:
+            app.logger.error(f"Error changing item access level: {str(e)}")
+            db.session.rollback()
+            return False, f"Error changing item access level: {str(e)}"
 
 
 def get_all_user_locations(user: User) -> list[Location]:
@@ -1283,6 +1298,15 @@ def activate_user_in_db(user_id: int) -> (bool, str):
 
 
 def find_item_by_slug(item_slug: int, user_id: int = None) -> Item:
+    """
+    Args:
+        item_slug (int): The unique identifier of the item.
+        user_id (int, optional): The user identifier. If provided, filters the items by the user's ID as well.
+
+    Returns:
+        Item: The item matching the provided slug and optional user ID.
+
+    """
     if user_id is None:
         item_ = Item.query.filter_by(slug=item_slug).first()
     else:
@@ -1342,6 +1366,16 @@ def find_template(template_id: int) -> Optional[Location]:
 
 
 def find_location_by_name(location_name: str) -> Location:
+    """
+    Finds a location by its name.
+
+    Args:
+        location_name: The name of the location to find.
+
+    Returns:
+        The Location object that matches the given name.
+
+    """
     location_ = Location.query.filter_by(name=location_name).first()
     return location_
 
@@ -1426,18 +1460,6 @@ def relate_items_by_id(item1_id: int, item2_id: int) -> (bool, str):
                 return False, f"Could not relate items with ids {item1_id} and {item2_id}"
         else:
             return False, f"Items with ids {item1_id} and {item2_id} are already related"
-
-
-def add_item_inventory(item, inventory):
-    with app.app_context():
-        stmt = select(Item).where(Item.id == item)
-        item_ = db.session.execute(stmt).first()
-
-        stmt = select(Inventory).where(Inventory.id == inventory)
-        inventory_ = db.session.execute(stmt).first()
-
-        inventory_[0].items.append(item_[0])
-        db.session.commit()
 
 
 def set_item_main_image(main_image_url: str, item_id: int, user: User):
