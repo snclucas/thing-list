@@ -2470,7 +2470,10 @@ def get_or_add_new_location(location_name: str, location_description: str, to_us
         }
 
 
-def add_new_template(name: str, fields: str, to_user: User) -> Location:
+def add_new_template(name: str, fields: str, to_user: User) -> (FieldTemplate, str):
+    if name is None or fields is None or to_user is None:
+        return None, "Invalid parameters"
+
     with app.app_context():
         try:
             template_ = FieldTemplate(name=name, fields=fields, user_id=to_user.id)
@@ -2478,9 +2481,9 @@ def add_new_template(name: str, fields: str, to_user: User) -> Location:
             db.session.commit()
             db.session.flush()
             db.session.expire_all()
-            return template_
+            return template_, "Success"
         except Exception as e:
-            print(e)
+            return None, str(e)
 
 
 def get_users_for_inventory(inventory_id: int, current_user_id: int):
