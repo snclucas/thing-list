@@ -62,11 +62,12 @@ def reset_password_form():
         if potential_user:
             user_email = potential_user.email
             confirmation_token = uuid.uuid4().hex
+            confirmation_token = flask_bcrypt.generate_password_hash(confirmation_token)
             potential_user.token = confirmation_token
             try:
                 db.session.commit()
             except SQLAlchemyError as err:
-                current_app.logger.error(f"Error updating user token: {str(err)}", exc_info=True)
+                current_app.logger.error(msg=f"Error updating user token: {str(err)}", exc_info=True)
                 flash("Unable to reset password")
 
             text_body = render_template(template_name_or_list='email/user_registration.txt', user=username,
@@ -109,14 +110,15 @@ def reset_password(token):
         # generate password hash
         password_hash = flask_bcrypt.generate_password_hash(supplied_password)
 
-        user_ = find_user_by_token(token=token)
+        supplied_token = flask_bcrypt.generate_password_hash(token)
+        user_ = find_user_by_token(token=supplied_token)
 
         if user_ is not None and not user_.activated and user_.token == token:
             user_.password = password_hash
             try:
                 db.session.commit()
             except SQLAlchemyError as err:
-                current_app.logger.error(f"Error updating user password: {str(err)}", exc_info=True)
+                current_app.logger.error(msg=f"Error updating user password: {str(err)}", exc_info=True)
                 flash("Unable to reset password")
 
             flash("Password reset")
@@ -140,7 +142,7 @@ def sanitize(input_string):
     return input_string.encode('unicode_escape').decode()
 
 
-@auth_flask_login.route("/login", methods=["GET", "POST"])
+@auth_flask_login.route(rule="/login", methods=["GET", "POST"])
 def login():
     """
     Method: login
@@ -178,7 +180,7 @@ def login():
             flash("Unable to log you in")
 
     allow_registrations = (int(app.config['ALLOW_REGISTRATIONS']) == 1)
-    return render_template("auth/login.html", allow_registrations=allow_registrations)
+    return render_template(template_name_or_list="auth/login.html", allow_registrations=allow_registrations)
 
 
 @auth_flask_login.route(rule="/activate-user/<token>", methods=["GET"])
@@ -191,7 +193,8 @@ def activate_user(token):
     :return: The rendered template after user activation.
     :rtype: str
     """
-    user_ = find_user_by_token(token=token)
+    supplied_token = flask_bcrypt.generate_password_hash(token)
+    user_ = find_user_by_token(token=supplied_token)
     template = "auth/login.html"
 
     if user_ is not None and not user_.activated and user_.token == token:
@@ -204,7 +207,7 @@ def activate_user(token):
     return render_template(template)
 
 
-@auth_flask_login.route("/passwd", methods=["GET", "POST"])
+@auth_flask_login.route(rule="/passwd", methods=["GET", "POST"])
 @login_required
 def change_password():
     current_app.logger.info(request.form)
@@ -217,10 +220,11 @@ def change_password():
             user_ = find_user(username_or_email=username)
             if user_ is not None:
                 confirmation_token = uuid.uuid4().hex
+                confirmation_token = flask_bcrypt.generate_password_hash(confirmation_token)
 
-                text_body = render_template('email/reset_password.txt', user=username, token=confirmation_token)
-                html_body = render_template('email/reset_password.html', user=username, token=confirmation_token)
-                send_email("Password change", sender=app.config['ADMINS'][0], recipients=[user_.email],
+                text_body = render_template(template_name_or_list='email/reset_password.txt', user=username, token=confirmation_token)
+                html_body = render_template(template_name_or_list='email/reset_password.html', user=username, token=confirmation_token)
+                send_email(subject="Password change", sender=app.config['ADMINS'][0], recipients=[user_.email],
                            text_body=text_body, html_body=html_body)
 
         except Exception as err:
@@ -260,13 +264,13 @@ def password_check(password):
     # calculating the length
     length_error = len(password) < 8
     # searching for digits
-    digit_error = re.search(r"\d", password) is None
+    digit_error = re.search(pattern=r"\d", string=password) is None
     # searching for uppercase
-    uppercase_error = re.search(r"[A-Z]", password) is None
+    uppercase_error = re.search(pattern=r"[A-Z]", string=password) is None
     # searching for lowercase
-    lowercase_error = re.search(r"[a-z]", password) is None
+    lowercase_error = re.search(pattern=r"[a-z]", string=password) is None
     # searching for symbols
-    symbol_error = re.search(r"\W", password) is None
+    symbol_error = re.search(pattern=r"\W", string=password) is None
     # overall result
     password_ok = not (length_error or digit_error or uppercase_error or lowercase_error or symbol_error)
 
@@ -280,7 +284,7 @@ def password_check(password):
     }
 
 
-@auth_flask_login.route("/register", methods=["GET", "POST"])
+@auth_flask_login.route(rule="/register", methods=["GET", "POST"])
 def register():
     """
     Registers a new user in the application.
@@ -329,7 +333,7 @@ def register():
             return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
         # Simple email validation, you might want to use a more robust method in production
-        if not re.match(r"[^@]+@[^@]+\.[^@]+", email):
+        if not re.match(pattern=r"[^@]+@[^@]+\.[^@]+", string=email):
             flash("Invalid email address.")
             return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
@@ -347,6 +351,7 @@ def register():
         password_hash = flask_bcrypt.generate_password_hash(supplied_password)
 
         confirmation_token = uuid.uuid4().hex
+        confirmation_token = flask_bcrypt.generate_password_hash(confirmation_token)
 
         # prepare User
         new_user = User(username=username, email=email, password=password_hash, token=confirmation_token)
@@ -363,14 +368,14 @@ def register():
             else:
                 flash("Unable to register you at this time")
         except Exception as err:
-            current_app.logger.error(f"Exception occurred: {str(err)}", exc_info=True)
+            current_app.logger.error(msg=f"Exception occurred: {str(err)}", exc_info=True)
             flash("Unable to register with that email address")
             current_app.logger.error("Error on registration - possible duplicate emails")
 
     return render_template(template_name_or_list="auth/register.html", allow_registrations=allow_registrations)
 
 
-@auth_flask_login.route("/reauth", methods=["GET", "POST"])
+@auth_flask_login.route(rule="/reauth", methods=["GET", "POST"])
 @login_required
 def reauth():
     if request.method == "POST":
