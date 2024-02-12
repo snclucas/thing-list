@@ -18,6 +18,38 @@ auth_flask_login = Blueprint('auth_flask_login', __name__, template_folder='temp
 
 @auth_flask_login.route(rule='/forgot-password', methods=['GET', 'POST'])
 def reset_password_form():
+    """
+    Reset Password Form
+
+    Handles the logic for resetting user passwords.
+
+    Returns:
+        template: 'auth/reset_password.html' - If the request method is 'GET'
+        template: 'auth/reset_password.html' with flash message - If the username is empty
+        template: 'auth/reset_password.html' with flash message - If unable to update the user token
+        template: 'auth/login.html' with flash message - If the reset password email is sent successfully
+
+    Method:
+        GET:
+            Renders the 'auth/reset_password.html' template.
+
+        POST:
+            Retrieves the username from the request form data.
+            If the username is empty, renders the 'auth/reset_password.html' template with a flash message.
+
+            Otherwise, finds the user with the given username or email.
+            If the user exists, generates a confirmation token and updates the user's token in the database.
+            If an error occurs during the database update, flashes a message and renders the 'auth/reset_password.html' template.
+
+            Constructs the text and HTML bodies of the email using the 'email/user_registration.txt' and 'email/user_registration.html' templates and the username and confirmation token
+    *.
+
+            Sends the email with the subject "Password reset" to the user's email address.
+
+            Flashes a message indicating that an email will be sent if the account exists.
+
+            Renders the 'auth/login.html' template.
+    """
     if request.method == "GET":
         return render_template('auth/reset_password.html')
     else:
@@ -45,12 +77,30 @@ def reset_password_form():
                        text_body=text_body, html_body=html_body)
 
         flash("If this account exists, an email will be sent with instructions to reset the password")
-        return render_template(template_name_or_list="auth/reset_password.html")
+        return render_template(template_name_or_list="auth/login.html")
 
 
 @auth_flask_login.route(rule='/reset-password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
+    """
+    Args:
+        token: The token generated for password reset.
 
+    Returns:
+        None
+
+    This method handles the password reset functionality. It expects a token parameter to be passed in the URL. If the request method is GET, it renders the 'new_password.html' template
+    *. If the request method is POST, it retrieves the supplied password from the form, sanitizes it, and generates a password hash using flask_bcrypt.
+
+    It then searches for a user with the provided token using the 'find_user_by_token' method. If a user is found and the user is not activated and the user's token matches the provided
+    * token, it updates the user's password with the generated password hash and commits the changes to the database. If there is an error during the update, an error message is logged and
+    * a flash message is displayed indicating that the password reset was unsuccessful.
+
+    If no user is found or if the user is already activated or the user's token does not match the provided token, a flash message is displayed indicating that the password reset was unsuccessful
+    *.
+
+    Finally, it renders the 'login.html' template.
+    """
     if request.method == "GET":
         return render_template('auth/new_password.html')
     else:

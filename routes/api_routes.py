@@ -2,8 +2,8 @@
 from flask import Blueprint
 from flask_login import login_required, current_user
 
-from database_functions import get_all_itemtypes_for_user, get_all_user_locations, get_all_user_tags, find_items, \
-    get_all_item_types, find_items_new, find_all_my_items
+from database_functions import get_all_itemtypes_for_user, get_all_user_locations, get_all_user_tags, \
+    get_all_item_types, find_all_my_items
 
 api_routes = Blueprint('api', __name__)
 
@@ -19,14 +19,14 @@ def my_utility_processor():
     return dict(item_tag_to_string=item_tag_to_string)
 
 
-@api_routes.route('/api/item-types', methods=['GET'])
+@api_routes.route(rule='/api/item-types', methods=['GET'])
 @login_required
 def user_item_types():
     user_itemtypes_ = get_all_itemtypes_for_user(user_id=current_user.id)
     return user_itemtypes_
 
 
-@api_routes.route('/api/user-items', methods=['GET', 'POST'])
+@api_routes.route(rule='/api/user-items', methods=['GET', 'POST'])
 @login_required
 def user_items():
     user_items_ = find_all_my_items(logged_in_user=current_user)
@@ -37,7 +37,7 @@ def user_items():
     return ret_items
 
 
-@api_routes.route('/api/locations', methods=['GET'])
+@api_routes.route(rule='/api/locations', methods=['GET'])
 @login_required
 def locations():
     locations_ = get_all_user_locations(user=current_user)

@@ -17,10 +17,11 @@ types = Blueprint('types', __name__)
 @login_required
 def item_types():
     user_itemtypes = get_all_itemtypes_for_user(user_id=current_user.id, string_list=False)
-    return render_template('types/item_types.html', username=current_user.username, user_item_types=user_itemtypes)
+    return render_template(template_name_or_list='types/item_types.html', username=current_user.username,
+                           user_item_types=user_itemtypes)
 
 
-@types.route('/item-type/delete', methods=['POST'])
+@types.route(rule='/item-type/delete', methods=['POST'])
 @login_required
 def delete_item_type():
     if request.method == 'POST':
@@ -30,7 +31,7 @@ def delete_item_type():
         return redirect(url_for('types.item_types'))
 
 
-@types.route('/item_type/add', methods=['POST'])
+@types.route(rule='/item_type/add', methods=['POST'])
 @login_required
 def add_item_type():
 
@@ -45,7 +46,7 @@ def add_item_type():
         return redirect(url_for('types.item_types'))
 
 
-@types.route('/item-types/save', methods=['POST'])
+@types.route(rule='/item-types/save', methods=['POST'])
 @login_required
 def itemtypes_save():
     username = current_user.username
@@ -70,7 +71,7 @@ def itemtypes_save():
     return output
 
 
-@types.route('/item-types/load', methods=['POST'])
+@types.route(rule='/item-types/load', methods=['POST'])
 @login_required
 def itemtypes_load():
 

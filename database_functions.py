@@ -846,12 +846,33 @@ def regenerate_inventory_token(user_id, inventory_id, new_token):
         return None
 
 
-def find_all_my_items(logged_in_user: User):
-    with app.app_context():
-        query = db.session.query(Item)
-        query = query.filter(Item.user_id == logged_in_user.id)
-        results_ = query.all()
+def find_all_my_items(logged_in_user: User, limit: int = 100) -> List[Item]:
+    """
+    Finds all items owned by the logged-in user.
+
+    Args:
+        logged_in_user (User): The logged-in user object.
+        limit (int, optional): The maximum number of items to retrieve. Defaults to 100.
+
+    Returns:
+        List[Item]: A list of Item objects owned by the logged-in user. Returns an empty list if no items are found or an error occurs.
+    """
+    # Check if the logged-in user is valid
+    if not logged_in_user or not isinstance(logged_in_user, User):
+        return []
+
+    try:
+        # Wrap the database query inside a try-except block
+        with app.app_context():
+            query = db.session.query(Item)
+            query = query.filter(Item.user_id == logged_in_user.id)
+
+            # Limit the number of returned rows for performance
+            results_ = query.limit(limit).all()
         return results_
+    except Exception as e:
+        print(f"Exception occurred: {e}")
+        return []
 
 
 def _find_my_items(logged_in_user: User, inventory_id, query_params):
