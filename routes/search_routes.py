@@ -2,8 +2,18 @@ from flask import Blueprint, render_template, request
 from flask_login import login_required, current_user
 
 from database_functions import search_items
+import strings
 
 search_routes = Blueprint('search', __name__)
+
+
+@search_routes.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @search_routes.route('/search', methods=['GET', 'POST'])

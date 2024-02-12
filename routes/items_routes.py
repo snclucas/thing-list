@@ -20,8 +20,18 @@ from database_functions import get_all_user_locations, \
     get_users_for_inventory, get_user_inventory_by_id, get_or_add_new_location, edit_items_locations, \
     change_item_access_level, link_items, copy_items, commit, find_items_new, __PUBLIC, __PRIVATE, find_user_by_username
 from models import FieldTemplate
+import strings
 
 items_routes = Blueprint('items', __name__)
+
+
+@items_routes.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @items_routes.context_processor

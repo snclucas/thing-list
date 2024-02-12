@@ -11,8 +11,19 @@ from database_functions import find_user, save_new_user, find_user_by_token, act
     find_user_by_email
 from email_utils import send_email
 from models import User
+import strings
 
 auth_flask_login = Blueprint('auth_flask_login', __name__, template_folder='templates')
+
+
+
+@auth_flask_login.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 
@@ -128,7 +139,7 @@ def reset_password(token):
         return render_template('auth/login.html')
 
 
-def sanitize(input_string):
+def sanitize(input_string: str) -> str:
     """
     Sanitizes the given input string by encoding and decoding it using unicode_escape.
 

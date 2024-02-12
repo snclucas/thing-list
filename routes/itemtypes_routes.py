@@ -9,8 +9,18 @@ from app import app
 
 from database_functions import get_all_itemtypes_for_user, find_type_by_text, \
     add_new_user_itemtype, delete_itemtypes_from_db
+import strings
 
 types = Blueprint('types', __name__)
+
+
+@types.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @types.route('/item-types')

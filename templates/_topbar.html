@@ -4,12 +4,12 @@
 
         <li class="nav-item text-center"><a class="nav-link" href="{{ url_for('items.items') }}">
             <i class="grey mb-2 fas fa-th-list"></i>
-            <p class="text-muted show-big">Items</p></a>
+            <p class="text-muted show-big">{{ strings.items_string }}</p></a>
         </li>
 
         <li class="nav-item text-center"><a class="nav-link" href="{{ url_for('search.search') }}">
             <i class="grey mb-2 fas fa-search"></i>
-            <p class="text-muted show-big">Search</p></a>
+            <p class="text-muted show-big">{{ strings.search_string }}</p></a>
         </li>
 
         <a class="navbar-brand" href="#">
@@ -26,14 +26,14 @@
 
             <li class="nav-item text-center"><a class="nav-link" href="{{ url_for('auth_flask_login.logout') }}">
                 <i class="grey mb-2 fas fa-sign-out-alt"></i>
-                <p class="text-muted show-big">logout</p></a>
+                <p class="text-muted show-big">{{ strings.auth_logout_string }}</p></a>
             </li>
 
         {% else %}
 
             <li class="nav-item text-center"><a class="nav-link" href="{{ url_for('auth_flask_login.login') }}">
                 <i class="grey mb-2 fas fa-sign-in-alt"></i>
-                <p class="text-muted show-big">login</p></a>
+                <p class="text-muted show-big">{{ strings.auth_login_string }}</p></a>
             </li>
 
         {% endif %}

@@ -13,7 +13,7 @@
         </title>
 
         {% block metadata %}
-            <meta property="og:title" content="ThingList | A list of all your things"/>
+            <meta property="og:title" content="{{ strings.title_string }}"/>
             <meta property="og:type" content="website"/>
             <meta property="og:image" content="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"/>
             <meta property="og:url"

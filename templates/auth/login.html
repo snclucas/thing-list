@@ -24,13 +24,13 @@
                         </div>
 
                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                        <button class="btn btn-primary shadow-2 mb-4">Login</button>
+                        <button class="btn btn-primary shadow-2 mb-4">{{ strings.auth_login_string }}</button>
                     </form>
 
                     <p class="mb-0 text-muted"><a href="/forgot-password">Forgot password?</a></p>
                     <br>
                     {% if allow_registrations %}
-                        <p class="mb-0 text-muted">Don't have account yet? <a href="/register">Register</a></p>
+                        <p class="mb-0 text-muted">Don't have account yet? <a href="/register">{{ strings.auth_register_string }}</a></p>
                     {% endif %}
 
                     {% with messages = get_flashed_messages() %}

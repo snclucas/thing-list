@@ -14,6 +14,7 @@ from app import db, app, __PUBLIC__, __OWNER__
 from email_utils import send_email
 from models import Inventory, User, Item, UserInventory, InventoryItem, ItemType, Tag, \
     Location, Image, Field, ItemField, FieldTemplate, Notification, TemplateField, Relateditems
+import strings
 
 _NONE_ = "None"
 
@@ -43,10 +44,10 @@ def post_user_add_hook(new_user: User):
 
     """
     with app.app_context():
-        add_user_inventory(name=f"__default__{new_user.username}", description=f"Default inventory",
+        add_user_inventory(name=f"__default__{new_user.username}", description=strings.default_inventory_description,
                            access_level=0,
                            user_id=new_user.id)
-        get_or_add_new_location(location_name=_NONE_, location_description="No location (default)",
+        get_or_add_new_location(location_name=_NONE_, location_description=strings.no_locations_description_string,
                                 to_user_id=new_user.id)
         add_new_user_itemtype(name=_NONE_, user_id=new_user.id)
     # add default locations, types
@@ -1583,6 +1584,17 @@ def find_image(image_id: int, user: User) -> Optional[Image]:
 
 
 def delete_images_from_item(item_id: int, image_ids, user: User) -> (bool, str):
+    """
+    Delete images from an item.
+
+    Args:
+        item_id (int): The ID of the item.
+        image_ids (list): The IDs of the images to be deleted.
+        user (User): The user performing the deletion.
+
+    Returns:
+        tuple: A tuple containing a boolean indicating the success of the deletion and a string describing the result.
+    """
     if item_id is None:
         return False, "Item ID cannot be None"
 
@@ -1935,6 +1947,21 @@ def delete_item_images_by_item_id(item_id: int, user: User):
 
 
 def delete_item_images(item_: Item) -> (bool, str):
+    """
+    Deletes the images associated with an item.
+
+    Args:
+        item_ (Item): The item object whose images are to be deleted.
+
+    Returns:
+        tuple: A tuple containing a boolean value indicating the success of the deletion
+               and a string message describing the result.
+        - The first element of the tuple is True if the images are deleted successfully; otherwise False.
+        - The second element of the tuple is a message detailing the result of the deletion.
+          - If the deletion is successful, the message will be "Item images deleted successfully".
+          - If there is an error deleting the images, the message will provide the specific error details.
+
+    """
     if item_ is None:
         return False, "Item ID cannot be None"
 
@@ -1957,11 +1984,28 @@ def delete_item_images(item_: Item) -> (bool, str):
 
 
 def get_related_items(item_):
+    """
+    Args:
+        item_: An instance of an item.
+
+    Returns:
+        A list of related items associated with the given item.
+
+    """
+
     if item_ is None:
         app.logger.error("Item cannot be None")
         return []
-    return Relateditems.query.filter(
-        or_(Relateditems.item_id == item_.id, Relateditems.related_item_id == item_.id)).all()
+
+    try:
+        related_items = Relateditems.query.filter(
+            or_(Relateditems.item_id == item_.id,
+                Relateditems.related_item_id == item_.id)).all()
+    except Exception as e:
+        app.logger.error(f"Unable to fetch related items: {str(e)}")
+        return []
+
+    return related_items
 
 
 def get_items_to_delete(user: User, item_ids: list):

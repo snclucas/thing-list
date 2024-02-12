@@ -4,9 +4,18 @@ from flask_login import login_required, current_user
 
 from database_functions import get_user_locations, update_location_by_id, get_or_add_new_location, \
     delete_location, find_location_by_id
-from models import Location
+import strings
 
 location = Blueprint('location', __name__)
+
+
+@location.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 def get_form_data(key: str) -> str:

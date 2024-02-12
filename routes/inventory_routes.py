@@ -12,6 +12,7 @@ from database_functions import get_user_inventories, delete_item_from_inventory,
     delete_inventory_by_id, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory, \
     send_inventory_invite, regenerate_inventory_token, find_inventory_by_access_token, add_user_to_inventory_from_token
 from email_utils import send_email
+import strings
 
 inv = Blueprint('inv', __name__)
 
@@ -22,6 +23,15 @@ __VIEWER = 2
 __PRIVATE = 0
 __PUBLIC = 1
 __READ_ONLY = 2
+
+
+@inv.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @inv.context_processor
@@ -74,7 +84,7 @@ def inventories_for_username(username):
                 requesting_user_id = user_.id
                 username = user_.username
             else:
-                return render_template(template_name_or_list='404.html', message="No such inventory"), 404
+                return render_template(template_name_or_list='404.html', message=strings.no_inventory_string), 404
         else:
             requesting_user_id = current_user.id
             username = current_user.username
@@ -84,7 +94,7 @@ def inventories_for_username(username):
                                      access_level=-1)
 
     if len(user_invs) == 0:
-        return render_template(template_name_or_list='404.html', message="No inventories"), 404
+        return render_template(template_name_or_list='404.html', message=strings.no_inventories_string), 404
 
     number_inventories = len(user_invs) - 1  # -1 to count for the 'hidden' default inventory
 
@@ -103,12 +113,26 @@ def inventory(inventory_id: int):
             return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                     username=current_user.username, inventory_slug=inventory_.slug))
 
-    return render_template(template_name_or_list='404.html', message="No such inventory"), 404
+    return render_template(template_name_or_list='404.html', message=strings.no_inventory_string), 404
 
 
 @inv.route(rule='/inventory/add', methods=['POST'])
 @login_required
 def add_inventory():
+    """
+
+    This method adds a new inventory to the system. It receives a POST request to the '/inventory/add' endpoint.
+
+    Parameters:
+        None
+
+    Returns:
+        None
+
+    Example usage:
+        add_inventory()
+
+    """
     inventory_name_ = request.form.get("inventory_name")
     inventory_description_ = request.form.get("inventory_description")
     if inventory_name_ is None or inventory_name_ == "":
@@ -147,19 +171,18 @@ def del_inventory():
 @inv.route(rule='/inventory/edit', methods=['POST'])
 @login_required
 def edit_inventory():
-    if request.method == 'POST':
-        inventory_id = bleach.clean(request.form.get("inventory_id"))
-        inventory_name = bleach.clean(request.form.get("inventory_name"))
-        inventory_description = bleach.clean(request.form.get("inventory_description"))
+    inventory_id = bleach.clean(request.form.get("inventory_id"))
+    inventory_name = bleach.clean(request.form.get("inventory_name"))
+    inventory_description = bleach.clean(request.form.get("inventory_description"))
 
-        access_level_ = __PRIVATE
-        if "inventory_public" in request.form:
-            access_level_ = __PUBLIC
+    access_level_ = __PRIVATE
+    if "inventory_public" in request.form:
+        access_level_ = __PUBLIC
 
-        edit_inventory_data(user_id=current_user.id, inventory_id=int(inventory_id), name=inventory_name,
-                            description=inventory_description, access_level=int(access_level_))
+    edit_inventory_data(user_id=current_user.id, inventory_id=int(inventory_id), name=inventory_name,
+                        description=inventory_description, access_level=int(access_level_))
 
-        return redirect(url_for('inv.inventories'))
+    return redirect(url_for('inv.inventories'))
 
 
 @inv.route(rule='/inventory/deleteuser', methods=['POST'])

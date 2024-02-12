@@ -4,8 +4,18 @@ from flask_login import login_required, current_user
 from database_functions import get_user_inventories, get_user_item_count, get_user_templates, get_user_locations, \
     get_all_itemtypes_for_user, find_user_by_username, delete_notification_by_id, get_number_user_locations
 
+import strings
+
 main = Blueprint('main', __name__)
 
+
+@main.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 @main.route('/')
 def index():
@@ -24,10 +34,25 @@ def index():
 
 @main.route('/about')
 def about():
+    """
+    This method is a route handler for the '/about' endpoint. It renders the 'about.html' template and returns it as a response.
+
+    Returns:
+        Response: A Flask response object containing the rendered 'about.html' template.
+    """
     return render_template('about.html')
 
 @main.route('/privacy-policy')
 def privacy():
+    """
+    Method privacy
+
+        Method for rendering the privacy policy page.
+
+    Returns:
+        The rendered privacy policy page.
+
+    """
     return render_template('privacy_policy.html')
 
 
@@ -39,15 +64,14 @@ def del_notification():
 
     :return: None
     """
-    if request.method == 'POST':
-        json_data = request.json
-        username = json_data['username']
-        notification_id = json_data.get('notification_id')
-        if notification_id is None:
-            return "Missing 'notification_id'", 400
-        delete_notification_by_id(notification_id=notification_id, user=current_user)
+    json_data = request.json
+    username = json_data.get('username')
+    notification_id = json_data.get('notification_id')
+    if notification_id is None:
+        return "Missing 'notification_id'", 400
+    delete_notification_by_id(notification_id=notification_id, user=current_user)
 
-        return redirect(url_for(endpoint='main.profile', username=username))
+    return redirect(url_for(endpoint='main.profile', username=username))
 
 
 @main.route('/@<username>')
@@ -81,7 +105,7 @@ def profile(username):
 
     user_notifications = current_user.notifications
     # -1 to remove the default inventory
-    return render_template('profile.html', name=current_user.username, num_items=num_items,
+    return render_template(template_name_or_list='profile.html', name=current_user.username, num_items=num_items,
                            num_item_types=num_item_types, username=username,
                            num_field_templates=num_field_templates, num_user_locations=num_user_locations,
                            user_notifications=user_notifications, user_is_authenticated=user_is_authenticated,

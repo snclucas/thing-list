@@ -9,7 +9,7 @@ import bleach
 from PIL import Image
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import login_required, current_user
-# from flask_weasyprint import render_pdf, HTML
+import strings
 
 from app import app, __VIEWER__
 from database_functions import get_all_user_locations, \
@@ -21,8 +21,18 @@ from database_functions import get_all_user_locations, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
     find_item_by_slug, relate_items_by_id, __PUBLIC, find_user_by_username
 from utils import correct_image_orientation
+import strings
 
 item_routes = Blueprint('item', __name__)
+
+
+@item_routes.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @item_routes.context_processor
@@ -84,12 +94,12 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
                                                          viewing_user_id=requested_user_id)
 
     if inventory_ is None:
-        return render_template('404.html', message="No such item or you do not have access to this item"), 404
+        return render_template(template_name_or_list='404.html', message=strings.items_no_such_item_or_no_access), 404
 
     item_access_level = __VIEWER__
     if user_inventory_ is None:
         if inventory_.access_level != __PUBLIC:
-            return render_template('404.html', message="No such item or you do not have access to this item"), 404
+            return render_template(template_name_or_list='404.html', message=strings.items_no_such_item_or_no_access), 404
     else:
         item_access_level = user_inventory_.access_level
 
@@ -100,7 +110,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
         item_, item_type_string, inventory_item_ = None, None, None
 
     if item_ is None or inventory_item_ is None:
-        return render_template('404.html', message="No such item or you do not have access to this item"), 404
+        return render_template(template_name_or_list='404.html', message=strings.items_no_such_item_or_no_access), 404
 
     item_fields = get_item_fields(item_id=item_.id)
 
@@ -130,7 +140,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
 
     all_item_types_ = get_all_item_types()
 
-    return render_template('item/item.html', name=username, item_fields=item_fields, all_item_fields=all_item_fields,
+    return render_template(template_name_or_list='item/item.html', name=username, item_fields=item_fields, all_item_fields=all_item_fields,
                            all_fields=all_fields, inventory_slug=inventory_.slug, inventory=inventory_,
                            item=item_, username=username, item_type=item_type_string,
                            all_item_types=all_item_types_,
@@ -138,7 +148,7 @@ def item_with_username_and_inventory(username: str, inventory_slug: str, item_sl
                            image_dir=app.config['UPLOAD_FOLDER'], item_access_level=item_access_level)
 
 
-@item_routes.route('/item/edit/<string:item_id>', methods=['POST'])
+@item_routes.route(rule='/item/edit/<string:item_id>', methods=['POST'])
 @login_required
 def edit_item(item_id):
 
@@ -316,25 +326,36 @@ def unrelate_items():
         unrelate_items_by_id(item1_id=item1, item2_id=item2)
 
 
-@item_routes.route("/item/images/remove", methods=["POST"])
+@item_routes.route(rule="/item/images/remove", methods=["POST"])
 def delete_images():
-    if request.method == 'POST':
-        json_data = request.json
-        item_id = json_data['item_id']
-        item_slug = json_data['item_slug']
-        inventory_slug = json_data['inventory_slug']
-        username = json_data['username']
-        image_list = json_data['image_id_list']
+    """
+    Deletes images from an item.
 
-        delete_images_from_item(item_id=item_id, image_ids=image_list, user=current_user)
+    Args:
+        item_id (int): The ID of the item.
+        image_ids (list): A list of image IDs to be deleted.
+        user (User): The current user.
 
-        return redirect(url_for('item.item_with_username_and_inventory',
-                                username=username,
-                                inventory_slug=inventory_slug,
-                                item_slug=item_slug))
+    Returns:
+        redirect: A redirect to the item page with the given parameters.
+
+    """
+    json_data = request.json
+    item_id = json_data.get('item_id')
+    item_slug = json_data.get('item_slug')
+    inventory_slug = json_data.get('inventory_slug')
+    username = json_data.get('username')
+    image_list = json_data.get('image_id_list')
+
+    delete_images_from_item(item_id=item_id, image_ids=image_list, user=current_user)
+
+    return redirect(url_for(endpoint='item.item_with_username_and_inventory',
+                            username=username,
+                            inventory_slug=inventory_slug,
+                            item_slug=item_slug))
 
 
-@item_routes.route("/item/images/setmainimage", methods=["POST"])
+@item_routes.route(rule="/item/images/setmainimage", methods=["POST"])
 def set_main_image():
     """
     Sets the main image for an item.
@@ -411,7 +432,7 @@ def upload():
 
     add_images_to_item(item_id=item_id, filenames=new_filename_list, user=current_user)
 
-    return redirect(url_for('item.item_with_username_and_inventory',
+    return redirect(url_for(endpoint='item.item_with_username_and_inventory',
                             username=username,
                             inventory_slug=inventory_slug,
                             item_slug=item_slug))

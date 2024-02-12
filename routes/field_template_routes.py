@@ -10,7 +10,18 @@ from database_functions import find_template, add_new_template, update_template_
     set_template_fields_orders, \
     get_template_fields_by_id
 
+import strings
+
 field_template = Blueprint('field_template', __name__)
+
+
+@field_template.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @field_template.route('/field-templates')
