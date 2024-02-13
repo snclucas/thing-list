@@ -20,10 +20,10 @@ from database_functions import get_all_user_locations, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
     find_item_by_slug, relate_items_by_id, __PUBLIC, find_user_by_username
 from utils import correct_image_orientation
+import strings
 
 
 item_routes = Blueprint('item', __name__)
-
 
 
 @item_routes.context_processor
@@ -156,6 +156,8 @@ def edit_item(item_id):
     item_description = item_description
     item_quantity = bleach.clean(item_quantity)
 
+    item_description = item_description[:2000]
+
     del form_data["item_name"]
     del form_data["item_description"]
     del form_data["item_quantity"]
@@ -167,10 +169,6 @@ def edit_item(item_id):
     else:
         item_tags = []
     del form_data["item_tags"]
-
-
-
-
 
     item_type = request.form.get("item_type")
     if item_type is not None:
@@ -205,13 +203,13 @@ def edit_item(item_id):
     if not status:
         flash("Error updating item")
 
-    return redirect(url_for('item.item_with_username_and_inventory',
+    return redirect(url_for(endpoint='item.item_with_username_and_inventory',
                             username=username,
                             inventory_slug=inventory_slug,
                             item_slug=new_item_slug))
 
 
-@item_routes.route('/item/fields', methods=['POST'])
+@item_routes.route(rule='/item/fields', methods=['POST'])
 @login_required
 def edit_item_fields():
     if request.method == 'POST':
@@ -223,7 +221,7 @@ def edit_item_fields():
     return True
 
 
-@item_routes.route('/default-inventory_fields', methods=['POST'])
+@item_routes.route(rule='/default-inventory_fields', methods=['POST'])
 @login_required
 def edit_inv_default_fields():
     if request.method == 'POST':
@@ -238,7 +236,7 @@ def edit_inv_default_fields():
     return True
 
 
-@item_routes.route('/inventory/save-inventory-template', methods=['POST'])
+@item_routes.route(rule='/inventory/save-inventory-template', methods=['POST'])
 @login_required
 def save_inventory_template():
     form_data = dict(request.form)
@@ -266,7 +264,7 @@ def save_inventory_template():
                             username=current_user.username, inventory_slug=inventory_slug))
 
 
-@item_routes.route("/item/relate-items", methods=["POST"])
+@item_routes.route(rule="/item/relate-items", methods=["POST"])
 def relate_items():
     item_id = request.form.get("item_id")
     relateditem_slug = request.form.get("relateditem")
@@ -295,30 +293,35 @@ def relate_items():
                             item_slug=item_slug))
 
 
-@item_routes.route('/unrelate-items', methods=['POST'])
+@item_routes.route(rule='/unrelate-items', methods=['POST'])
 def unrelate_items():
-    if request.method == 'POST':
-        json_data = request.json
-        item1 = json_data['item1']
-        item2 = json_data['item2']
-        item1 = int(item1)
-        item2 = int(item2)
-        unrelate_items_by_id(item1_id=item1, item2_id=item2)
+    json_data = request.json
+    item1 = json_data['item1']
+    item2 = json_data['item2']
+    item1 = int(item1)
+    item2 = int(item2)
+    unrelate_items_by_id(item1_id=item1, item2_id=item2)
 
 
 @item_routes.route(rule="/item/images/remove", methods=["POST"])
 def delete_images():
     """
-    Deletes images from an item.
+    Deletes the specified images from an item.
 
-    Args:
-        item_id (int): The ID of the item.
-        image_ids (list): A list of image IDs to be deleted.
-        user (User): The current user.
+    The method expects a JSON payload with the following properties:
+    - 'item_id' (string): The ID of the item.
+    - 'item_slug' (string): The slug of the item.
+    - 'inventory_slug' (string): The slug of the inventory.
+    - 'username' (string): The username of the user.
+    - 'image_id_list' (list): The list of image IDs to be deleted.
+
+    This method internally calls the 'delete_images_from_item' function to delete the images.
 
     Returns:
-        redirect: A redirect to the item page with the given parameters.
-
+        A redirect response to the endpoint 'item.item_with_username_and_inventory' with the following parameters:
+        - 'username' (string): The username of the user.
+        - 'inventory_slug' (string): The slug of the inventory.
+        - 'item_slug' (string): The slug of the item.
     """
     json_data = request.json
     item_id = json_data.get('item_id')
@@ -380,7 +383,7 @@ def set_main_image():
                             item_slug=item_slug))
 
 
-@item_routes.route("/item/images/upload", methods=["POST"])
+@item_routes.route(rule="/item/images/upload", methods=["POST"])
 def upload():
     new_filename_list = []
 

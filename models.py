@@ -89,7 +89,7 @@ class Inventory(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50))
     slug = db.Column(db.String(50), nullable=True, unique=False)
-    description = db.Column(db.String(255))
+    description = db.Column(db.String(2000))
     owner_id = db.Column(db.Integer, db.ForeignKey('users.id'), primary_key=True, nullable=False)
     owner = db.relationship(User, load_on_pending=True, lazy='subquery')
     users = db.relationship('User', secondary='inventory_users', back_populates='inventories', lazy='subquery')
