@@ -2613,11 +2613,89 @@ def add_user_to_inventory_from_token(inventory_id: int, user_to_add: User, added
         return False
 
 
+def create_user_inventory(user, inventory_id: int, access_level: int) -> (bool, str):
+    """
+    Creates a user inventory with the given parameters.
+
+    Args:
+        user: The user object.
+        inventory_id (int): The ID of the inventory.
+        access_level (int): The access level for the user's inventory.
+
+    Returns:
+        tuple: A tuple containing a boolean value indicating if the user inventory was created successfully and a string message.
+               The boolean value is True if the user inventory was created successfully, otherwise False.
+               The string message provides information about the result of the create operation.
+    """
+    ui = UserInventory(user_id=user.id, inventory_id=inventory_id, access_level=access_level)
+    if user is None:
+        return False, "User object was None"
+
+    if inventory_id is None:
+        return False, "Inventory ID was None"
+
+    if access_level is None:
+        return False, "Access level was None"
+
+    try:
+        db.session.add(ui)
+        db.session.commit()
+        return True, "User inventory created"
+    except Exception as e:
+        db.session.rollback()
+        return False, "Error creating user inventory"
+
+
+def find_userinventory_by_inventory_id(user_id: int, inventory_id: int):
+    user_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id) \
+        .filter(UserInventory.user_id == user_id).one_or_none()
+    return user_inventory_
+
+
 def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_username: str,
-                          added_user_access_level: int):
+                          added_user_access_level: int) -> (bool, str):
     with app.app_context():
-        user_inventory_ = UserInventory.query.filter(UserInventory.inventory_id == inventory_id) \
-            .filter(UserInventory.user_id == current_user_id).one_or_none()
+        user_inventory = find_userinventory_by_inventory_id(user_id=current_user_id, inventory_id=inventory_id)
+
+        if user_inventory is None:
+            return False, "Inventory not found"
+        elif user_inventory.access_level != __OWNER__:
+            return False, "User not authorized to add user to inventory"
+        elif added_user_access_level == __OWNER__:
+            return False, ""  # don't support owner change right now
+
+        user_to_add = find_user_by_username(username=user_to_add_username)
+
+        if user_to_add is None:
+            return False, "User not found"
+
+        user_to_add_inventory = find_userinventory_by_inventory_id(user_id=user_to_add.id, inventory_id=inventory_id)
+
+        if user_to_add_inventory is None:
+            status, message = create_user_inventory(user_to_add, inventory_id, added_user_access_level)
+            if not status:
+                return False, message
+        else:
+            user_to_add_inventory.access_level = added_user_access_level
+            try:
+                db.session.commit()
+            except Exception as e:
+                return False, str(e)
+
+        add_user_notification(from_user_id=current_user_id, to_user_id=user_to_add.id,
+                              message=f"You have been added to the following inventory")
+
+        return True, "User added to inventory"
+
+
+
+
+
+
+def add_user_to_inventory2(inventory_id: int, current_user_id: int, user_to_add_username: str,
+                          added_user_access_level: int) -> (bool, str):
+    with app.app_context():
+        user_inventory_ = find_userinventory_by_inventory_id(user_id=current_user_id, inventory_id=inventory_id)
 
         if user_inventory_ is not None:
             if user_inventory_.access_level == __OWNER__:
@@ -2628,32 +2706,31 @@ def add_user_to_inventory(inventory_id: int, current_user_id: int, user_to_add_u
                         if user_to_add_ is not None:
 
                             # check if a user_inventory exists
-                            user_to_add_inventory_ = UserInventory.query.filter(
-                                UserInventory.inventory_id == inventory_id) \
-                                .filter(UserInventory.user_id == user_to_add_.id).one_or_none()
+                            user_to_add_inventory_ = find_userinventory_by_inventory_id(user_id=user_to_add_.id,
+                                                                                        inventory_id=inventory_id)
 
                             if user_to_add_inventory_ is not None:
                                 user_to_add_inventory_.access_level = added_user_access_level
                                 db.session.commit()
 
                             else:
-                                ui = UserInventory(user_id=user_to_add_.id, inventory_id=inventory_id,
-                                                   access_level=added_user_access_level)
-                                db.session.add(ui)
-                                db.session.commit()
+                                status, message = create_user_inventory(user_to_add_,
+                                                                        inventory_id, added_user_access_level)
+                                if not status:
+                                    return False, message
 
                             add_user_notification(from_user_id=current_user_id, to_user_id=user_to_add_.id,
                                                   message=f"You have been added to the following inventory")
-                            return True
+                            return True, "User added to inventory"
 
                     else:  # the username does not exist
-                        return False
+                        return False, "User not found"
                 else:
-                    return False  # don't support owner change right now
+                    return False, ""  # don't support owner change right now
             else:  # current user was not the inventory owner
-                return False
+                return False, "User not authorized to add user to inventory"
         else:  # inventory was not found
-            return False
+            return False, "Inventory not found"
 
 
 def get_user_inventory_by_id(user_id: int, inventory_id: int) -> Inventory:

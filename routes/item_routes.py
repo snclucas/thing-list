@@ -9,7 +9,6 @@ import bleach
 from PIL import Image
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify, flash
 from flask_login import login_required, current_user
-import strings
 
 from app import app, __VIEWER__
 from database_functions import get_all_user_locations, \
@@ -21,18 +20,10 @@ from database_functions import get_all_user_locations, \
     set_inventory_default_fields, save_inventory_fieldtemplate, get_user_location_by_id, unrelate_items_by_id, \
     find_item_by_slug, relate_items_by_id, __PUBLIC, find_user_by_username
 from utils import correct_image_orientation
-import strings
+
 
 item_routes = Blueprint('item', __name__)
 
-
-@item_routes.context_processor
-def inject_front_end_strings():
-    """
-    Inject strings into the front end
-    :return:
-    """
-    return dict(strings=strings)
 
 
 @item_routes.context_processor
@@ -44,17 +35,6 @@ def my_utility_processor():
         return ",".join(tag_arr)
 
     return dict(item_tag_to_string=item_tag_to_string)
-
-
-# @item_routes.route('/item/save-pdf', methods=['POST'])
-# @login_required
-# def items_save_pdf():
-#     if request.method == 'POST':
-#         html = item_with_username_and_inventory()
-#
-#         return render_pdf(HTML(string=html))
-
-        #return item_with_username_and_inventory()
 
 
 @item_routes.route('/@<username>/<inventory_slug>/<item_slug>')
@@ -173,7 +153,7 @@ def edit_item(item_id):
     item_quantity = request.form.get("item_quantity")
 
     item_name = bleach.clean(item_name)
-    item_description = bleach.clean(item_description)
+    item_description = item_description
     item_quantity = bleach.clean(item_quantity)
 
     del form_data["item_name"]

@@ -9,8 +9,8 @@ from flask_bcrypt import Bcrypt
 from flask_wtf.csrf import CSRFProtect
 from flask_mail import Mail
 
-#from pycharm_flask_debug_patch import restart_with_reloader_patch
-
+from pycharm_flask_debug_patch import restart_with_reloader_patch
+import strings
 
 from dotenv import load_dotenv
 
@@ -93,6 +93,15 @@ login_manager.init_app(app)
 
 
 mail = Mail(app)
+
+
+@app.context_processor
+def inject_front_end_strings():
+    """
+    Inject strings into the front end
+    :return:
+    """
+    return dict(strings=strings)
 
 
 @app.context_processor
