@@ -26,11 +26,11 @@
                         |
                         {% if  inventory_data['inventory_access_level'] == 1 %}
                             <span class="fas fa-unlock" style="color:red;"
-                                  data-toggle="tooltip" data-placement="top" title="This inventory is public"
+                                  data-toggle="tooltip" data-placement="top" title="{{ strings.this_inventory_is_public_tooltip }}"
                             ></span>
                         {% else %}
                             <span class="fas fa-lock"
-                                  data-toggle="tooltip" data-placement="top" title="This inventory is not public"
+                                  data-toggle="tooltip" data-placement="top" title="{{ strings.this_inventory_is_not_public_tooltip }}"
                             ></span>
                         {% endif %}
                         {% if inventory_data['userinventory_access_level'] == 1 %}
@@ -54,27 +54,9 @@
                                   data-inventory-slug="{{ inventory_data['inventory_slug'] }}"
                                   data-inventory-public="{{ inventory_data['inventory_access_level'] }}"
 
-
-                                  data-toggle="tooltip" data-placement="top" title="Edit inventory"
+                                  data-toggle="tooltip" data-placement="top" title="{{ strings.edit_inventory_tooltip }}"
                                   style="display: inline-block; margin-right: 20px;"></span>
-
-                                <span id="delete-inventory-btn-{{ inventory_data['inventory_id'] }}"
-                                      data-bs-toggle="collapse"
-                                      href="#confirmInventoryDelete-{{ inventory_data['inventory_id'] }}"
-                                      class="fas fa-times fa-2x "
-                                      data-toggle="tooltip" data-placement="top" title="Delete inventory"
-                                      style="color:red; display: inline-block; margin-right: 20px;"></span>
-
-                                <div class="collapse" id="confirmInventoryDelete-{{ inventory_data['inventory_id'] }}"
-                                     aria-expanded="false">
-                                    <button type="button" class="btn btn-primary btn-sm"
-                                            id="confirmInventoryDeleteBtn-{{ inventory_data['inventory_id'] }}"
-                                            data-inventory-id="{{ inventory_data['inventory_id'] }}"
-                                            data-inventory-slug="{{ inventory_data['inventory_slug'] }}">Confirm delete
-                                    </button>
-                                </div>
                             </td>
-
 
                         {% else %}
                             <td>Remove</td>

@@ -4,22 +4,18 @@
     <hr>
 
     <div class="row">
-
         <div class="col-12">
             <label for="inventoryName" class="form-label">Name:</label>
             <input type="text" class="form-control" name="inventory_name" id="add_form_inventory_name" required>
         </div>
-
     </div>
 
     <br>
     <div class="row">
-
         <div class="col-12">
             <label for="inventoryDescription" class="form-label">Description:</label>
             <input type="text" class="form-control" name="inventory_description" id="add_form_inventory_description">
         </div>
-
     </div>
 
     <br>
@@ -67,7 +63,6 @@
 
 </form>
 
-
 <hr>
 
 <div class="row">
@@ -86,15 +81,12 @@
                 <form method="post"
                       action="{{ url_for('inv.register_for_inventory_access') }}">
 
-
                     <div class="row">
-
                         <div class="col-12">
                             <label for="inventoryName" class="form-label">Access token:</label>
                             <input type="text" class="form-control" name="access_token" id="access_token"
                                    required>
                         </div>
-
                     </div>
 
                     <br>
