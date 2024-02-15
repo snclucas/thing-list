@@ -1,4 +1,5 @@
 import json
+import string
 import uuid
 
 import bleach
@@ -290,36 +291,42 @@ def delete_from_inventory(username: str, inventory_slug, item_id):
 @login_required
 def add_to_inventory():
 
-    if request.method == 'POST':
-        item_name = request.form.get("name")
-        item_description = request.form.get("description")
-        inventory_id = request.form.get("inventory_id")
+    item_name = request.form.get("name")
+    item_description = request.form.get("description")
+    inventory_id = request.form.get("inventory_id")
 
-        username = request.form.get("username").lower()
-        inventory_slug = request.form.get("inventory_slug").lower()
-        item_type = request.form.get("type").lower()
-        if item_type == '':
-            item_type = 'none'
-        item_location = request.form.get("location_id").lower()
-        item_specific_location = request.form.get("specific_location").lower()
-        item_tags = request.form.get("tags").lower()
-        item_tags = item_tags.lower().split(",")
+    item_name = bleach.clean(item_name).replace('"','\\"')
+    item_description = bleach.clean(item_description).replace('"','\\"')
 
-        item_custom_fields = dict(request.form)
-        to_remove = ['username', 'name', 'id', 'description', 'inventory_id', 'location_id',
-                     'inventory_slug', 'specific_location', 'csrf_token', 'tags', 'type']
-        for field in to_remove:
-            del item_custom_fields[field]
+    printable = set(string.printable)
+    item_name = ''.join(filter(lambda x: x in printable, item_name))
+    item_description = ''.join(filter(lambda x: x in printable, item_description))
 
-        add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
-                              item_tags=item_tags,
-                              item_location_id=int(item_location), item_specific_location=item_specific_location,
-                              inventory_id=inventory_id, user_id=current_user.id,
-                              custom_fields=item_custom_fields)
+    username = request.form.get("username").lower()
+    inventory_slug = request.form.get("inventory_slug").lower()
+    item_type = request.form.get("type").lower()
+    if item_type == '':
+        item_type = 'none'
+    item_location = request.form.get("location_id").lower()
+    item_specific_location = request.form.get("specific_location").lower()
+    item_tags = request.form.get("tags").lower()
+    item_tags = item_tags.lower().split(",")
 
-        if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
-            return redirect(url_for('items.items_with_username',
-                                    username=username))
-        else:
-            return redirect(url_for('items.items_with_username_and_inventory',
-                                    username=username, inventory_slug=inventory_slug))
+    item_custom_fields = dict(request.form)
+    to_remove = ['username', 'name', 'id', 'description', 'inventory_id', 'location_id',
+                 'inventory_slug', 'specific_location', 'csrf_token', 'tags', 'type']
+    for field in to_remove:
+        del item_custom_fields[field]
+
+    add_item_to_inventory(item_name=item_name, item_desc=item_description, item_type=item_type,
+                          item_tags=item_tags,
+                          item_location_id=int(item_location), item_specific_location=item_specific_location,
+                          inventory_id=inventory_id, user_id=current_user.id,
+                          custom_fields=item_custom_fields)
+
+    if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
+        return redirect(url_for('items.items_with_username',
+                                username=username))
+    else:
+        return redirect(url_for('items.items_with_username_and_inventory',
+                                username=username, inventory_slug=inventory_slug))

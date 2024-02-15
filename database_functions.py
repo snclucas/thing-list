@@ -6,7 +6,7 @@ from typing import Union, List, Tuple, Optional
 import flask_bcrypt
 
 from slugify import slugify
-from sqlalchemy import select, and_, ClauseElement, or_
+from sqlalchemy import select, and_, ClauseElement, or_, text
 from sqlalchemy.exc import SQLAlchemyError, NoResultFound, InvalidRequestError
 from sqlalchemy.sql.functions import func
 
