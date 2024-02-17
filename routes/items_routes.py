@@ -52,7 +52,7 @@ def _find_list_index(list_, value):
         return -1
 
 
-@items_routes.route('/items/load', methods=['POST'])
+@items_routes.route(rule='/items/load', methods=['POST'])
 @login_required
 def items_load():
     username = current_user.username
@@ -71,7 +71,7 @@ def items_load():
             if "text/csv" not in import_file_mimetype:
                 flash("Uploaded file does not seem to be a CSV file.")
 
-                return redirect(url_for('items.items_with_username_and_inventory',
+                return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                         username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
             with open(filepath) as csvfile:
@@ -104,7 +104,7 @@ def items_load():
                         description_col_index = _find_list_index(column_headers, "description")
 
                         if name_col_index == -1 or description_col_index == -1:
-                            return redirect(url_for('items.items_with_username_and_inventory',
+                            return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                                     username=username,
                                                     inventory_slug=inventory_slug).replace('%40', '@'))
 
@@ -218,7 +218,7 @@ def items_move():
             if result["status"] == "error":
                 flash("There was a problem copying your things!")
 
-        return redirect(url_for('item.items_with_username', username=username).replace('%40', '@'))
+        return redirect(url_for(endpoint='item.items_with_username', username=username).replace('%40', '@'))
 
 
 @items_routes.route(rule='/items/edit', methods=['POST'])
@@ -229,7 +229,7 @@ def items_edit():
             if not all(key in request.json for key in
                                 ('item_ids', 'username', 'inventory_slug', 'location_id', 'item_visibility')):
                 flash("There was a problem editing your things!")
-                return redirect(url_for('items.items_with_username_and_inventory',
+                return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                         username=current_user.username,
                                         inventory_slug="all").replace('%40', '@'))
 
@@ -255,11 +255,11 @@ def items_edit():
         if access_level != -1:
             change_item_access_level(item_ids=item_ids, access_level=access_level, user_id=current_user.id)
 
-        return redirect(url_for('items.items_with_username_and_inventory',
+        return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                 username=username, inventory_slug=inventory_slug).replace('%40', '@'))
 
 
-@items_routes.route('/items/save-pdf', methods=['POST'])
+@items_routes.route(rule='/items/save-pdf', methods=['POST'])
 @login_required
 def items_save_pdf():
     if request.method == 'POST':
@@ -279,7 +279,7 @@ def items_save_pdf():
         return response
 
 
-@items_routes.route('/items/save', methods=['POST'])
+@items_routes.route(rule='/items/save', methods=['POST'])
 @login_required
 def items_save():
     inventory_slug = request.form.get("inventory_slug")
@@ -420,10 +420,10 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
         users_in_this_inventory = get_users_for_inventory(inventory_id=inventory_id, current_user_id=current_user.id)
 
     if inventory_ is None and inventory_slug != "all":
-        return render_template('404.html', message="No such inventory"), 404
+        return render_template(template_name_or_list='404.html', message="No such inventory"), 404
 
     if not user_is_authenticated and inventory_.access_level == __PRIVATE:
-        return render_template('404.html', message="No such inventory"), 404
+        return render_template(template_name_or_list='404.html', message="No such inventory"), 404
 
     if not user_is_authenticated and inventory_.access_level == __PUBLIC:
         is_inventory_owner = False
@@ -438,7 +438,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
             if user_inventory_ is not None:
                 inventory_access_level = user_inventory_[0].access_level
             else:
-                return render_template('404.html', message="No inventory or no permissions to view inventory"), 404
+                return render_template(template_name_or_list='404.html', message="No inventory or no permissions to view inventory"), 404
 
             is_inventory_owner = (inventory_.owner_id == logged_in_user_id) or inventory_access_level == 0
         else:
@@ -461,7 +461,7 @@ def items_with_username_and_inventory(username=None, inventory_slug=None):
     else:
         current_username = None
 
-    return render_template('item/items.html',
+    return render_template(template_name_or_list='item/items.html',
                            inventory_id=inventory_id,
                            current_username=current_username,
                            username=username,

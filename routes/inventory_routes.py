@@ -8,11 +8,11 @@ from flask_login import login_required, current_user
 
 from database_functions import get_user_inventories, delete_item_from_inventory, \
     add_item_to_inventory, \
-    get_items_for_inventory, find_inventory, get_all_item_types, find_inventory_by_slug, \
-    find_user_by_username, edit_inventory_data, get_all_user_locations, \
+    find_inventory, find_inventory_by_slug, \
+    find_user_by_username, edit_inventory_data, \
     delete_inventory_by_id, add_user_to_inventory, delete_user_to_inventory, find_inventory_by_id, add_user_inventory, \
-    send_inventory_invite, regenerate_inventory_token, find_inventory_by_access_token, add_user_to_inventory_from_token
-from email_utils import send_email
+    regenerate_inventory_token, find_inventory_by_access_token, add_user_to_inventory_from_token
+
 import strings
 
 inv = Blueprint('inv', __name__)
@@ -45,7 +45,7 @@ def my_utility_processor():
     return dict(item_tag_to_string=item_tag_to_string)
 
 
-@inv.route('/inventories', methods=['GET'])
+@inv.route(rule='/inventories', methods=['GET'])
 @login_required
 def inventories():
     """
@@ -121,8 +121,15 @@ def inventory(inventory_id: int):
 @login_required
 def add_inventory():
     """
+    Add Inventory
 
-    This method adds a new inventory to the system. It receives a POST request to the '/inventory/add' endpoint.
+    Adds a new inventory to the system with the provided name, description, access level, and user ID.
+
+    Returns:
+        None
+
+    Invocation:
+        The method is invoked using a POST request to the '/inventory/add' route.
 
     Parameters:
         None
@@ -130,9 +137,27 @@ def add_inventory():
     Returns:
         None
 
-    Example usage:
-        add_inventory()
+    Exceptions:
+        None
 
+    Preconditions:
+        - The user must be logged in.
+        - The request must contain the 'inventory_name' and 'inventory_description' fields in the request form.
+            - If 'inventory_name' is None or an empty string, the method will redirect to the 'inv.inventories' route.
+            - If 'inventory_description' is None, it will be set to an empty string.
+
+    Postconditions:
+        - If the 'inventory_public' field is present in the request form, the access level of the new inventory will be set
+          to __PUBLIC. Otherwise, it will be set to __PRIVATE.
+        - The 'inventory_name' and 'inventory_description' values will be cleaned using the 'bleach.clean()' method.
+        - The 'add_user_inventory' function will be called with the cleaned 'inventory_name', 'inventory_description',
+          'access_level', and 'user_id' parameters.
+        - If the 'add_user_inventory' function returns a non-None 'new_inventory_data' value, the method will redirect to
+          the 'items.items_with_username_and_inventory' route with the current user's username and the new inventory's slug.
+        - Otherwise, the method will redirect to the 'inv.inventories' route.
+
+    Example Usage:
+        response = add_inventory()
     """
     inventory_name_ = request.form.get("inventory_name")
     inventory_description_ = request.form.get("inventory_description")
@@ -206,14 +231,16 @@ def delete_user_to_inv():
     inventory_ = find_inventory_by_id(inventory_id=inventory_id, user_id=current_user.id)
 
     if result:
-        return redirect(url_for('items.items_with_username_and_inventory',
-                                inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
+        return redirect(url_for(endpoint='items.items_with_username_and_inventory',
+                                inventory_slug=inventory_.slug,
+                                username=current_user.username).replace('%40', '@'))
     else:
-        return redirect(url_for('items.items_with_username_and_inventory',
-                                inventory_slug=inventory_.slug, username=current_user.username).replace('%40', '@'))
+        return redirect(url_for(endpoint='items.items_with_username_and_inventory',
+                                inventory_slug=inventory_.slug,
+                                username=current_user.username).replace('%40', '@'))
 
 
-@inv.route("/regenerate-token>", methods=["POST"])
+@inv.route(rule="/regenerate-token>", methods=["POST"])
 @login_required
 def regenerate_token():
     if request.method == 'POST':
@@ -232,7 +259,7 @@ def regenerate_token():
                    {'ContentType': 'application/json'}
 
 
-@inv.route('/inventory/access', methods=['POST'])
+@inv.route(rule='/inventory/access', methods=['POST'])
 @login_required
 def register_for_inventory_access():
     if request.method == 'POST':
@@ -278,16 +305,16 @@ def add_user_to_inv():
             return redirect(url_for('inv.inventories'))
 
 
-@inv.route('/inventory/@<username>/<inventory_slug>/delete/<item_id>', methods=['POST'])
+@inv.route(rule='/inventory/@<username>/<inventory_slug>/delete/<item_id>', methods=['POST'])
 @login_required
 def delete_from_inventory(username: str, inventory_slug, item_id):
     inventory_, user_inventory_ = find_inventory_by_slug(inventory_slug=inventory_slug,
                                                          inventory_owner_id=current_user.id)
     delete_item_from_inventory(user=current_user, inventory_id=int(inventory_.id), item_id=int(item_id))
-    return redirect(url_for('inv.inventory_by_slug', username=username, inventory_slug=inventory_.slug))
+    return redirect(url_for(endpoint='inv.inventory_by_slug', username=username, inventory_slug=inventory_.slug))
 
 
-@inv.route('/inventory/additem', methods=['POST'])
+@inv.route(rule='/inventory/additem', methods=['POST'])
 @login_required
 def add_to_inventory():
 
@@ -325,8 +352,8 @@ def add_to_inventory():
                           custom_fields=item_custom_fields)
 
     if inventory_id == '' or inventory_slug == '' or inventory_id is None or inventory_slug is None:
-        return redirect(url_for('items.items_with_username',
+        return redirect(url_for(endpoint='items.items_with_username',
                                 username=username))
     else:
-        return redirect(url_for('items.items_with_username_and_inventory',
+        return redirect(url_for(endpoint='items.items_with_username_and_inventory',
                                 username=username, inventory_slug=inventory_slug))

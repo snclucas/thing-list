@@ -1,5 +1,5 @@
 import bleach
-from flask import Blueprint, render_template, redirect, url_for, request, flash
+from flask import Blueprint, render_template, redirect, url_for, request
 from flask_login import login_required, current_user
 
 from database_functions import get_user_locations, update_location_by_id, get_or_add_new_location, \
@@ -24,14 +24,15 @@ def get_form_data(key: str) -> str:
 def sanitize_input(value: str) -> str:
     return bleach.clean(value)
 
-@location.route('/locations', methods=['GET'])
+@location.route(rule='/locations', methods=['GET'])
 @login_required
 def locations():
     user_locations = get_user_locations(user_id=current_user.id)
-    return render_template('location/locations.html', username=current_user.username, locations=user_locations)
+    return render_template(template_name_or_list='location/locations.html',
+                           username=current_user.username, locations=user_locations)
 
 
-@location.route('/location/delete', methods=['POST'])
+@location.route(rule='/location/delete', methods=['POST'])
 @login_required
 def del_location():
     """

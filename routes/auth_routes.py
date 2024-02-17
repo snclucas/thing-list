@@ -1,7 +1,7 @@
 import re
 import uuid
 
-from sqlalchemy.exc import SQLAlchemyError, NoResultFound, InvalidRequestError
+from sqlalchemy.exc import SQLAlchemyError
 from flask import current_app, Blueprint, render_template, request, flash, redirect, url_for
 from app import db
 from app import login_manager, flask_bcrypt, app
@@ -240,13 +240,6 @@ def change_password():
 
         except Exception as err:
             current_app.logger.error("Error on registration - possible duplicate emails")
-
-
-
-
-
-
-
 
         flash("If this account exists, an email will be sent with instructions to reset the password")
         return render_template("auth/reset_password.html")

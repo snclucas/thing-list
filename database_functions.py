@@ -1222,6 +1222,12 @@ def get_item_types(item_id=None, user_id=None) -> list:
 
 
 def add_new_user_itemtype(name: str, user_id: int):
+    """
+    Args:
+        name (str): The name of the item type to be added.
+        user_id (int): The ID of the user adding the item type.
+
+    """
     with app.app_context():
         item_type_ = find_type_by_text(type_text=name, user_id=user_id)
 
@@ -2366,6 +2372,31 @@ def commit():
     db.session.commit()
 
 
+def __create_item(item_name, item_desc, user_id, item_quantity, item_location_id: int, item_specific_location: str = None) -> Item:
+    """
+    Args:
+        item_name: The name of the item. (str)
+        item_desc: The description of the item. (str)
+        user_id: The ID of the user who creates the item. (int)
+        item_quantity: The quantity of the item. (int)
+        item_location_id: The ID of the location where the item is stored. (int)
+        item_specific_location: The specific location of the item. Defaults to None. (str)
+
+    Returns:
+        Item: The newly created item. (Item)
+
+    """
+    # create the new item
+    new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
+                    location_id=item_location_id, specific_location=item_specific_location)
+    db.session.add(new_item)
+    # get new item ID and set the item slug
+    db.session.flush()
+    item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
+    new_item.slug = item_slug
+    return new_item
+
+
 def add_item_to_inventory(item_id=None, item_name=None, item_desc=None, item_type=None, item_tags=None,
                           inventory_id=None, user_id=None, item_quantity=None,
                           item_location_id=None, item_specific_location="", custom_fields=None):
@@ -2410,17 +2441,14 @@ def add_item_to_inventory(item_id=None, item_name=None, item_desc=None, item_typ
         try:
 
             if item_id is None:
-                # create the new item
-                new_item = Item(name=item_name, description=item_desc, user_id=user_id, quantity=item_quantity,
-                                location_id=item_location_id, specific_location=item_specific_location)
-                db.session.add(new_item)
-                # get new item ID and set the item slug
-                db.session.flush()
-                item_slug = f"{str(new_item.id)}-{slugify(item_name)}"
-                new_item.slug = item_slug
+                new_item = __create_item(item_name, item_desc, user_id, item_quantity, item_location_id, item_specific_location)
 
             else:
+                # get the existing item (possibly)
                 new_item = find_item_by_id(user_id=user_id, item_id=item_id)
+                if new_item is None:
+                    # This item is being added from inporting from CSV file
+                    new_item = __create_item(item_name, item_desc, user_id, item_quantity, item_location_id, item_specific_location)
 
             if item_type is None:
                 item_type = "None"
