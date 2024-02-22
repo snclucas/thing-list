@@ -5,6 +5,17 @@ items_string = "Items"
 basic_help_tooltip = "Basic help"
 front_page_line1 = "Do you have <strong>Things</strong>? Do you need to make lists of <strong>Things</strong>?"
 front_page_line2 = "ThingList will allow you to make lists of your <strong>Things</strong>! No judgement"
+delete_string = "Delete"
+export_string = "Export"
+edit_string = "Edit"
+add_new_string = "Add new"
+save_string = "Save"
+cancel_string = "Cancel"
+public_string = "Public"
+private_string = "Private"
+
+
+delete_confirm_string = "Do you really want to delete? This process cannot be undone."
 
 #auth
 auth_login_string = "Login"

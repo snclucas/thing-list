@@ -56,13 +56,12 @@
 
                                     <div class="collapse" id="collapseDeleteItemTypes" aria-expanded="false">
                                         <div class="text-center">
-                                            <p>Do you really want to delete? This process cannot be
-                                                undone.</p>
+                                            <p>{{ strings.delete_confirm_string }}</p>
                                             <button id="confirm-delete-itemtypes-btn" type="button"
-                                                    class="btn btn-primary btn-sm">Delete
+                                                    class="btn btn-primary btn-sm">{{ strings.delete_string }}
                                             </button>
                                             <button id="cancel-delete-itemtypes-btn" type="button"
-                                                    class="btn btn-primary btn-sm">Cancel
+                                                    class="btn btn-primary btn-sm">{{ strings.cancel_string }}
                                             </button>
                                             <hr>
                                         </div>
@@ -74,7 +73,7 @@
                                           action="{{ url_for("types.itemtypes_save", username=username) }}">
                                         <input type="hidden" class="form-control" name="username" id="form_username"
                                                value="{{ username }}">
-                                        <button type="submit" class="btn btn-primary">Export</button>
+                                        <button type="submit" class="btn btn-primary">{{ strings.export_string }}</button>
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                                     </form>
                                 </div>
