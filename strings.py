@@ -3,7 +3,8 @@ title_string = "ThingList | A list of all your things"
 search_string = "Search"
 items_string = "Items"
 basic_help_tooltip = "Basic help"
-
+front_page_line1 = "Do you have <strong>Things</strong>? Do you need to make lists of <strong>Things</strong>?"
+front_page_line2 = "ThingList will allow you to make lists of your <strong>Things</strong>! No judgement"
 
 #auth
 auth_login_string = "Login"

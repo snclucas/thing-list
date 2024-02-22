@@ -3,10 +3,8 @@
 {% block content %}
     <div class="content">
         <div class="container">
-
             <div class="card">
                 <div class=" text-center">
-
                     <div class="row align-items-center">
 
                         <div class="col-12">
@@ -14,17 +12,14 @@
                                  src="{{ url_for('static', filename='img/thinglist-logo-50pc.png') }}"
                                  alt="ThingList logo">
 
-                            <p>Do you have <strong>Things</strong>? Do you need to make lists of <strong>Things</strong>?</p>
+                            <p>{{ strings.front_page_line1|safe }}</p>
 
-                            <p>ThingList will allow you to make lists of your <strong>Things</strong>! No judgement.</p>
+                            <p>{{ strings.front_page_line2|safe }}</p>
 
                         </div>
-
                     </div>
-
                 </div>
             </div>
         </div>
-
     </div>
 {% endblock %}

@@ -32,8 +32,8 @@
                                         </a>
 
                                         <span class="fas fa-info fa-2x" data-bs-toggle="collapse"
-                                                  href="#collapseItemTypeHelp"
-                                                  style="display: inline-block; margin-right: 20px;"></span>
+                                              href="#collapseItemTypeHelp"
+                                              style="display: inline-block; margin-right: 20px;"></span>
 
                                     </div>
 
@@ -49,10 +49,10 @@
                                     </div>
 
                                     <div class="collapse" id="collapseAddItemType" aria-expanded="false">
-                                <div class="card card-body">
-                                    {% include 'types/_add_itemtypes_form.html' %}
-                                </div>
-                            </div>
+                                        <div class="card card-body">
+                                            {% include 'types/_add_itemtypes_form.html' %}
+                                        </div>
+                                    </div>
 
                                     <div class="collapse" id="collapseDeleteItemTypes" aria-expanded="false">
                                         <div class="text-center">
@@ -68,15 +68,15 @@
                                         </div>
                                     </div>
 
-                            {% include 'types/_item_types_table.html' %}
+                                    {% include 'types/_item_types_table.html' %}
 
-                            <form id="form-export-itemtypes" method="POST" style="display: none;"
-                                  action="{{ url_for("types.itemtypes_save", username=username) }}">
-                                <input type="hidden" class="form-control" name="username" id="form_username"
-                                       value="{{ username }}">
-                                <button type="submit" class="btn btn-primary">Export</button>
-                                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                            </form>
+                                    <form id="form-export-itemtypes" method="POST" style="display: none;"
+                                          action="{{ url_for("types.itemtypes_save", username=username) }}">
+                                        <input type="hidden" class="form-control" name="username" id="form_username"
+                                               value="{{ username }}">
+                                        <button type="submit" class="btn btn-primary">Export</button>
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                                    </form>
                                 </div>
                             </div>
                         </div>
@@ -121,7 +121,6 @@
         });
 
 
-
         function check_checkboxes() {
             let number_selected = checkbox_count("selected-item-")
 
@@ -150,21 +149,6 @@
         }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
         $("#confirm-delete-itemtypes-btn").on("click", function (e) {
             e.preventDefault();
 
@@ -191,9 +175,6 @@
                 }
             });
         });
-
-
-
 
 
         const autoCompleteJS = new autoComplete({

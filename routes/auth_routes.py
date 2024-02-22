@@ -1,6 +1,7 @@
 import re
 import uuid
 
+from MySQLdb import OperationalError
 from sqlalchemy.exc import SQLAlchemyError
 from flask import current_app, Blueprint, render_template, request, flash, redirect, url_for
 from app import db
@@ -424,7 +425,11 @@ def load_user(id):
     if id is None:
         redirect('/login')
 
-    user = User.query.filter_by(id=id).first()
+    try:
+        user = User.query.filter_by(id=id).first()
+    except OperationalError as err:
+        current_app.logger.error(msg=f"Error loading user: {str(err)}", exc_info=True)
+        return render_template(template_name_or_list='500.html', message="error"), 500
     if user is not None:
         if user.is_active:
             return user
