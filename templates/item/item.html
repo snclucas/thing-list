@@ -186,8 +186,13 @@
                                     <div class="col-md-6">
                                         <h5>Inventories: </h5>
                                         {% for inventory in item.inventories %}
-                                            <strong><a
-                                                    href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">{{ inventory.name }}</a></strong>
+                                            <strong>
+                                            {% if '_default_' not in inventory.name  %}
+                                                    <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">{{ inventory.name }}</a>
+                                            {% else %}
+                                                    <a href="{{ url_for('items.items_with_username_and_inventory', username=username, inventory_slug=inventory.slug) | replace('%40', '@') }}">None / Default</a>
+                                            {% endif %}
+                                            </strong>
                                         {% endfor %}
                                     </div>
                                 {% endif %}
