@@ -15,6 +15,52 @@
     {% endblock %}
 
     <link href="{{ url_for('static', filename='css/autoComplete.css') }}" rel="stylesheet">
+
+
+    <style>
+    .notice {
+    padding: 15px;
+    background-color: #fafafa;
+    border-left: 6px solid #7f7f84;
+    margin-bottom: 10px;
+    -webkit-box-shadow: 0 5px 8px -6px rgba(0,0,0,.2);
+       -moz-box-shadow: 0 5px 8px -6px rgba(0,0,0,.2);
+            box-shadow: 0 5px 8px -6px rgba(0,0,0,.2);
+}
+.notice-sm {
+    padding: 10px;
+    font-size: 80%;
+}
+.notice-lg {
+    padding: 35px;
+    font-size: large;
+}
+.notice-success {
+    border-color: #80D651;
+}
+.notice-success>strong {
+    color: #80D651;
+}
+.notice-info {
+    border-color: #4567cd;
+}
+.notice-info>strong {
+    color: #4567cd;
+}
+.notice-warning {
+    border-color: #FEAF20;
+}
+.notice-warning>strong {
+    color: #FEAF20;
+}
+.notice-danger {
+    border-color: #d73814;
+}
+.notice-danger>strong {
+    color: #d73814;
+}
+    </style>
+
 {% endblock %}
 
 {% block content %}
@@ -78,19 +124,34 @@
 
                                 <div class="col-md-8 order-sm-first order-last">
                                     <p class="card-text">{{ item.description | safe }}</p>
-                                    <h6><strong>Type:</strong> {{ item_type }}</h6>
+
+                                    <div class="notice notice-info">
+                                        <strong>Type:</strong> {{ item_type }}
+                                    </div>
 
                                     {% if item_access_level == 0 %}
-                                        <h6><strong>Location:</strong> {{ item_location['name'] }}</h6>
+
+                                        <div class="notice notice-info">
+                                        <strong>Location:</strong> {{ item_location['name'] }}
+                                        </div>
 
                                         {% if item.specific_location is not none %}
-                                            <h6><strong>Specific location #:</strong> {{ item.specific_location }}</h6>
+
+                                            <div class="notice notice-info">
+                                        <strong>Specific location #:</strong> {{item.specific_location }}
+                                        </div>
+
                                         {% else %}
-                                            <h6><strong>Specific location #:</strong> Not set</h6>
+                                            <div class="notice notice-info">
+                                        <strong>Specific location #:</strong> Not set
+                                        </div>
                                         {% endif %}
                                     {% endif %}
 
-                                    <h6><strong>Quantity:</strong> {{ item.quantity }}</h6>
+
+                                <div class="notice notice-info">
+                                        <strong>Quantity:</strong> {{item.quantity }}
+                                        </div>
 
                                 </div>
 
@@ -116,17 +177,21 @@
                                 {% for field, item_field in item_fields.items() %}
 
                                     <tr>
-                                        <td><strong>{{ field.field|capitalize }}:</strong></td>
                                         <td>
+                                        <div class="notice notice-warning">
+                                            <strong>{{ field.field|capitalize }}:</strong>
 
                                             {% if field.type|lower == 'url' %}
                                                 <a href="{{ item_field.value }}">{{ item_field.value }}</a>
                                             {% else %}
                                                 {{ item_field.value }}
                                             {% endif %}
+                                        </div>
                                         </td>
-
+                                    <td>
+                                        </td>
                                     </tr>
+
                                 {% endfor %}
                                 </tbody>
                             </table>
